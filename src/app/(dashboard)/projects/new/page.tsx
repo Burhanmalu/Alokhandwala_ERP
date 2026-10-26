@@ -447,25 +447,6 @@ export default function NewSiteInspectionPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {photoUrls.map((url, idx) => (
-              <div key={idx} className="relative rounded-xl overflow-hidden border border-slate-200 group bg-slate-100 aspect-video">
-                <img src={url} alt={`Inspection Photo ${idx + 1}`} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePhoto(idx)}
-                    className="p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 transition"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="absolute bottom-1.5 left-1.5 px-2 py-0.5 bg-slate-950/70 text-white text-[10px] rounded backdrop-blur-xs font-mono">
-                  Photo #{idx + 1}
-                </div>
-              </div>
-            ))}
-
           {/* Hidden file input */}
           <input
             ref={fileInputRef}
