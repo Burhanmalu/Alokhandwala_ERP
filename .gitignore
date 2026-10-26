@@ -1,0 +1,33 @@
+# Next.js build output
+.next/
+out/
+
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing and coverage
+coverage/
+
+# Next.js telemetry & cache
+.next/cache/
+*.tsbuildinfo
+next-env.d.ts
+
+# Misc / OS
+.DS_Store
+*.pem
+Thumbs.db
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment files
+.env*.local
+
+# Local database store (if not meant for version control)
+# .data/
