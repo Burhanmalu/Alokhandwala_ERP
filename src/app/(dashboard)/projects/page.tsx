@@ -10,6 +10,8 @@ import {
   PlusCircle, 
   Download, 
   ChevronRight, 
+  ChevronDown,
+  Check,
   Calendar, 
   Building2, 
   User, 
@@ -58,11 +60,24 @@ function ProjectsListContent() {
   const [loading, setLoading] = useState(true);
   const [currentTab, setCurrentTab] = useState(initialStatus);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+  const filterRef = React.useRef<HTMLDivElement>(null);
   const [restrictionModal, setRestrictionModal] = useState<{
     open: boolean;
     title: string;
     message: string;
   } | null>(null);
+
+  // Close filter dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setFilterDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     fetchProjects();
@@ -148,6 +163,21 @@ function ProjectsListContent() {
     });
   }, [projects, currentTab, searchQuery, currentUser]);
 
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: projects.length };
+    STATUS_TABS.forEach(t => {
+      if (t.key === 'ALL') return;
+      if (t.key === 'ACTIVE_RENTAL') {
+        counts[t.key] = projects.filter(p => p.status === 'ACTIVE_RENTAL' || p.status === 'INSTALLED' || p.status === 'EXTENDED').length;
+      } else {
+        counts[t.key] = projects.filter(p => p.status === t.key).length;
+      }
+    });
+    return counts;
+  }, [projects]);
+
+  const activeTabObj = STATUS_TABS.find(t => t.key === currentTab) || STATUS_TABS[0];
+
   const exportToCSV = () => {
     const headers = ['Project Code', 'Customer', 'Site', 'Supervisor', 'Status', 'Rental Start', 'Rental End', 'Monthly Rate (INR)'];
     const rows = filteredProjects.map(p => [
@@ -214,37 +244,138 @@ function ProjectsListContent() {
         </div>
       </div>
 
-      {/* Status Navigation Tabs */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-slate-200 text-xs no-scrollbar">
-        {STATUS_TABS.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setCurrentTab(tab.key)}
-            className={`px-3 py-2 rounded-t-lg font-medium whitespace-nowrap transition-all border-b-2 ${
-              currentTab === tab.key
-                ? 'border-emerald-600 text-emerald-800 bg-emerald-50/70 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Search and Filter Toolbar */}
+      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex flex-1 items-center gap-2">
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search projects by code, customer, site, or supervisor..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-center gap-3">
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Filter by Project Code, Customer, Site, or Supervisor..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition"
-          />
+          {/* Filter Button with Dropdown Popover */}
+          <div className="relative" ref={filterRef}>
+            <button
+              type="button"
+              onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
+              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg border transition cursor-pointer shrink-0 shadow-2xs ${
+                currentTab !== 'ALL'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 ring-1 ring-emerald-500/30'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <Filter className={`w-3.5 h-3.5 ${currentTab !== 'ALL' ? 'text-emerald-600' : 'text-slate-500'}`} />
+              <span>{currentTab === 'ALL' ? 'Filter by Status' : activeTabObj.label}</span>
+              {currentTab !== 'ALL' && (
+                <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center">
+                  {filteredProjects.length}
+                </span>
+              )}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${filterDropdownOpen ? 'rotate-180 text-emerald-600' : 'text-slate-400'}`} />
+            </button>
+
+            {/* Dropdown Menu */}
+            {filterDropdownOpen && (
+              <div className="absolute right-0 sm:left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-40 animate-in fade-in zoom-in-95 duration-100">
+                <div className="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span>Filter by Status</span>
+                  {currentTab !== 'ALL' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCurrentTab('ALL');
+                        setFilterDropdownOpen(false);
+                      }}
+                      className="text-emerald-700 hover:underline capitalize font-semibold cursor-pointer"
+                    >
+                      Reset All
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-72 overflow-y-auto py-1 text-xs divide-y divide-slate-50">
+                  {STATUS_TABS.map((tab) => {
+                    const isSelected = currentTab === tab.key;
+                    const count = statusCounts[tab.key] || 0;
+                    return (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => {
+                          setCurrentTab(tab.key);
+                          setFilterDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3.5 py-2 flex items-center justify-between transition cursor-pointer ${
+                          isSelected
+                            ? 'bg-emerald-50/80 text-emerald-900 font-bold'
+                            : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${
+                            tab.key === 'ALL' ? 'bg-slate-400' :
+                            tab.key === 'NOT_INSTALLED' ? 'bg-slate-400' :
+                            tab.key === 'CONFIRMED_PROJECT' ? 'bg-blue-500' :
+                            tab.key === 'ACTIVE_RENTAL' ? 'bg-emerald-500' :
+                            tab.key === 'BUFFER_PERIOD' ? 'bg-amber-500' :
+                            tab.key === 'EXTENDED' ? 'bg-teal-500' :
+                            tab.key === 'SHIFTING_IN_PROGRESS' ? 'bg-indigo-500' :
+                            tab.key === 'REMOVAL_PENDING' ? 'bg-rose-500' :
+                            'bg-slate-300'
+                          }`} />
+                          <span>{tab.label}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                            isSelected ? 'bg-emerald-200 text-emerald-900 font-bold' : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            {count}
+                          </span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="text-xs text-slate-500 font-medium self-end sm:self-center whitespace-nowrap">
-          Showing <span className="font-bold text-slate-800">{filteredProjects.length}</span> projects
+
+        {/* Status Count and Active Filter Pill */}
+        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium self-end sm:self-center whitespace-nowrap">
+          {currentTab !== 'ALL' && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-[11px] font-semibold">
+              <span>{activeTabObj.label}</span>
+              <button
+                type="button"
+                onClick={() => setCurrentTab('ALL')}
+                className="hover:text-emerald-950 p-0.5 rounded-full cursor-pointer"
+                title="Clear status filter"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          <span>
+            Showing <span className="font-bold text-slate-800">{filteredProjects.length}</span> of <span className="font-semibold text-slate-600">{projects.length}</span> projects
+          </span>
         </div>
       </div>
 

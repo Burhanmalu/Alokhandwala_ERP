@@ -12,7 +12,86 @@
     "bufferDaysDefault": 3,
     "extensionDurationMonthsDefault": 1,
     "lowStockThresholdDefault": 50,
-    "rentalCurrency": "INR"
+    "rentalCurrency": "INR",
+    "termsAndConditions": [
+      {
+        "id": 1,
+        "title": "Pricing",
+        "category": "PRICING",
+        "shortSummary": "Per-square-foot basis; actual area depends on site conditions & installed quantity.",
+        "fullText": "All prices are calculated on a per-square-foot (sq. ft.) basis. The actual area may vary depending on site conditions and the final quantity required during installation."
+      },
+      {
+        "id": 2,
+        "title": "Rental Period",
+        "category": "RENTAL",
+        "shortSummary": "Quoted price applicable for 28 days (1 month). Exceeding by 1 day incurs monthly charges.",
+        "fullText": "The quoted price is applicable for 28 days (1 month). If the rental period exceeds 28 days by even 1 day, the applicable monthly charges will be charged."
+      },
+      {
+        "id": 3,
+        "title": "Transportation",
+        "category": "LOGISTICS",
+        "shortSummary": "Extra 2-way charges applicable for both delivery and return transportation.",
+        "fullText": "Transportation charges are extra and will be charged for both delivery and return transportation (2-way charges)."
+      },
+      {
+        "id": 4,
+        "title": "Walkway Jali",
+        "category": "EQUIPMENT",
+        "shortSummary": "1 walkway Jali included per unit; additional Jali charged at ₹200 per piece.",
+        "fullText": "1 walkway Jali is included with each unit of scaffolding. Any additional walkway Jali will be charged at ₹200 per piece."
+      },
+      {
+        "id": 5,
+        "title": "Shifting Charges",
+        "category": "LOGISTICS",
+        "shortSummary": "Extra customer-borne charges: ₹6 per sq. ft. or 60% of the per-unit amount.",
+        "fullText": "Shifting charges are extra and shall be borne by the customer. Charges will be ₹6 per sq. ft. or 60% of the per-unit amount, as applicable."
+      },
+      {
+        "id": 6,
+        "title": "Order Cancellation",
+        "category": "OPERATIONS",
+        "shortSummary": "Strictly non-cancellable once confirmed.",
+        "fullText": "Once the order is confirmed, it cannot be cancelled."
+      },
+      {
+        "id": 7,
+        "title": "Payment Terms",
+        "category": "PAYMENT",
+        "shortSummary": "75% advance before installation; remaining 25% post-installation completion.",
+        "fullText": "75% advance payment is required before installation. The remaining 25% shall be paid after completion of installation."
+      },
+      {
+        "id": 8,
+        "title": "Monthly Payment",
+        "category": "PAYMENT",
+        "shortSummary": "Due on next day after completion of each 28-day rental period.",
+        "fullText": "For extended rental periods, the monthly rental payment must be made on the next day after completion of each 28-day/month rental period."
+      },
+      {
+        "id": 9,
+        "title": "Damage or Misplacement",
+        "category": "RESPONSIBILITY",
+        "shortSummary": "Customer liable for damage, loss, or misplacement at prevailing material values.",
+        "fullText": "The customer shall be responsible for any damage, loss, or misplacement of scaffolding material at the site. The value of damaged or missing material will be charged according to the prevailing material value on the date of assessment."
+      },
+      {
+        "id": 10,
+        "title": "Post-Installation Visit",
+        "category": "OPERATIONS",
+        "shortSummary": "Visits after installation completion are chargeable by location and scope.",
+        "fullText": "Any visit required after completion of installation will be chargeable, depending on the location and nature of the visit."
+      },
+      {
+        "id": 11,
+        "title": "Challan & Material Responsibility",
+        "category": "RESPONSIBILITY",
+        "shortSummary": "Customer must approve delivery challan; uninstallation reconciled against approved challan.",
+        "fullText": "At the time of installation, the customer must verify and approve the delivery challan containing details of all scaffolding materials supplied at the site. The customer shall be responsible for the safekeeping of all materials during the rental period. At the time of uninstallation, the materials will be verified against the approved delivery challan, and any shortage, loss, misplacement, or damage shall be charged to the customer as per the applicable material value."
+      }
+    ]
   },
   "users": [
     {
@@ -123,14 +202,14 @@
       "minimumStockThreshold": 100,
       "isActive": true,
       "totalOwnedQty": 2500,
-      "usableWarehouseQty": 68,
+      "usableWarehouseQty": 2425,
       "reservedQty": 0,
-      "siteAllocatedQty": 2432,
+      "siteAllocatedQty": 75,
       "inTransitQty": 0,
       "damagedQty": 0,
       "missingQty": 0,
       "underInspectionQty": 0,
-      "availableToAllocate": 68
+      "availableToAllocate": 2425
     },
     {
       "id": "mat-02",
@@ -192,14 +271,14 @@
       "minimumStockThreshold": 50,
       "isActive": true,
       "totalOwnedQty": 1500,
-      "usableWarehouseQty": 1462,
+      "usableWarehouseQty": 1500,
       "reservedQty": 0,
-      "siteAllocatedQty": 38,
+      "siteAllocatedQty": 0,
       "inTransitQty": 0,
       "damagedQty": 0,
       "missingQty": 0,
       "underInspectionQty": 0,
-      "availableToAllocate": 1462
+      "availableToAllocate": 1500
     },
     {
       "id": "mat-12",
@@ -238,14 +317,14 @@
       "minimumStockThreshold": 150,
       "isActive": true,
       "totalOwnedQty": 4000,
-      "usableWarehouseQty": 3700,
+      "usableWarehouseQty": 4000,
       "reservedQty": 0,
-      "siteAllocatedQty": 300,
+      "siteAllocatedQty": 0,
       "inTransitQty": 0,
       "damagedQty": 0,
       "missingQty": 0,
       "underInspectionQty": 0,
-      "availableToAllocate": 3700
+      "availableToAllocate": 4000
     },
     {
       "id": "mat-13",
@@ -307,14 +386,14 @@
       "minimumStockThreshold": 80,
       "isActive": true,
       "totalOwnedQty": 2000,
-      "usableWarehouseQty": 81,
+      "usableWarehouseQty": 2000,
       "reservedQty": 0,
-      "siteAllocatedQty": 1919,
+      "siteAllocatedQty": 0,
       "inTransitQty": 0,
       "damagedQty": 0,
       "missingQty": 0,
       "underInspectionQty": 0,
-      "availableToAllocate": 81
+      "availableToAllocate": 2000
     },
     {
       "id": "mat-15",
@@ -422,14 +501,14 @@
       "minimumStockThreshold": 80,
       "isActive": true,
       "totalOwnedQty": 1500,
-      "usableWarehouseQty": 1443,
+      "usableWarehouseQty": 1500,
       "reservedQty": 0,
-      "siteAllocatedQty": 57,
+      "siteAllocatedQty": 0,
       "inTransitQty": 0,
       "damagedQty": 0,
       "missingQty": 0,
       "underInspectionQty": 0,
-      "availableToAllocate": 1443
+      "availableToAllocate": 1500
     },
     {
       "id": "mat-19",
@@ -491,14 +570,14 @@
       "minimumStockThreshold": 100,
       "isActive": true,
       "totalOwnedQty": 1500,
-      "usableWarehouseQty": 1462,
+      "usableWarehouseQty": 1500,
       "reservedQty": 0,
-      "siteAllocatedQty": 38,
+      "siteAllocatedQty": 0,
       "inTransitQty": 0,
       "damagedQty": 0,
       "missingQty": 0,
       "underInspectionQty": 0,
-      "availableToAllocate": 1462
+      "availableToAllocate": 1500
     },
     {
       "id": "mat-10",
@@ -537,14 +616,14 @@
       "minimumStockThreshold": 200,
       "isActive": true,
       "totalOwnedQty": 5000,
-      "usableWarehouseQty": 3575,
+      "usableWarehouseQty": 5000,
       "reservedQty": 0,
-      "siteAllocatedQty": 1425,
+      "siteAllocatedQty": 0,
       "inTransitQty": 0,
       "damagedQty": 0,
       "missingQty": 0,
       "underInspectionQty": 0,
-      "availableToAllocate": 3575
+      "availableToAllocate": 5000
     },
     {
       "id": "mat-09",
@@ -560,14 +639,14 @@
       "minimumStockThreshold": 150,
       "isActive": true,
       "totalOwnedQty": 3500,
-      "usableWarehouseQty": 1500,
+      "usableWarehouseQty": 3500,
       "reservedQty": 0,
-      "siteAllocatedQty": 2000,
+      "siteAllocatedQty": 0,
       "inTransitQty": 0,
       "damagedQty": 0,
       "missingQty": 0,
       "underInspectionQty": 0,
-      "availableToAllocate": 1500
+      "availableToAllocate": 3500
     },
     {
       "id": "mat-21",
@@ -583,14 +662,14 @@
       "minimumStockThreshold": 100,
       "isActive": true,
       "totalOwnedQty": 2000,
-      "usableWarehouseQty": 1981,
+      "usableWarehouseQty": 2000,
       "reservedQty": 0,
-      "siteAllocatedQty": 19,
+      "siteAllocatedQty": 0,
       "inTransitQty": 0,
       "damagedQty": 0,
       "missingQty": 0,
       "underInspectionQty": 0,
-      "availableToAllocate": 1981
+      "availableToAllocate": 2000
     },
     {
       "id": "mat-22",
@@ -606,616 +685,213 @@
       "minimumStockThreshold": 100,
       "isActive": true,
       "totalOwnedQty": 2500,
-      "usableWarehouseQty": 2462,
+      "usableWarehouseQty": 2500,
       "reservedQty": 0,
-      "siteAllocatedQty": 38,
+      "siteAllocatedQty": 0,
       "inTransitQty": 0,
       "damagedQty": 0,
       "missingQty": 0,
       "underInspectionQty": 0,
-      "availableToAllocate": 2462
+      "availableToAllocate": 2500
     }
   ],
   "customers": [
     {
-      "id": "cust-1792679542694",
-      "customerCode": "CUST-0001",
-      "companyName": "burhan",
-      "referenceName": "shabbbir",
-      "contactPerson": "burhan",
-      "phone": "4546548946",
-      "email": "burhan@scaffold-client.com",
-      "billingAddress": "hhodsjdhdf",
-      "city": "Mumbai",
-      "state": "Maharashtra",
+      "id": "cust-audit",
+      "customerCode": "CUST-AUDIT",
+      "companyName": "Audit Infra Ltd",
+      "referenceName": "Audit Infra",
+      "contactPerson": "Adnan",
+      "phone": "9820000000",
+      "billingAddress": "Indore",
+      "city": "Indore",
+      "state": "Madhya Pradesh",
       "status": "ACTIVE",
-      "creditLimit": 500000,
+      "creditLimit": 1000000,
       "outstandingBalance": 0,
-      "sitesCount": 2,
-      "projectsCount": 2,
+      "sitesCount": 1,
+      "projectsCount": 1,
       "activeRentalsCount": 0,
-      "createdAt": "2026-10-22T14:32:22.694Z",
-      "updatedAt": "2026-10-22T14:32:22.694Z"
+      "createdAt": "2026-10-27T14:00:07.197Z",
+      "updatedAt": "2026-10-27T14:00:07.197Z"
     }
   ],
-  "sites": [
-    {
-      "id": "site-1792679542695",
-      "siteCode": "SITE-0001",
-      "customerId": "cust-1792679542694",
-      "customerName": "burhan",
-      "siteName": "burhan Site",
-      "siteAddress": "hhodsjdhdf",
-      "referralName": "shabbbir",
-      "landmark": "namak gorund",
-      "city": "Mumbai",
-      "state": "Maharashtra",
-      "contactPerson": "burhan",
-      "contactPhone": "4546548946",
-      "assignedSupervisorId": "usr-admin-01",
-      "supervisorName": "Burhan Malu (Super Admin)",
-      "status": "ACTIVE",
-      "createdAt": "2026-10-22T14:32:22.695Z"
-    },
-    {
-      "id": "site-1793010667150",
-      "siteCode": "SITE-0002",
-      "customerId": "cust-1792679542694",
-      "customerName": "burhan",
-      "siteName": "burhan Site",
-      "siteAddress": "hhodsjdhdf",
-      "referralName": "shabbbir",
-      "city": "Mumbai",
-      "state": "Maharashtra",
-      "contactPerson": "burhan",
-      "contactPhone": "4546548946",
-      "assignedSupervisorId": "usr-admin-01",
-      "supervisorName": "Burhan Malu (Admin)",
-      "status": "ACTIVE",
-      "createdAt": "2026-10-26T10:31:07.150Z"
-    }
-  ],
+  "sites": [],
   "projects": [
     {
-      "id": "proj-1793010667151",
-      "projectCode": "AW-SCF-000002",
-      "customerId": "cust-1792679542694",
-      "customerName": "burhan",
-      "siteId": "site-1793010667150",
-      "siteName": "burhan Site",
-      "siteAddress": "hhodsjdhdf",
-      "referralName": "shabbbir",
-      "assignedSupervisorId": "usr-admin-01",
-      "supervisorName": "Burhan Malu (Admin)",
-      "status": "NOT_INSTALLED",
-      "pricingModel": "MONTHLY_RENTAL",
-      "monthlyRentalRate": 0,
-      "agreedProjectPrice": 0,
-      "depositAmount": 0,
-      "transportCharges": 0,
-      "installationLabourCharges": 0,
-      "shiftingCharges": 0,
-      "dismantlingLabourCharges": 0,
-      "gstPercentage": 18,
-      "siteRemarks": "hghghgj",
-      "measurements": {
-        "id": "meas-1793010667151",
-        "siteId": "site-1793010667150",
-        "projectId": "proj-1793010667151",
-        "length": 65,
-        "width": 48,
-        "height": 55,
-        "unit": "FEET",
-        "measurementType": "FAÇADE_SCAFFOLD",
-        "description": "hghghgj",
-        "measuredBy": "Burhan Malu (Admin)",
-        "measuredAt": "2026-10-26T10:31:07.151Z"
-      },
-      "photos": [
-        {
-          "id": "pht-1793010667151-0",
-          "entityType": "SITE_INSPECTION",
-          "entityId": "proj-1793010667151",
-          "fileName": "site_inspection_1.jpg",
-          "fileUrl": "/uploads/site_1793010659931_vxq6e_Prestige_Institute_Exam_Timetable_2026.png",
-          "fileSizeBytes": 2048000,
-          "mimeType": "image/jpeg",
-          "stageLabel": "BEFORE_INSTALLATION",
-          "uploadedBy": "usr-admin-01",
-          "uploaderName": "Burhan Malu (Admin)",
-          "createdAt": "2026-10-26T10:31:07.151Z"
-        }
-      ],
-      "materials": [],
-      "createdAt": "2026-10-26T10:31:07.151Z",
-      "updatedAt": "2026-10-26T10:31:07.151Z"
-    },
-    {
-      "id": "proj-1792679542695",
-      "projectCode": "AW-SCF-000001",
-      "customerId": "cust-1792679542694",
-      "customerName": "burhan",
-      "siteId": "site-1792679542695",
-      "siteName": "burhan Site",
-      "siteAddress": "hhodsjdhdf",
-      "referralName": "shabbbir",
-      "assignedSupervisorId": "usr-admin-01",
-      "supervisorName": "Burhan Malu (Super Admin)",
+      "id": "proj-audit-01",
+      "projectCode": "AW-SCF-AUDIT01",
+      "customerId": "cust-audit",
+      "customerName": "Audit Infra Ltd",
+      "siteId": "site-audit",
+      "siteName": "Indore Hub",
+      "siteAddress": "Indore MP",
+      "assignedSupervisorId": "usr-sup-01",
+      "supervisorName": "Mustafa Alokhandwala",
       "status": "ACTIVE_RENTAL",
       "pricingModel": "MONTHLY_RENTAL",
-      "monthlyRentalRate": 469931,
-      "agreedProjectPrice": 469931,
+      "monthlyRentalRate": 50000,
+      "agreedProjectPrice": 75000,
       "depositAmount": 0,
       "transportCharges": 0,
       "installationLabourCharges": 0,
       "shiftingCharges": 0,
-      "dismantlingLabourCharges": 0,
+      "dismantlingLabourCharges": 10000,
       "gstPercentage": 18,
-      "siteRemarks": "stair",
-      "measurements": {
-        "id": "meas-1792679542695",
-        "siteId": "site-1792679542695",
-        "projectId": "proj-1792679542695",
-        "length": 64,
-        "width": 11,
-        "height": 646,
-        "unit": "FEET",
-        "measurementType": "FAÇADE_SCAFFOLD",
-        "description": "stair",
-        "measuredBy": "Burhan Malu (Super Admin)",
-        "measuredAt": "2026-10-22T14:32:22.695Z"
-      },
-      "photos": [],
+      "createdAt": "2026-10-27T14:00:07.197Z",
+      "updatedAt": "2026-10-27T14:00:07.532Z",
+      "quotationNumber": "QTN-AUDIT-002",
+      "quotationDate": "2026-03-01",
+      "plannedInstallationDate": "2026-03-05",
+      "durationMonths": 1,
+      "paymentTerms": "75% advance payment required before installation. Remaining 25% payable after installation completion. For extended rentals, monthly payments must be made on the next day following completion of each 28-day rental period.",
+      "termsSnapshot": [
+        {
+          "id": 1,
+          "title": "Pricing",
+          "category": "PRICING",
+          "shortSummary": "Per-square-foot basis; actual area depends on site conditions & installed quantity.",
+          "fullText": "All prices are calculated on a per-square-foot (sq. ft.) basis. The actual area may vary depending on site conditions and the final quantity required during installation."
+        },
+        {
+          "id": 2,
+          "title": "Rental Period",
+          "category": "RENTAL",
+          "shortSummary": "Quoted price applicable for 28 days (1 month). Exceeding by 1 day incurs monthly charges.",
+          "fullText": "The quoted price is applicable for 28 days (1 month). If the rental period exceeds 28 days by even 1 day, the applicable monthly charges will be charged."
+        },
+        {
+          "id": 3,
+          "title": "Transportation",
+          "category": "LOGISTICS",
+          "shortSummary": "Extra 2-way charges applicable for both delivery and return transportation.",
+          "fullText": "Transportation charges are extra and will be charged for both delivery and return transportation (2-way charges)."
+        },
+        {
+          "id": 4,
+          "title": "Walkway Jali",
+          "category": "EQUIPMENT",
+          "shortSummary": "1 walkway Jali included per unit; additional Jali charged at ₹200 per piece.",
+          "fullText": "1 walkway Jali is included with each unit of scaffolding. Any additional walkway Jali will be charged at ₹200 per piece."
+        },
+        {
+          "id": 5,
+          "title": "Shifting Charges",
+          "category": "LOGISTICS",
+          "shortSummary": "Extra customer-borne charges: ₹6 per sq. ft. or 60% of the per-unit amount.",
+          "fullText": "Shifting charges are extra and shall be borne by the customer. Charges will be ₹6 per sq. ft. or 60% of the per-unit amount, as applicable."
+        },
+        {
+          "id": 6,
+          "title": "Order Cancellation",
+          "category": "OPERATIONS",
+          "shortSummary": "Strictly non-cancellable once confirmed.",
+          "fullText": "Once the order is confirmed, it cannot be cancelled."
+        },
+        {
+          "id": 7,
+          "title": "Payment Terms",
+          "category": "PAYMENT",
+          "shortSummary": "75% advance before installation; remaining 25% post-installation completion.",
+          "fullText": "75% advance payment is required before installation. The remaining 25% shall be paid after completion of installation."
+        },
+        {
+          "id": 8,
+          "title": "Monthly Payment",
+          "category": "PAYMENT",
+          "shortSummary": "Due on next day after completion of each 28-day rental period.",
+          "fullText": "For extended rental periods, the monthly rental payment must be made on the next day after completion of each 28-day/month rental period."
+        },
+        {
+          "id": 9,
+          "title": "Damage or Misplacement",
+          "category": "RESPONSIBILITY",
+          "shortSummary": "Customer liable for damage, loss, or misplacement at prevailing material values.",
+          "fullText": "The customer shall be responsible for any damage, loss, or misplacement of scaffolding material at the site. The value of damaged or missing material will be charged according to the prevailing material value on the date of assessment."
+        },
+        {
+          "id": 10,
+          "title": "Post-Installation Visit",
+          "category": "OPERATIONS",
+          "shortSummary": "Visits after installation completion are chargeable by location and scope.",
+          "fullText": "Any visit required after completion of installation will be chargeable, depending on the location and nature of the visit."
+        },
+        {
+          "id": 11,
+          "title": "Challan & Material Responsibility",
+          "category": "RESPONSIBILITY",
+          "shortSummary": "Customer must approve delivery challan; uninstallation reconciled against approved challan.",
+          "fullText": "At the time of installation, the customer must verify and approve the delivery challan containing details of all scaffolding materials supplied at the site. The customer shall be responsible for the safekeeping of all materials during the rental period. At the time of uninstallation, the materials will be verified against the approved delivery challan, and any shortage, loss, misplacement, or damage shall be charged to the customer as per the applicable material value."
+        }
+      ],
+      "extraJaliQuantity": 0,
+      "extraJaliCharges": 0,
+      "twoWayTransportCharges": 0,
+      "advancePercentage": 75,
+      "advanceRequiredAmount": 56250,
+      "completionDueAmount": 18750,
       "materials": [
         {
-          "id": "pm-1792679627669-mat-01",
-          "projectId": "proj-1792679542695",
+          "id": "pm-1793109607471-mat-01",
+          "projectId": "proj-audit-01",
           "materialId": "mat-01",
           "materialName": "VERTICAL 10FT/3MTR",
           "itemCode": "V-10FT-3M",
           "unit": "NOS",
-          "requiredQuantity": 2432,
+          "requiredQuantity": 80,
           "reservedQuantity": 0,
-          "issuedQuantity": 2432,
-          "installedQuantity": 2432,
+          "issuedQuantity": 80,
+          "installedQuantity": 75,
           "returnedUsableQuantity": 0,
           "returnedDamagedQuantity": 0,
           "missingQuantity": 0,
           "monthlyRentalRate": 65
-        },
-        {
-          "id": "pm-1792679627669-mat-11",
-          "projectId": "proj-1792679542695",
-          "materialId": "mat-11",
-          "materialName": "VERTICAL 5FT/1.5MTR",
-          "itemCode": "V-5FT-1.5M",
-          "unit": "NOS",
-          "requiredQuantity": 38,
-          "reservedQuantity": 0,
-          "issuedQuantity": 38,
-          "installedQuantity": 38,
-          "returnedUsableQuantity": 0,
-          "returnedDamagedQuantity": 0,
-          "missingQuantity": 0,
-          "monthlyRentalRate": 42
-        },
-        {
-          "id": "pm-1792679627669-mat-03",
-          "projectId": "proj-1792679542695",
-          "materialId": "mat-03",
-          "materialName": "LEDGER 8FT/2.5MTR",
-          "itemCode": "L-8FT-2.5M",
-          "unit": "NOS",
-          "requiredQuantity": 300,
-          "reservedQuantity": 0,
-          "issuedQuantity": 300,
-          "installedQuantity": 300,
-          "returnedUsableQuantity": 0,
-          "returnedDamagedQuantity": 0,
-          "missingQuantity": 0,
-          "monthlyRentalRate": 42
-        },
-        {
-          "id": "pm-1792679627669-mat-14",
-          "projectId": "proj-1792679542695",
-          "materialId": "mat-14",
-          "materialName": "LEDGER 4FT/1.25MTR",
-          "itemCode": "L-4FT-1.25M",
-          "unit": "NOS",
-          "requiredQuantity": 1919,
-          "reservedQuantity": 0,
-          "issuedQuantity": 1919,
-          "installedQuantity": 1919,
-          "returnedUsableQuantity": 0,
-          "returnedDamagedQuantity": 0,
-          "missingQuantity": 0,
-          "monthlyRentalRate": 28
-        },
-        {
-          "id": "pm-1792679627669-mat-05",
-          "projectId": "proj-1792679542695",
-          "materialId": "mat-05",
-          "materialName": "JACK",
-          "itemCode": "JACK-BASE",
-          "unit": "NOS",
-          "requiredQuantity": 38,
-          "reservedQuantity": 0,
-          "issuedQuantity": 38,
-          "installedQuantity": 38,
-          "returnedUsableQuantity": 0,
-          "returnedDamagedQuantity": 0,
-          "missingQuantity": 0,
-          "monthlyRentalRate": 30
-        },
-        {
-          "id": "pm-1792679627669-mat-22",
-          "projectId": "proj-1792679542695",
-          "materialId": "mat-22",
-          "materialName": "BASE PLATE MS",
-          "itemCode": "BASE-PLATE-STD",
-          "unit": "NOS",
-          "requiredQuantity": 38,
-          "reservedQuantity": 0,
-          "issuedQuantity": 38,
-          "installedQuantity": 38,
-          "returnedUsableQuantity": 0,
-          "returnedDamagedQuantity": 0,
-          "missingQuantity": 0,
-          "monthlyRentalRate": 15
-        },
-        {
-          "id": "pm-1792679627669-mat-09",
-          "projectId": "proj-1792679542695",
-          "materialId": "mat-09",
-          "materialName": "COUPLER SWIVEL",
-          "itemCode": "CPL-SWIVEL",
-          "unit": "NOS",
-          "requiredQuantity": 2000,
-          "reservedQuantity": 0,
-          "issuedQuantity": 2000,
-          "installedQuantity": 2000,
-          "returnedUsableQuantity": 0,
-          "returnedDamagedQuantity": 0,
-          "missingQuantity": 0,
-          "monthlyRentalRate": 14
-        },
-        {
-          "id": "pm-1792679627669-mat-08",
-          "projectId": "proj-1792679542695",
-          "materialId": "mat-08",
-          "materialName": "COUPLER RIGHT ANGLE / FIXED",
-          "itemCode": "CPL-FIXED",
-          "unit": "NOS",
-          "requiredQuantity": 1425,
-          "reservedQuantity": 0,
-          "issuedQuantity": 1425,
-          "installedQuantity": 1425,
-          "returnedUsableQuantity": 0,
-          "returnedDamagedQuantity": 0,
-          "missingQuantity": 0,
-          "monthlyRentalRate": 12
-        },
-        {
-          "id": "pm-1792679627669-mat-18",
-          "projectId": "proj-1792679542695",
-          "materialId": "mat-18",
-          "materialName": "JALI 8FT MS",
-          "itemCode": "JALI-8FT-MS",
-          "unit": "NOS",
-          "requiredQuantity": 57,
-          "reservedQuantity": 0,
-          "issuedQuantity": 57,
-          "installedQuantity": 57,
-          "returnedUsableQuantity": 0,
-          "returnedDamagedQuantity": 0,
-          "missingQuantity": 0,
-          "monthlyRentalRate": 78
-        },
-        {
-          "id": "pm-1792679627669-mat-21",
-          "projectId": "proj-1792679542695",
-          "materialId": "mat-21",
-          "materialName": "TOE BOARD 8FT MS",
-          "itemCode": "TOE-BOARD-8FT",
-          "unit": "NOS",
-          "requiredQuantity": 19,
-          "reservedQuantity": 0,
-          "issuedQuantity": 19,
-          "installedQuantity": 19,
-          "returnedUsableQuantity": 0,
-          "returnedDamagedQuantity": 0,
-          "missingQuantity": 0,
-          "monthlyRentalRate": 25
         }
       ],
-      "createdAt": "2026-10-22T14:32:22.695Z",
-      "updatedAt": "2026-10-22T14:34:27.064Z",
-      "quotationNumber": "QTN-AW-SCF-000001",
-      "quotationDate": "2026-10-27",
-      "plannedInstallationDate": "2026-10-30",
-      "durationMonths": 1,
-      "paymentTerms": "",
       "scaffoldingPlan": {
         "planId": "PLAN_STANDARD",
-        "planName": "Option 1 — Standard Engineering Plan",
-        "badge": "IS 4014 Recommended",
-        "description": "Standard 8ft (2.5m) cuplock bay grid with 10ft standards, MS anti-skid Jali decks, and standard safety guardrails.",
-        "configurationSummary": {
-          "configurationType": "PERIMETER_FACADE",
-          "dimensions": {
-            "length": 64,
-            "width": 11,
-            "height": 646,
-            "unit": "FEET",
-            "lengthFt": 64,
-            "widthFt": 11,
-            "heightFt": 646
-          },
-          "bayLengthFt": 8,
-          "transomWidthFt": 4,
-          "liftHeightFt": 6.5,
-          "totalBays": 19,
-          "totalLifts": 100,
-          "totalVerticalStandardsGrid": 38,
-          "workingDeckLevelsCount": 1,
-          "safetyStandard": "IS 4014 / BS EN 12811 / OSHA",
-          "loadRatingClass": "Class 3 Medium Duty (2.0 kN/m²)"
-        },
-        "materials": [
-          {
-            "materialId": "mat-01",
-            "itemCode": "V-10FT-3M",
-            "name": "VERTICAL 10FT/3MTR",
-            "categoryName": "Cuplock Verticals (Standards)",
-            "unit": "NOS",
-            "requiredQty": 2432,
-            "warehouseStock": 2500,
-            "currentlyReserved": 0,
-            "availableStock": 2500,
-            "proposedReserveQty": 2432,
-            "remainingStockAfterReservation": 68,
-            "shortageQty": 0,
-            "monthlyRentalRate": 65,
-            "monthlyRentalTotal": 158080,
-            "purchaseCost": 1450,
-            "status": "IN_STOCK",
-            "weightKg": 35264,
-            "notes": "64 standard(s) per vertical column across 38 grid columns"
-          },
-          {
-            "materialId": "mat-11",
-            "itemCode": "V-5FT-1.5M",
-            "name": "VERTICAL 5FT/1.5MTR",
-            "categoryName": "Cuplock Verticals (Standards)",
-            "unit": "NOS",
-            "requiredQty": 38,
-            "warehouseStock": 1500,
-            "currentlyReserved": 0,
-            "availableStock": 1500,
-            "proposedReserveQty": 38,
-            "remainingStockAfterReservation": 1462,
-            "shortageQty": 0,
-            "monthlyRentalRate": 42,
-            "monthlyRentalTotal": 1596,
-            "purchaseCost": 820,
-            "status": "IN_STOCK",
-            "weightKg": 281.2,
-            "notes": "1 standard(s) per vertical column across 38 grid columns"
-          },
-          {
-            "materialId": "mat-03",
-            "itemCode": "L-8FT-2.5M",
-            "name": "LEDGER 8FT/2.5MTR",
-            "categoryName": "Cuplock Ledgers (Horizontals)",
-            "unit": "NOS",
-            "requiredQty": 300,
-            "warehouseStock": 4000,
-            "currentlyReserved": 0,
-            "availableStock": 4000,
-            "proposedReserveQty": 300,
-            "remainingStockAfterReservation": 3700,
-            "shortageQty": 0,
-            "monthlyRentalRate": 42,
-            "monthlyRentalTotal": 12600,
-            "purchaseCost": 890,
-            "status": "IN_STOCK",
-            "weightKg": 43396.4,
-            "notes": "Longitudinal ledgers on inner & outer faces across 101 levels; Diagonal face sway bracing tubes (5 braced bays across 100 lifts); Top & mid safety guardrails for 1 deck level(s)"
-          },
-          {
-            "materialId": "mat-14",
-            "itemCode": "L-4FT-1.25M",
-            "name": "LEDGER 4FT/1.25MTR",
-            "categoryName": "Cuplock Ledgers (Horizontals)",
-            "unit": "NOS",
-            "requiredQty": 1919,
-            "warehouseStock": 2000,
-            "currentlyReserved": 0,
-            "availableStock": 2000,
-            "proposedReserveQty": 1919,
-            "remainingStockAfterReservation": 81,
-            "shortageQty": 0,
-            "monthlyRentalRate": 28,
-            "monthlyRentalTotal": 53732,
-            "purchaseCost": 540,
-            "status": "IN_STOCK",
-            "weightKg": 9211.2,
-            "notes": "Transoms bridging inner/outer standards across 101 levels"
-          },
-          {
-            "materialId": "mat-05",
-            "itemCode": "JACK-BASE",
-            "name": "JACK",
-            "categoryName": "Jacks & Mobile Wheels",
-            "unit": "NOS",
-            "requiredQty": 38,
-            "warehouseStock": 1500,
-            "currentlyReserved": 0,
-            "availableStock": 1500,
-            "proposedReserveQty": 38,
-            "remainingStockAfterReservation": 1462,
-            "shortageQty": 0,
-            "monthlyRentalRate": 30,
-            "monthlyRentalTotal": 1140,
-            "purchaseCost": 520,
-            "status": "IN_STOCK",
-            "weightKg": 182.4,
-            "notes": "Adjustable leveling base jacks (1 per vertical standard)"
-          },
-          {
-            "materialId": "mat-22",
-            "itemCode": "BASE-PLATE-STD",
-            "name": "BASE PLATE MS",
-            "categoryName": "Safety Accessories & Base Plates",
-            "unit": "NOS",
-            "requiredQty": 38,
-            "warehouseStock": 2500,
-            "currentlyReserved": 0,
-            "availableStock": 2500,
-            "proposedReserveQty": 38,
-            "remainingStockAfterReservation": 2462,
-            "shortageQty": 0,
-            "monthlyRentalRate": 15,
-            "monthlyRentalTotal": 570,
-            "purchaseCost": 220,
-            "status": "IN_STOCK",
-            "weightKg": 68.4,
-            "notes": "MS sole base plates for load distribution"
-          },
-          {
-            "materialId": "mat-09",
-            "itemCode": "CPL-SWIVEL",
-            "name": "COUPLER SWIVEL",
-            "categoryName": "Couplers & Clamps",
-            "unit": "NOS",
-            "requiredQty": 2000,
-            "warehouseStock": 3500,
-            "currentlyReserved": 0,
-            "availableStock": 3500,
-            "proposedReserveQty": 2000,
-            "remainingStockAfterReservation": 1500,
-            "shortageQty": 0,
-            "monthlyRentalRate": 14,
-            "monthlyRentalTotal": 28000,
-            "purchaseCost": 195,
-            "status": "IN_STOCK",
-            "weightKg": 2500,
-            "notes": "Forged swivel couplers (2 per diagonal cross brace)"
-          },
-          {
-            "materialId": "mat-08",
-            "itemCode": "CPL-FIXED",
-            "name": "COUPLER RIGHT ANGLE / FIXED",
-            "categoryName": "Couplers & Clamps",
-            "unit": "NOS",
-            "requiredQty": 1425,
-            "warehouseStock": 5000,
-            "currentlyReserved": 0,
-            "availableStock": 5000,
-            "proposedReserveQty": 1425,
-            "remainingStockAfterReservation": 3575,
-            "shortageQty": 0,
-            "monthlyRentalRate": 12,
-            "monthlyRentalTotal": 17100,
-            "purchaseCost": 180,
-            "status": "IN_STOCK",
-            "weightKg": 1638.7,
-            "notes": "Right-angle fixed double couplers for intermediate ties and transom locks"
-          },
-          {
-            "materialId": "mat-18",
-            "itemCode": "JALI-8FT-MS",
-            "name": "JALI 8FT MS",
-            "categoryName": "Walkway Jali & Platforms",
-            "unit": "NOS",
-            "requiredQty": 57,
-            "warehouseStock": 1500,
-            "currentlyReserved": 0,
-            "availableStock": 1500,
-            "proposedReserveQty": 57,
-            "remainingStockAfterReservation": 1443,
-            "shortageQty": 0,
-            "monthlyRentalRate": 78,
-            "monthlyRentalTotal": 4446,
-            "purchaseCost": 1650,
-            "status": "IN_STOCK",
-            "weightKg": 866.4,
-            "notes": "Anti-skid walkway jali across 1 active working deck level(s)"
-          },
-          {
-            "materialId": "mat-21",
-            "itemCode": "TOE-BOARD-8FT",
-            "name": "TOE BOARD 8FT MS",
-            "categoryName": "Safety Accessories & Base Plates",
-            "unit": "NOS",
-            "requiredQty": 19,
-            "warehouseStock": 2000,
-            "currentlyReserved": 0,
-            "availableStock": 2000,
-            "proposedReserveQty": 19,
-            "remainingStockAfterReservation": 1981,
-            "shortageQty": 0,
-            "monthlyRentalRate": 25,
-            "monthlyRentalTotal": 475,
-            "purchaseCost": 450,
-            "status": "IN_STOCK",
-            "weightKg": 79.8,
-            "notes": "Galvanized MS safety toe boards (150mm kick plate) along working platforms"
-          }
-        ],
-        "totals": {
-          "totalPieces": 12842,
-          "totalWeightKg": 93489,
-          "totalMonthlyRental": 469931,
-          "stockReadinessPercentage": 93,
-          "shortageItemsCount": 1,
-          "totalShortagePieces": 876,
-          "estimatedProcurementCost": 779640
-        },
-        "safetyNotes": [
-          "Configuration: 19 Bays (8ft) × 100 Lifts (6.5ft) = 38 vertical standard lines.",
-          "Working Decks: 1 fully planked platform(s) with double guardrails & toe boards.",
-          "Estimated structural tare weight: 93.49 Metric Tonnes.",
-          "Stock Warning: 1 component line(s) have shortages (876 units deficit). Procurement/external hire required."
-        ],
-        "isRecommended": true
+        "planName": "Standard Plan"
       },
       "siteDimensions": {
-        "length": 64,
-        "width": 11,
-        "height": 646,
+        "length": 60,
+        "width": 40,
+        "height": 20,
         "unit": "FEET",
-        "lengthFt": 64,
-        "widthFt": 11,
-        "heightFt": 646
+        "configurationType": "PERIMETER_FACADE"
       },
-      "actualInstallationDate": "2026-10-26T23:06",
-      "rentalStartDate": "2026-10-26",
-      "rentalEndDate": "2026-11-26",
-      "originalRentalEndDate": "2026-11-26",
+      "actualInstallationDate": "2026-03-05T10:00:00Z",
+      "rentalStartDate": "2026-03-05",
+      "rentalEndDate": "2026-04-05",
+      "originalRentalEndDate": "2026-04-05",
       "actualMeasurements": {
-        "length": 64,
-        "width": 11,
-        "height": 646,
+        "length": 62,
+        "width": 40,
+        "height": 20,
         "unit": "FEET",
         "isCorrect": true,
-        "variancePercentage": 0,
-        "remarks": "Dimensions match planned inspection",
-        "verifiedBy": "Burhan Malu (Super Admin)",
-        "verifiedAt": "2026-10-22T14:34:27.064Z"
+        "variancePercentage": 3.3,
+        "remarks": "Minor length extension for balcony clearance",
+        "verifiedBy": "Shabbir Contractor",
+        "verifiedAt": "2026-10-27T14:00:07.532Z"
       },
       "installationSupervisor": {
-        "assignedSupervisorId": "usr-admin-01",
-        "assignedSupervisorName": "Burhan Malu (Super Admin)",
-        "executingSupervisorId": "usr-admin-01",
-        "executingSupervisorName": "Burhan Malu (Super Admin)",
-        "isSameSupervisor": true
+        "assignedSupervisorId": "usr-sup-01",
+        "assignedSupervisorName": "Mustafa Alokhandwala",
+        "executingSupervisorId": "usr-sup-02",
+        "executingSupervisorName": "Shabbir Contractor",
+        "isSameSupervisor": false,
+        "delegationRemarks": "Assigned supervisor on emergency leave"
       },
       "installationWorkers": [
         {
-          "id": "wrk-1792679647339-6tb6",
-          "name": "mariyaa",
-          "role": "Scaffolder"
+          "id": "wrk-1793109607532-0",
+          "name": "Kailash Yadav",
+          "role": "Lead Scaffolder"
+        },
+        {
+          "id": "wrk-1793109607532-1",
+          "name": "Rameshwar Lal",
+          "role": "Rigger"
         }
       ]
     }
@@ -1224,394 +900,196 @@
   "payments": [],
   "transactions": [
     {
-      "id": "txn-1792679667064",
-      "transactionNumber": "TXN-2026-000002",
+      "id": "txn-1793109607532",
+      "transactionNumber": "TXN-2026-000005",
       "movementType": "MATERIAL_ISSUE_DISPATCH",
       "sourceLocation": "Taloja Central Scaffolding Yard",
-      "destinationLocation": "burhan Site",
-      "projectId": "proj-1792679542695",
-      "projectCode": "AW-SCF-000001",
-      "referenceDocument": "INSTALL-AW-SCF-000001",
-      "actorId": "usr-admin-01",
-      "actorName": "Burhan Malu (Super Admin)",
+      "destinationLocation": "Indore Hub",
+      "projectId": "proj-audit-01",
+      "projectCode": "AW-SCF-AUDIT01",
+      "referenceDocument": "INSTALL-AW-SCF-AUDIT01",
+      "actorId": "usr-sup-02",
+      "actorName": "Shabbir Contractor",
       "remarks": "Material issued and successfully installed at site",
       "lines": [
         {
           "materialId": "mat-01",
           "materialName": "VERTICAL 10FT/3MTR",
           "itemCode": "V-10FT-3M",
-          "quantity": 2432,
+          "quantity": 75,
           "condition": "GOOD",
-          "remarks": "Issued and installed at burhan Site"
-        },
-        {
-          "materialId": "mat-11",
-          "materialName": "VERTICAL 5FT/1.5MTR",
-          "itemCode": "V-5FT-1.5M",
-          "quantity": 38,
-          "condition": "GOOD",
-          "remarks": "Issued and installed at burhan Site"
-        },
-        {
-          "materialId": "mat-03",
-          "materialName": "LEDGER 8FT/2.5MTR",
-          "itemCode": "L-8FT-2.5M",
-          "quantity": 300,
-          "condition": "GOOD",
-          "remarks": "Issued and installed at burhan Site"
-        },
-        {
-          "materialId": "mat-14",
-          "materialName": "LEDGER 4FT/1.25MTR",
-          "itemCode": "L-4FT-1.25M",
-          "quantity": 1919,
-          "condition": "GOOD",
-          "remarks": "Issued and installed at burhan Site"
-        },
-        {
-          "materialId": "mat-05",
-          "materialName": "JACK",
-          "itemCode": "JACK-BASE",
-          "quantity": 38,
-          "condition": "GOOD",
-          "remarks": "Issued and installed at burhan Site"
-        },
-        {
-          "materialId": "mat-22",
-          "materialName": "BASE PLATE MS",
-          "itemCode": "BASE-PLATE-STD",
-          "quantity": 38,
-          "condition": "GOOD",
-          "remarks": "Issued and installed at burhan Site"
-        },
-        {
-          "materialId": "mat-09",
-          "materialName": "COUPLER SWIVEL",
-          "itemCode": "CPL-SWIVEL",
-          "quantity": 2000,
-          "condition": "GOOD",
-          "remarks": "Issued and installed at burhan Site"
-        },
-        {
-          "materialId": "mat-08",
-          "materialName": "COUPLER RIGHT ANGLE / FIXED",
-          "itemCode": "CPL-FIXED",
-          "quantity": 1425,
-          "condition": "GOOD",
-          "remarks": "Issued and installed at burhan Site"
-        },
-        {
-          "materialId": "mat-18",
-          "materialName": "JALI 8FT MS",
-          "itemCode": "JALI-8FT-MS",
-          "quantity": 57,
-          "condition": "GOOD",
-          "remarks": "Issued and installed at burhan Site"
-        },
-        {
-          "materialId": "mat-21",
-          "materialName": "TOE BOARD 8FT MS",
-          "itemCode": "TOE-BOARD-8FT",
-          "quantity": 19,
-          "condition": "GOOD",
-          "remarks": "Issued and installed at burhan Site"
+          "remarks": "Issued and installed at Indore Hub"
         }
       ],
-      "createdAt": "2026-10-22T14:34:27.064Z"
+      "createdAt": "2026-10-27T14:00:07.532Z"
     },
     {
-      "id": "txn-1792679627670",
-      "transactionNumber": "TXN-2026-000001",
+      "id": "txn-1793109607472",
+      "transactionNumber": "TXN-2026-000004",
       "movementType": "RESERVATION",
       "sourceLocation": "Taloja Central Scaffolding Yard",
-      "destinationLocation": "burhan Site",
-      "projectId": "proj-1792679542695",
-      "projectCode": "AW-SCF-000001",
-      "referenceDocument": "QTN-AW-SCF-000001",
+      "destinationLocation": "Indore Hub",
+      "projectId": "proj-audit-01",
+      "projectCode": "AW-SCF-AUDIT01",
+      "referenceDocument": "QTN-AUDIT-002",
       "actorId": "usr-admin-01",
-      "actorName": "Burhan Malu (Super Admin)",
-      "remarks": "Site: hhodsjdhdf. stair",
+      "actorName": "Burhan Malu",
+      "remarks": "Increased height requirements",
       "lines": [
         {
           "materialId": "mat-01",
           "materialName": "VERTICAL 10FT/3MTR",
           "itemCode": "V-10FT-3M",
-          "quantity": 2432,
+          "quantity": 80,
           "condition": "GOOD",
-          "remarks": "Reserved for AW-SCF-000001"
-        },
-        {
-          "materialId": "mat-11",
-          "materialName": "VERTICAL 5FT/1.5MTR",
-          "itemCode": "V-5FT-1.5M",
-          "quantity": 38,
-          "condition": "GOOD",
-          "remarks": "Reserved for AW-SCF-000001"
-        },
-        {
-          "materialId": "mat-03",
-          "materialName": "LEDGER 8FT/2.5MTR",
-          "itemCode": "L-8FT-2.5M",
-          "quantity": 300,
-          "condition": "GOOD",
-          "remarks": "Reserved for AW-SCF-000001"
-        },
-        {
-          "materialId": "mat-14",
-          "materialName": "LEDGER 4FT/1.25MTR",
-          "itemCode": "L-4FT-1.25M",
-          "quantity": 1919,
-          "condition": "GOOD",
-          "remarks": "Reserved for AW-SCF-000001"
-        },
-        {
-          "materialId": "mat-05",
-          "materialName": "JACK",
-          "itemCode": "JACK-BASE",
-          "quantity": 38,
-          "condition": "GOOD",
-          "remarks": "Reserved for AW-SCF-000001"
-        },
-        {
-          "materialId": "mat-22",
-          "materialName": "BASE PLATE MS",
-          "itemCode": "BASE-PLATE-STD",
-          "quantity": 38,
-          "condition": "GOOD",
-          "remarks": "Reserved for AW-SCF-000001"
-        },
-        {
-          "materialId": "mat-09",
-          "materialName": "COUPLER SWIVEL",
-          "itemCode": "CPL-SWIVEL",
-          "quantity": 2000,
-          "condition": "GOOD",
-          "remarks": "Reserved for AW-SCF-000001"
-        },
-        {
-          "materialId": "mat-08",
-          "materialName": "COUPLER RIGHT ANGLE / FIXED",
-          "itemCode": "CPL-FIXED",
-          "quantity": 1425,
-          "condition": "GOOD",
-          "remarks": "Reserved for AW-SCF-000001"
-        },
-        {
-          "materialId": "mat-18",
-          "materialName": "JALI 8FT MS",
-          "itemCode": "JALI-8FT-MS",
-          "quantity": 57,
-          "condition": "GOOD",
-          "remarks": "Reserved for AW-SCF-000001"
-        },
-        {
-          "materialId": "mat-21",
-          "materialName": "TOE BOARD 8FT MS",
-          "itemCode": "TOE-BOARD-8FT",
-          "quantity": 19,
-          "condition": "GOOD",
-          "remarks": "Reserved for AW-SCF-000001"
+          "remarks": "Revised reservation (delta: +30)"
         }
       ],
-      "createdAt": "2026-10-22T14:33:47.670Z"
+      "createdAt": "2026-10-27T14:00:07.472Z"
+    },
+    {
+      "id": "txn-1793109607471",
+      "transactionNumber": "TXN-2026-000003",
+      "movementType": "RESERVATION",
+      "sourceLocation": "Taloja Central Scaffolding Yard",
+      "destinationLocation": "Indore Hub",
+      "projectId": "proj-audit-01",
+      "projectCode": "AW-SCF-AUDIT01",
+      "referenceDocument": "QTN-AUDIT-002",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu",
+      "remarks": "Material reservation for quotation QTN-AUDIT-002",
+      "lines": [
+        {
+          "materialId": "mat-01",
+          "materialName": "VERTICAL 10FT/3MTR",
+          "itemCode": "V-10FT-3M",
+          "quantity": 50,
+          "condition": "GOOD",
+          "remarks": "Reserved for AW-SCF-AUDIT01"
+        }
+      ],
+      "createdAt": "2026-10-27T14:00:07.471Z"
+    },
+    {
+      "id": "txn-1793109607469",
+      "transactionNumber": "TXN-2026-000002",
+      "movementType": "RESERVATION_RELEASE",
+      "sourceLocation": "Indore Hub",
+      "destinationLocation": "Taloja Central Scaffolding Yard",
+      "projectId": "proj-audit-01",
+      "projectCode": "AW-SCF-AUDIT01",
+      "referenceDocument": "QTN-AUDIT-001",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu",
+      "remarks": "Client postponement",
+      "lines": [
+        {
+          "materialId": "mat-01",
+          "materialName": "VERTICAL 10FT/3MTR",
+          "itemCode": "V-10FT-3M",
+          "quantity": 100,
+          "condition": "GOOD",
+          "remarks": "Released from AW-SCF-AUDIT01"
+        }
+      ],
+      "createdAt": "2026-10-27T14:00:07.469Z"
+    },
+    {
+      "id": "txn-1793109607466",
+      "transactionNumber": "TXN-2026-000001",
+      "movementType": "RESERVATION",
+      "sourceLocation": "Taloja Central Scaffolding Yard",
+      "destinationLocation": "Indore Hub",
+      "projectId": "proj-audit-01",
+      "projectCode": "AW-SCF-AUDIT01",
+      "referenceDocument": "QTN-AUDIT-001",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu",
+      "remarks": "Material reservation for quotation QTN-AUDIT-001",
+      "lines": [
+        {
+          "materialId": "mat-01",
+          "materialName": "VERTICAL 10FT/3MTR",
+          "itemCode": "V-10FT-3M",
+          "quantity": 100,
+          "condition": "GOOD",
+          "remarks": "Reserved for AW-SCF-AUDIT01"
+        }
+      ],
+      "createdAt": "2026-10-27T14:00:07.466Z"
     }
   ],
   "bufferRequests": [],
   "rentalExtensions": [],
   "shiftingRequests": [],
   "removalRequests": [],
-  "notifications": [
-    {
-      "id": "notif-1793010667151",
-      "roleTarget": "ADMIN",
-      "title": "New Project Inspection: AW-SCF-000002",
-      "message": "burhan - burhan Site has been inspected and awaits confirmation.",
-      "type": "INFO",
-      "entityType": "PROJECT",
-      "entityId": "proj-1793010667151",
-      "isRead": false,
-      "createdAt": "2026-10-26T10:31:07.151Z"
-    },
-    {
-      "id": "notif-1792679542695",
-      "roleTarget": "ADMIN_PM",
-      "title": "New Project Inspection: AW-SCF-000001",
-      "message": "burhan - burhan Site has been inspected and awaits confirmation.",
-      "type": "INFO",
-      "entityType": "PROJECT",
-      "entityId": "proj-1792679542695",
-      "isRead": false,
-      "createdAt": "2026-10-22T14:32:22.695Z"
-    }
-  ],
-  "auditLogs": [
-    {
-      "id": "aud-1793010667151",
-      "actorId": "usr-admin-01",
-      "actorEmail": "Burhan Malu (Admin)",
-      "action": "CREATE_PROJECT",
-      "entityTable": "projects",
-      "entityId": "proj-1793010667151",
-      "newState": {
-        "id": "proj-1793010667151",
-        "projectCode": "AW-SCF-000002",
-        "customerId": "cust-1792679542694",
-        "customerName": "burhan",
-        "siteId": "site-1793010667150",
-        "siteName": "burhan Site",
-        "siteAddress": "hhodsjdhdf",
-        "referralName": "shabbbir",
-        "assignedSupervisorId": "usr-admin-01",
-        "supervisorName": "Burhan Malu (Admin)",
-        "status": "NOT_INSTALLED",
-        "pricingModel": "MONTHLY_RENTAL",
-        "monthlyRentalRate": 0,
-        "agreedProjectPrice": 0,
-        "depositAmount": 0,
-        "transportCharges": 0,
-        "installationLabourCharges": 0,
-        "shiftingCharges": 0,
-        "dismantlingLabourCharges": 0,
-        "gstPercentage": 18,
-        "siteRemarks": "hghghgj",
-        "measurements": {
-          "id": "meas-1793010667151",
-          "siteId": "site-1793010667150",
-          "projectId": "proj-1793010667151",
-          "length": 65,
-          "width": 48,
-          "height": 55,
-          "unit": "FEET",
-          "measurementType": "FAÇADE_SCAFFOLD",
-          "description": "hghghgj",
-          "measuredBy": "Burhan Malu (Admin)",
-          "measuredAt": "2026-10-26T10:31:07.151Z"
-        },
-        "photos": [
-          {
-            "id": "pht-1793010667151-0",
-            "entityType": "SITE_INSPECTION",
-            "entityId": "proj-1793010667151",
-            "fileName": "site_inspection_1.jpg",
-            "fileUrl": "/uploads/site_1793010659931_vxq6e_Prestige_Institute_Exam_Timetable_2026.png",
-            "fileSizeBytes": 2048000,
-            "mimeType": "image/jpeg",
-            "stageLabel": "BEFORE_INSTALLATION",
-            "uploadedBy": "usr-admin-01",
-            "uploaderName": "Burhan Malu (Admin)",
-            "createdAt": "2026-10-26T10:31:07.151Z"
-          }
-        ],
-        "materials": [],
-        "createdAt": "2026-10-26T10:31:07.151Z",
-        "updatedAt": "2026-10-26T10:31:07.151Z"
-      },
-      "createdAt": "2026-10-26T10:31:07.151Z"
-    },
-    {
-      "id": "aud-1792679542695",
-      "actorId": "usr-admin-01",
-      "actorEmail": "Burhan Malu (Super Admin)",
-      "action": "CREATE_PROJECT",
-      "entityTable": "projects",
-      "entityId": "proj-1792679542695",
-      "newState": {
-        "id": "proj-1792679542695",
-        "projectCode": "AW-SCF-000001",
-        "customerId": "cust-1792679542694",
-        "customerName": "burhan",
-        "siteId": "site-1792679542695",
-        "siteName": "burhan Site",
-        "siteAddress": "hhodsjdhdf",
-        "referralName": "shabbbir",
-        "assignedSupervisorId": "usr-admin-01",
-        "supervisorName": "Burhan Malu (Super Admin)",
-        "status": "NOT_INSTALLED",
-        "pricingModel": "MONTHLY_RENTAL",
-        "monthlyRentalRate": 0,
-        "agreedProjectPrice": 0,
-        "depositAmount": 0,
-        "transportCharges": 0,
-        "installationLabourCharges": 0,
-        "shiftingCharges": 0,
-        "dismantlingLabourCharges": 0,
-        "gstPercentage": 18,
-        "siteRemarks": "stair",
-        "measurements": {
-          "id": "meas-1792679542695",
-          "siteId": "site-1792679542695",
-          "projectId": "proj-1792679542695",
-          "length": 64,
-          "width": 11,
-          "height": 646,
-          "unit": "FEET",
-          "measurementType": "FAÇADE_SCAFFOLD",
-          "description": "stair",
-          "measuredBy": "Burhan Malu (Super Admin)",
-          "measuredAt": "2026-10-22T14:32:22.695Z"
-        },
-        "photos": [],
-        "materials": [],
-        "installationWorkers": [
-          {
-            "id": "usr-wrk-01",
-            "name": "Ramesh Kumar",
-            "role": "Scaffolder"
-          }
-        ],
-        "assignedWorkerIds": [
-          "usr-wrk-01"
-        ],
-        "createdAt": "2026-10-22T14:32:22.695Z",
-        "updatedAt": "2026-10-22T14:32:22.695Z"
-      },
-      "createdAt": "2026-10-22T14:32:22.695Z"
-    }
-  ],
+  "notifications": [],
+  "auditLogs": [],
   "activityEvents": [
     {
-      "id": "act-1792679667064",
-      "projectId": "proj-1792679542695",
+      "id": "act-1793109607532",
+      "projectId": "proj-audit-01",
       "eventType": "INSTALLATION_COMPLETED",
       "eventTitle": "Installation Completed & Rental Activated",
-      "eventDescription": "Scaffolding installed on 2026-10-26. Size: 64m × 11m × 646m (Verified correct). Supervisor: Burhan Malu (Super Admin) (Assigned). Crew: mariyaa [Scaffolder].",
-      "actorId": "usr-admin-01",
-      "actorName": "Burhan Malu (Super Admin)",
-      "createdAt": "2026-10-22T14:34:27.064Z"
+      "eventDescription": "Scaffolding installed on 2026-03-05. Size: 62m × 40m × 20m (Verified correct). Supervisor: Shabbir Contractor (Delegated substitute; Assigned: Mustafa Alokhandwala). Crew: Kailash Yadav [Lead Scaffolder], Rameshwar Lal [Rigger].",
+      "actorId": "usr-sup-02",
+      "actorName": "Shabbir Contractor",
+      "createdAt": "2026-10-27T14:00:07.532Z"
     },
     {
-      "id": "act-1792679627670",
-      "projectId": "proj-1792679542695",
+      "id": "act-1793109607472",
+      "projectId": "proj-audit-01",
+      "eventType": "RESERVATION_REVISED",
+      "eventTitle": "Material Reservation Revised",
+      "eventDescription": "Revised reservation for 1 material lines. Reason: Increased height requirements.",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu",
+      "metadata": {
+        "reason": "Increased height requirements"
+      },
+      "createdAt": "2026-10-27T14:00:07.472Z"
+    },
+    {
+      "id": "act-1793109607471",
+      "projectId": "proj-audit-01",
       "eventType": "PROJECT_CONFIRMED",
       "eventTitle": "Project Confirmed & Materials Reserved",
-      "eventDescription": "Reserved 10 items (8266 total pieces) under Quotation QTN-AW-SCF-000001.",
+      "eventDescription": "Reserved 1 items (50 total pieces) under Quotation QTN-AUDIT-002.",
       "actorId": "usr-admin-01",
-      "actorName": "Burhan Malu (Super Admin)",
+      "actorName": "Burhan Malu",
       "metadata": {
-        "quotationNumber": "QTN-AW-SCF-000001",
-        "materialsCount": 10
+        "quotationNumber": "QTN-AUDIT-002",
+        "materialsCount": 1
       },
-      "createdAt": "2026-10-22T14:33:47.670Z"
+      "createdAt": "2026-10-27T14:00:07.471Z"
     },
     {
-      "id": "act-1792679542695",
-      "projectId": "proj-1792679542695",
-      "eventType": "INSPECTION_SUBMITTED",
-      "eventTitle": "Site Inspection Submitted",
-      "eventDescription": "Inspection completed by Burhan Malu (Super Admin) with dimensions 64m x 11m x 646m. Project set to NOT_INSTALLED.",
+      "id": "act-1793109607469",
+      "projectId": "proj-audit-01",
+      "eventType": "RESERVATION_RELEASED",
+      "eventTitle": "Material Reservation Released",
+      "eventDescription": "Released 100 reserved pieces back to warehouse stock.",
       "actorId": "usr-admin-01",
-      "actorName": "Burhan Malu (Super Admin)",
-      "createdAt": "2026-10-22T14:32:22.695Z"
+      "actorName": "Burhan Malu",
+      "metadata": {
+        "reason": "Client postponement"
+      },
+      "createdAt": "2026-10-27T14:00:07.469Z"
     },
     {
-      "id": "act-1793010667151",
-      "projectId": "proj-1793010667151",
-      "eventType": "INSPECTION_SUBMITTED",
-      "eventTitle": "Site Inspection Submitted",
-      "eventDescription": "Inspection completed by Burhan Malu (Admin) with dimensions 65m x 48m x 55m. Project set to NOT_INSTALLED.",
+      "id": "act-1793109607466",
+      "projectId": "proj-audit-01",
+      "eventType": "PROJECT_CONFIRMED",
+      "eventTitle": "Project Confirmed & Materials Reserved",
+      "eventDescription": "Reserved 1 items (100 total pieces) under Quotation QTN-AUDIT-001.",
       "actorId": "usr-admin-01",
-      "actorName": "Burhan Malu (Admin)",
-      "createdAt": "2026-10-26T10:31:07.151Z"
+      "actorName": "Burhan Malu",
+      "metadata": {
+        "quotationNumber": "QTN-AUDIT-001",
+        "materialsCount": 1
+      },
+      "createdAt": "2026-10-27T14:00:07.466Z"
     }
   ]
 }

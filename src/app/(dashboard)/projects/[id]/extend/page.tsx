@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Repeat, CheckCircle2, AlertTriangle, Calendar, ReceiptIndianRupee } from 'lucide-react';
 import { Project } from '@/lib/schema';
-import { formatDate, formatINR, addCalendarMonths } from '@/lib/formatters';
+import { formatDate, formatINR, addDays } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
+import { RENTAL_CONSTANTS } from '@/lib/constants/terms-and-conditions';
 
 export default function ProjectExtensionPage({
   params,
@@ -40,7 +41,10 @@ export default function ProjectExtensionPage({
   }, [id]);
 
   const currentEndDate = project?.rentalEndDate ? new Date(project.rentalEndDate) : new Date();
-  const newEndDate = addCalendarMonths(currentEndDate, durationMonths);
+  // Term 2: 28 days = 1 month
+  const newEndDate = addDays(currentEndDate, durationMonths * RENTAL_CONSTANTS.RENTAL_DAYS_PER_MONTH);
+  // Term 8: Payment due next day after cycle ends
+  const nextPaymentDueDate = addDays(currentEndDate, 1);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,12 +102,30 @@ export default function ProjectExtensionPage({
               <span>Extend Project Rental Period</span>
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Extends contractual rental duration using calendar-month arithmetic without re-deducting warehouse inventory.
+              Extends contractual rental duration based on official 28-day monthly cycles without consuming warehouse inventory.
             </p>
           </div>
           <span className="font-mono font-bold text-xs bg-slate-100 px-2 py-1 rounded">
             {project.projectCode}
           </span>
+        </div>
+
+        {/* Official Term 2 & 8 Policy Banner */}
+        <div className="p-3.5 bg-blue-50/70 border border-blue-200/90 rounded-xl space-y-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="w-5 h-5 rounded-full bg-blue-200 text-blue-900 font-bold text-xs flex items-center justify-center">§</span>
+            <span className="font-bold text-blue-950">Terms 2 & 8: Extension Commercial Rules</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-blue-900 leading-relaxed pt-1">
+            <div className="bg-white/80 p-2.5 rounded-lg border border-blue-100">
+              <span className="font-bold block text-blue-950">Term 2: 28 Days Rental Period</span>
+              Quoted price covers 28 days (1 month). If the rental exceeds 28 days by even 1 day, full monthly charges apply.
+            </div>
+            <div className="bg-white/80 p-2.5 rounded-lg border border-blue-100">
+              <span className="font-bold block text-blue-950">Term 8: Next-Day Monthly Payment</span>
+              Rental payment for extended periods must be made on the next day after completion of each 28-day cycle.
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -113,34 +135,40 @@ export default function ProjectExtensionPage({
           </div>
         )}
 
-        {/* Existing vs Proposed Dates */}
-        <div className="grid grid-cols-2 gap-3 p-3 bg-teal-50/50 rounded-xl border border-teal-200 text-xs">
+        {/* Existing vs Proposed Dates & Payment Due Date */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-teal-50/50 rounded-xl border border-teal-200 text-xs">
           <div>
-            <span className="text-slate-500">Current Rental Expiry:</span>
+            <span className="text-slate-500">Current Cycle Expiry:</span>
             <div className="font-mono font-bold text-slate-800 mt-0.5">{formatDate(project.rentalEndDate)}</div>
           </div>
           <div>
-            <span className="text-teal-800 font-semibold">New Contractual Expiry (+{durationMonths} mo):</span>
+            <span className="text-teal-800 font-semibold">New Expiry (+{durationMonths * 28}d):</span>
             <div className="font-mono font-bold text-teal-900 mt-0.5">{formatDate(newEndDate)}</div>
+          </div>
+          <div className="bg-white/80 p-2 rounded-lg border border-teal-200 sm:col-span-1">
+            <span className="text-emerald-700 font-bold block text-[10px] uppercase">Payment Due Date (Term 8):</span>
+            <div className="font-mono font-bold text-emerald-900 mt-0.5">{formatDate(nextPaymentDueDate)}</div>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Extension Duration (Calendar Months) *</label>
+            <label className="block font-semibold text-slate-700 mb-1">
+              Extension Duration (28-Day Monthly Cycles) *
+            </label>
             <div className="flex gap-3">
               {[1, 2, 3, 6].map((m) => (
                 <button
                   type="button"
                   key={m}
                   onClick={() => setDurationMonths(m)}
-                  className={`flex-1 py-2 rounded-lg font-bold border transition ${
+                  className={`flex-1 py-2 rounded-lg font-bold border transition cursor-pointer ${
                     durationMonths === m
                       ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  +{m} Month{m > 1 ? 's' : ''}
+                  +{m} Month{m > 1 ? 's' : ''} ({m * 28}d)
                 </button>
               ))}
             </div>

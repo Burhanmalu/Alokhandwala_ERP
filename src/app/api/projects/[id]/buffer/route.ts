@@ -19,9 +19,8 @@ export async function POST(
       projectId: id,
       requestedBufferDays: validated.requestedBufferDays,
       reason: validated.reason,
-      additionalCharges: validated.additionalCharges,
-      actorId: body.actorId || 'usr-pm-01',
-      actorName: body.actorName || 'Taha Merchant',
+      actorId: body.actorId || 'system',
+      actorName: body.actorName || 'Authorized User',
     });
 
     return NextResponse.json({ success: true, data: result }, { status: 200 });

@@ -27,13 +27,15 @@ import {
   Sparkles,
   X,
   Maximize2,
-  ImageIcon
+  ImageIcon,
+  FileText,
+  ShieldAlert
 } from 'lucide-react';
 import { Material, Project, ScaffoldingMaterialPlanOption } from '@/lib/schema';
 import { formatINR, formatDate } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
-import { SmartMaterialRecommendation } from '@/components/scaffolding/SmartMaterialRecommendation';
-import { processAndUploadImage, SAMPLE_SITE_PHOTOS } from '@/lib/image-utils';
+import { processAndUploadImage } from '@/lib/image-utils';
+import { OFFICIAL_TERMS_AND_CONDITIONS, DEFAULT_PAYMENT_TERMS_TEXT, RENTAL_CONSTANTS, BusinessTerm } from '@/lib/constants/terms-and-conditions';
 
 export default function ConfirmationFormPage() {
   return (
@@ -77,13 +79,14 @@ function ConfirmationFormContent() {
   const [plannedInstallationDate, setPlannedInstallationDate] = useState('');
   const [durationMonths, setDurationMonths] = useState<number>(1);
 
-  // Auto-calculated expected return / rental end date
+  // Auto-calculated expected return / rental end date (Term 2: 28 Days per Month)
   const calculatedEndDate = useMemo(() => {
     if (!plannedInstallationDate || !durationMonths) return '';
     try {
       const d = new Date(plannedInstallationDate);
       if (isNaN(d.getTime())) return '';
-      d.setMonth(d.getMonth() + Number(durationMonths || 1));
+      // Official Business Term 2: 28 days = 1 rental period
+      d.setDate(d.getDate() + Number(durationMonths || 1) * RENTAL_CONSTANTS.RENTAL_DAYS_PER_MONTH);
       return d.toISOString().split('T')[0];
     } catch {
       return '';
@@ -93,8 +96,10 @@ function ConfirmationFormContent() {
   const [depositAmount, setDepositAmount] = useState<number>(0);
   const [transportCharges, setTransportCharges] = useState<number>(0);
   const [installationLabourCharges, setInstallationLabourCharges] = useState<number>(0);
-  const [paymentTerms, setPaymentTerms] = useState('');
+  const [paymentTerms, setPaymentTerms] = useState(DEFAULT_PAYMENT_TERMS_TEXT);
   const [remarks, setRemarks] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(true);
+  const [showAllTerms, setShowAllTerms] = useState(false);
 
   // Site photo upload inside Confirmation Form
   const [uploadingSitePhoto, setUploadingSitePhoto] = useState(false);
@@ -116,6 +121,41 @@ function ConfirmationFormContent() {
   >([]);
   const [selectedPlan, setSelectedPlan] = useState<ScaffoldingMaterialPlanOption | null>(null);
   const [siteDimensions, setSiteDimensions] = useState<any>(null);
+
+  // Billable Area Calculation (Term 1: Façade elevation surface area basis)
+  const areaDetails = useMemo(() => {
+    const m = selectedProject?.measurements;
+    if (!m) return { areaSqFt: 0, lengthFt: 0, heightFt: 0, ratePerSqFt: 0 };
+    const lengthFt = m.unit === 'METERS' ? m.length * 3.28084 : m.length;
+    const heightFt = m.unit === 'METERS' ? m.height * 3.28084 : m.height;
+    const areaSqFt = Math.round(lengthFt * heightFt);
+    const ratePerSqFt = areaSqFt > 0 ? (monthlyRentalRate / areaSqFt) : 0;
+    return {
+      areaSqFt,
+      lengthFt: Math.round(lengthFt * 10) / 10,
+      heightFt: Math.round(heightFt * 10) / 10,
+      ratePerSqFt: Math.round(ratePerSqFt * 100) / 100,
+    };
+  }, [selectedProject?.measurements, monthlyRentalRate]);
+
+  // Walkway Jali Tracker (Term 4: 1 Jali included per unit, extra @ Rs. 200/pc)
+  const jaliDetails = useMemo(() => {
+    const jaliItems = selectedMaterials.filter(sm => {
+      const mat = catalogMaterials.find(c => c.id === sm.materialId);
+      return mat?.itemCode?.startsWith('JALI') || mat?.name?.toLowerCase().includes('jali');
+    });
+    const totalJali = jaliItems.reduce((sum, item) => sum + item.requiredQuantity, 0);
+    const baysCount = selectedPlan?.configurationSummary?.baysCount || Math.ceil((areaDetails.lengthFt || 10) / 8);
+    const includedJali = baysCount * RENTAL_CONSTANTS.INCLUDED_WALKWAY_JALI_PER_UNIT;
+    const extraJali = Math.max(0, totalJali - includedJali);
+    const extraJaliCharge = extraJali * RENTAL_CONSTANTS.EXTRA_WALKWAY_JALI_RATE;
+    return {
+      totalJali,
+      includedJali,
+      extraJali,
+      extraJaliCharge,
+    };
+  }, [selectedMaterials, catalogMaterials, selectedPlan, areaDetails]);
 
   const handlePlanSelected = (
     plan: ScaffoldingMaterialPlanOption, 
@@ -317,6 +357,15 @@ function ConfirmationFormContent() {
             height: selectedProject.measurements.height,
             unit: selectedProject.measurements.unit,
           } : undefined),
+          termsSnapshot: OFFICIAL_TERMS_AND_CONDITIONS,
+          ratePerSqFt: areaDetails.ratePerSqFt,
+          totalAreaSqFt: areaDetails.areaSqFt,
+          extraJaliQuantity: jaliDetails.extraJali,
+          extraJaliCharges: jaliDetails.extraJaliCharge,
+          twoWayTransportCharges: Number(transportCharges),
+          advancePercentage: 75,
+          advanceRequiredAmount: Math.round(Number(agreedProjectPrice || 0) * 0.75),
+          completionDueAmount: Math.round(Number(agreedProjectPrice || 0) * 0.25),
           actorId: currentUser.id,
           actorName: currentUser.fullName,
         }),
@@ -588,29 +637,12 @@ function ConfirmationFormContent() {
                 >
                   <UploadCloud className="w-7 h-7 text-slate-400 mx-auto mb-1.5" />
                   <div className="text-xs font-bold text-slate-700">No site inspection photographs attached yet</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">Click here to upload inspection photos or use sample presets below</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">Click here to upload on-site inspection photos</div>
                 </div>
               )}
 
-              {/* Quick presets & URL input for adding photo directly */}
-              <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-2">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10px] font-semibold text-slate-500 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-500" />
-                    <span>Quick Presets:</span>
-                  </span>
-                  {SAMPLE_SITE_PHOTOS.map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleAttachSitePhotos([preset.url])}
-                      className="px-2 py-0.5 rounded text-[11px] font-medium border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition flex items-center gap-1 cursor-pointer"
-                    >
-                      <Plus className="w-2.5 h-2.5 text-slate-400" />
-                      <span>{preset.title}</span>
-                    </button>
-                  ))}
-                </div>
+              {/* Photo URL manual input */}
+              <div className="mt-3 pt-2.5 border-t border-slate-100">
 
                 <div className="flex gap-2">
                   <input
@@ -782,17 +814,20 @@ function ConfirmationFormContent() {
               </div>
             </div>
 
-            {/* Financial Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-1">
+            {/* Financial Fields & Commercial Terms Alignment */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs pt-1">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Monthly Rental Amount (INR) *</label>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Monthly Rental Amount (INR) *
+                  <span className="text-[10px] text-blue-600 block font-normal">Term 2: Quoted per 28-day cycle</span>
+                </label>
                 <input
                   type="number"
                   value={monthlyRentalRate}
                   onChange={(e) => {
                     const rate = Number(e.target.value);
                     setMonthlyRentalRate(rate);
-                    setAgreedProjectPrice(rate * (durationMonths || 1));
+                    setAgreedProjectPrice(rate * (durationMonths || 1) + (transportCharges * 2) + jaliDetails.extraJaliCharge);
                   }}
                   required
                   className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-emerald-800 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
@@ -800,24 +835,186 @@ function ConfirmationFormContent() {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Total Agreed Project Price (INR)</label>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Transportation (Per Way INR)
+                  <span className="text-[10px] text-amber-600 block font-normal">Term 3: Charged 2-way (Delivery + Return)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={transportCharges}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setTransportCharges(val);
+                      setAgreedProjectPrice((monthlyRentalRate * (durationMonths || 1)) + (val * 2) + jaliDetails.extraJaliCharge);
+                    }}
+                    placeholder="0"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                  {transportCharges > 0 && (
+                    <div className="text-[10px] text-slate-500 mt-1">
+                      2-way Total: <span className="font-semibold text-slate-800">₹{formatINR(transportCharges * 2, false)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Total Agreed Project Price (INR)
+                  <span className="text-[10px] text-slate-500 block font-normal">Rental + Transport + Extras</span>
+                </label>
                 <input
                   type="number"
                   value={agreedProjectPrice}
                   onChange={(e) => setAgreedProjectPrice(Number(e.target.value))}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                 />
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="block font-semibold text-slate-700 mb-1">Payment & Credit Terms</label>
+              {/* Area Pricing & Walkway Jali Commercial Cards */}
+              <div className="sm:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                {/* Term 1: Area Details */}
+                <div className="p-3 bg-amber-50/60 border border-amber-200/80 rounded-xl flex items-start justify-between">
+                  <div>
+                    <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>Term 1: Area-Based Pricing</span>
+                    </div>
+                    <div className="text-xs text-amber-900 mt-0.5">
+                      Façade Area: <span className="font-bold">{areaDetails.areaSqFt} sq. ft.</span>
+                      {areaDetails.lengthFt > 0 && (
+                        <span className="text-amber-700 font-normal"> ({areaDetails.lengthFt}&apos; L × {areaDetails.heightFt}&apos; H)</span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-amber-700 mt-0.5">
+                      Effective Rate: <span className="font-semibold">₹{areaDetails.ratePerSqFt}/sq. ft.</span> per 28 days
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-right text-amber-600 bg-amber-100/70 px-2 py-1 rounded-md">
+                    Actual site area measured at installation
+                  </div>
+                </div>
+
+                {/* Term 4: Walkway Jali Tracker */}
+                <div className="p-3 bg-blue-50/60 border border-blue-200/80 rounded-xl flex items-start justify-between">
+                  <div>
+                    <div className="text-[10px] font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>Term 4: Walkway Jali Allowance</span>
+                    </div>
+                    <div className="text-xs text-blue-900 mt-0.5">
+                      Total Jali: <span className="font-bold">{jaliDetails.totalJali} pcs</span> | Included: <span className="font-semibold text-emerald-700">{jaliDetails.includedJali} pcs (1/unit)</span>
+                    </div>
+                    <div className="text-[11px] text-blue-700 mt-0.5">
+                      Extra Jali: <span className="font-semibold">{jaliDetails.extraJali} pcs</span> → <span className="font-bold text-blue-900">+₹{formatINR(jaliDetails.extraJaliCharge, false)}</span> (@ ₹200/pc)
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-right text-blue-600 bg-blue-100/70 px-2 py-1 rounded-md">
+                    1 Jali/unit included
+                  </div>
+                </div>
+              </div>
+
+              {/* Term 7 & 8: Payment Terms & Advance Split */}
+              <div className="sm:col-span-2 lg:col-span-3 p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200/90 rounded-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-emerald-200/60">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="text-xs font-bold text-emerald-950 uppercase tracking-wider">
+                      Term 7 & 8: Payment Schedule Breakdown
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full">
+                    75% Advance / 25% On Completion
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 text-xs">
+                  <div className="bg-white/80 p-3 rounded-lg border border-emerald-100 shadow-2xs">
+                    <div className="text-[10px] text-slate-500 font-medium uppercase">Advance Required (75%)</div>
+                    <div className="text-sm font-bold text-emerald-700 font-mono mt-0.5">
+                      ₹{formatINR(Math.round((agreedProjectPrice || 0) * 0.75), false)}
+                    </div>
+                    <div className="text-[10px] text-emerald-600 mt-1">Must be received before site installation</div>
+                  </div>
+                  <div className="bg-white/80 p-3 rounded-lg border border-teal-100 shadow-2xs">
+                    <div className="text-[10px] text-slate-500 font-medium uppercase">Installation Balance (25%)</div>
+                    <div className="text-sm font-bold text-teal-700 font-mono mt-0.5">
+                      ₹{formatINR(Math.round((agreedProjectPrice || 0) * 0.25), false)}
+                    </div>
+                    <div className="text-[10px] text-teal-600 mt-1">Payable immediately after installation completion</div>
+                  </div>
+                  <div className="bg-white/80 p-3 rounded-lg border border-blue-100 shadow-2xs">
+                    <div className="text-[10px] text-slate-500 font-medium uppercase">Extension Billing Due</div>
+                    <div className="text-xs font-bold text-blue-900 font-mono mt-0.5">
+                      Next day after 28 days
+                    </div>
+                    <div className="text-[10px] text-blue-600 mt-1">Term 8: Next-day billing for each 28-day cycle</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="sm:col-span-2 lg:col-span-3">
+                <label className="block font-semibold text-slate-700 mb-1">Commercial & Credit Remarks</label>
                 <input
                   type="text"
                   value={paymentTerms}
                   onChange={(e) => setPaymentTerms(e.target.value)}
-                  placeholder="e.g. Net 30 days, billing on 1st of every month"
+                  placeholder="Official Terms 1-11 apply as standardized"
                   className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                 />
+              </div>
+            </div>
+
+            {/* Official 11 Terms & Conditions Review Card */}
+            <div className="mt-4 border border-amber-200/80 rounded-xl bg-amber-50/30 overflow-hidden text-xs">
+              <div 
+                className="p-3.5 bg-amber-100/60 border-b border-amber-200 flex items-center justify-between cursor-pointer select-none"
+                onClick={() => setShowAllTerms(!showAllTerms)}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-amber-500/20 text-amber-900 flex items-center justify-center font-bold text-xs">
+                    §
+                  </div>
+                  <div>
+                    <span className="font-bold text-amber-950">Official Business Terms & Conditions (11 Clauses)</span>
+                    <span className="text-[10px] text-amber-700 ml-2 font-normal">Applicable across quotation, confirmation & invoice</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-amber-900 hover:text-amber-950 underline cursor-pointer"
+                >
+                  {showAllTerms ? 'Collapse Terms ▲' : 'Review All 11 Terms ▼'}
+                </button>
+              </div>
+
+              {showAllTerms && (
+                <div className="p-4 bg-white/95 space-y-3 max-h-80 overflow-y-auto divide-y divide-slate-100">
+                  {OFFICIAL_TERMS_AND_CONDITIONS.map((term) => (
+                    <div key={term.id} className="pt-2.5 first:pt-0">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] flex items-center justify-center shrink-0">
+                          {term.id}
+                        </span>
+                        <span className="font-bold text-slate-800 text-xs">{term.title}</span>
+                        <span className="text-[10px] text-slate-400 uppercase font-mono ml-auto">{term.category}</span>
+                      </div>
+                      <p className="text-slate-600 text-xs mt-1 leading-relaxed pl-7">{term.content}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="p-3 bg-amber-50/90 border-t border-amber-200/60 flex items-center gap-2.5">
+                <input
+                  type="checkbox"
+                  id="acceptTermsConfirmation"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
+                />
+                <label htmlFor="acceptTermsConfirmation" className="text-xs text-slate-700 font-medium cursor-pointer">
+                  Customer has been informed of and agrees to all <span className="font-bold text-slate-900">11 Official Terms & Conditions</span> (Pricing per sq. ft., 28-day rental, 75% advance, 2-way transport, walkway Jali rules & delivery challan responsibility).
+                </label>
               </div>
             </div>
           </div>

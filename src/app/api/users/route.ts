@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         fullName: body.fullName,
         phone: body.phone,
         role: body.role || 'SUPERVISOR',
-        password: body.password || 'demo2026',
+        password: body.password || '',
         isActive: true,
         createdAt: new Date().toISOString(),
       };

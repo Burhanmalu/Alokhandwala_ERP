@@ -112,6 +112,13 @@ class ERPDataStore {
         } else {
           parsed.users = JSON.parse(JSON.stringify(initialUsers));
         }
+
+        if (!parsed.companySettings) {
+          parsed.companySettings = JSON.parse(JSON.stringify(initialCompanySettings));
+        } else if (!parsed.companySettings.termsAndConditions) {
+          parsed.companySettings.termsAndConditions = JSON.parse(JSON.stringify(initialCompanySettings.termsAndConditions));
+        }
+
         return parsed;
       }
     } catch (e) {

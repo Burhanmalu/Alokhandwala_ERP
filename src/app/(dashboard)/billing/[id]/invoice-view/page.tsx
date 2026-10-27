@@ -182,6 +182,23 @@ export default function InvoicePrintViewPage({
           </div>
         </div>
 
+        {/* Official Terms & Conditions for Invoice */}
+        <div className="border-t border-slate-200 pt-4 text-[10px] text-slate-600 space-y-2">
+          <div className="font-bold text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+            <span>Official Commercial Terms & Conditions</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+            <div><span className="font-bold text-slate-700">1. Pricing Basis:</span> All prices calculated on per-sq.-ft. basis; final area subject to site installation.</div>
+            <div><span className="font-bold text-slate-700">2. Rental Period:</span> Quoted price applies for 28 days (1 month). Even 1 day over 28 days charges full monthly rate.</div>
+            <div><span className="font-bold text-slate-700">3. Transportation:</span> Extra 2-way charges (both delivery and return).</div>
+            <div><span className="font-bold text-slate-700">4. Walkway Jali:</span> 1 Jali included per unit; additional pieces charged at ₹200 each.</div>
+            <div><span className="font-bold text-slate-700">7. Payment Terms:</span> 75% advance required before installation; 25% balance payable upon installation completion.</div>
+            <div><span className="font-bold text-slate-700">8. Monthly Extension:</span> Monthly rental payments due on the next day after completion of each 28-day cycle.</div>
+            <div><span className="font-bold text-slate-700">9. Material Custody:</span> Customer responsible for damage, loss, or misplacement at prevailing material values.</div>
+            <div><span className="font-bold text-slate-700">11. Delivery Challan:</span> Verified and approved challan governs return reconciliation. Shortages chargeable.</div>
+          </div>
+        </div>
+
         {/* Bank NEFT Details & Terms */}
         <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-4 text-[11px] text-slate-600">
           <div>
@@ -196,6 +213,7 @@ export default function InvoicePrintViewPage({
           <div className="text-right flex flex-col justify-end items-end">
             <div className="text-[10px] text-slate-400">For Alokhandwala</div>
             <div className="my-1 opacity-75">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo-icon.png" alt="Company Seal" className="h-8 w-auto object-contain mx-auto print:opacity-90" />
             </div>
             <div className="font-bold text-[#24160c]">Authorized Signatory</div>

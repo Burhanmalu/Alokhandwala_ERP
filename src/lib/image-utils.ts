@@ -2,29 +2,6 @@
  * Utility functions for handling, compressing, and uploading site images
  */
 
-export const SAMPLE_SITE_PHOTOS = [
-  {
-    title: 'Commercial Façade',
-    category: 'Façade Scaffold',
-    url: 'https://images.unsplash.com/photo-1541888946425-d0fbb186156f?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    title: 'High-Rise Cup-Lock',
-    category: 'Cup-Lock System',
-    url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    title: 'Ground Shoring & Base',
-    category: 'Heavy Shoring',
-    url: 'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    title: 'Elevation Safety Netting',
-    category: 'Safety Staging',
-    url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=1200&q=80',
-  },
-];
-
 /**
  * Reads a File object and converts it to a base64 Data URL.
  */

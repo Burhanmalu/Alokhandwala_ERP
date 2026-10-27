@@ -10,6 +10,7 @@ import {
   RemovalRequest
 } from '../schema';
 import { ProjectService } from './project-service';
+import { OFFICIAL_TERMS_AND_CONDITIONS, DEFAULT_PAYMENT_TERMS_TEXT } from '../constants/terms-and-conditions';
 
 export class InventoryService {
   /**
@@ -41,6 +42,15 @@ export class InventoryService {
     materials: { materialId: string; requiredQuantity: number; monthlyRentalRate?: number }[];
     scaffoldingPlan?: any;
     siteDimensions?: any;
+    termsSnapshot?: any;
+    ratePerSqFt?: number;
+    totalAreaSqFt?: number;
+    extraJaliQuantity?: number;
+    extraJaliCharges?: number;
+    twoWayTransportCharges?: number;
+    advancePercentage?: number;
+    advanceRequiredAmount?: number;
+    completionDueAmount?: number;
     actorId: string;
     actorName: string;
   }): Promise<{ project: Project; transaction: InventoryTransaction }> {
@@ -130,7 +140,16 @@ export class InventoryService {
       project.depositAmount = data.depositAmount || 0;
       project.transportCharges = data.transportCharges || 0;
       project.installationLabourCharges = data.installationLabourCharges || 0;
-      project.paymentTerms = data.paymentTerms;
+      project.paymentTerms = data.paymentTerms || DEFAULT_PAYMENT_TERMS_TEXT;
+      project.termsSnapshot = data.termsSnapshot || state.companySettings?.termsAndConditions || OFFICIAL_TERMS_AND_CONDITIONS;
+      project.ratePerSqFt = data.ratePerSqFt;
+      project.totalAreaSqFt = data.totalAreaSqFt;
+      project.extraJaliQuantity = data.extraJaliQuantity || 0;
+      project.extraJaliCharges = data.extraJaliCharges || 0;
+      project.twoWayTransportCharges = data.transportCharges || 0;
+      project.advancePercentage = data.advancePercentage || 75;
+      project.advanceRequiredAmount = data.advanceRequiredAmount ?? ((data.agreedProjectPrice || 0) * 0.75);
+      project.completionDueAmount = data.completionDueAmount ?? ((data.agreedProjectPrice || 0) * 0.25);
       project.materials = projectMaterialList;
       if (data.scaffoldingPlan) project.scaffoldingPlan = data.scaffoldingPlan;
       if (data.siteDimensions) project.siteDimensions = data.siteDimensions;

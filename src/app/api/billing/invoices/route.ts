@@ -34,9 +34,8 @@ export async function POST(req: NextRequest) {
       invoiceDate: validated.invoiceDate,
       dueDate: validated.dueDate,
       notes: validated.notes,
-      lines: validated.lines,
-      actorId: body.actorId || 'usr-acc-01',
-      actorName: body.actorName || 'Fatema Kapadia',
+      actorId: body.actorId || 'system',
+      actorName: body.actorName || 'Authorized User',
     });
 
     return NextResponse.json({ success: true, data: invoice }, { status: 201 });

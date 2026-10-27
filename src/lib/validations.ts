@@ -72,6 +72,15 @@ export const projectConfirmationSchema = z.object({
   ).min(1, 'At least one material must be reserved for the project'),
   scaffoldingPlan: z.any().optional(),
   siteDimensions: z.any().optional(),
+  termsSnapshot: z.any().optional(),
+  ratePerSqFt: z.coerce.number().optional(),
+  totalAreaSqFt: z.coerce.number().optional(),
+  extraJaliQuantity: z.coerce.number().optional(),
+  extraJaliCharges: z.coerce.number().optional(),
+  twoWayTransportCharges: z.coerce.number().optional(),
+  advancePercentage: z.coerce.number().optional(),
+  advanceRequiredAmount: z.coerce.number().optional(),
+  completionDueAmount: z.coerce.number().optional(),
 });
 
 export const installationSubmissionSchema = z.object({

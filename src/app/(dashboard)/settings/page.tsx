@@ -3,14 +3,30 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/auth-context';
-import { Settings, Building2, ReceiptIndianRupee, Clock, ShieldCheck, Check } from 'lucide-react';
+import { Settings, Building2, Clock, Check, FileText, RotateCcw } from 'lucide-react';
 import { initialCompanySettings } from '@/lib/db/seed-data';
+import { OFFICIAL_TERMS_AND_CONDITIONS, BusinessTerm } from '@/lib/constants/terms-and-conditions';
 
 export default function SettingsPage() {
   const router = useRouter();
   const { currentUser } = useAuth();
   const [settings, setSettings] = useState(initialCompanySettings);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && json.data) {
+          setSettings({
+            ...json.data,
+            termsAndConditions: json.data.termsAndConditions || OFFICIAL_TERMS_AND_CONDITIONS,
+          });
+        }
+      })
+      .catch(err => console.error('Error fetching settings:', err));
+  }, []);
 
   useEffect(() => {
     if (currentUser && currentUser.role !== 'ADMIN') {
@@ -22,10 +38,37 @@ export default function SettingsPage() {
     }
   }, [currentUser, router]);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setSaving(true);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      }
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTermChange = (index: number, newFullText: string) => {
+    const updated = [...(settings.termsAndConditions || OFFICIAL_TERMS_AND_CONDITIONS)];
+    updated[index] = { ...updated[index], fullText: newFullText };
+    setSettings({ ...settings, termsAndConditions: updated });
+  };
+
+  const handleResetTerms = () => {
+    if (confirm('Reset all Terms & Conditions to official business defaults?')) {
+      setSettings({ ...settings, termsAndConditions: OFFICIAL_TERMS_AND_CONDITIONS });
+    }
   };
 
   return (
@@ -226,12 +269,63 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* 3. Official Business Terms & Conditions */}
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
+            <div>
+              <h2 className="text-sm font-bold text-[#24160c] flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#8c5e39]" />
+                <span>3. Official Business Terms & Conditions (11 Clauses)</span>
+              </h2>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Centralized clauses automatically injected across quotations, project confirmations, delivery challans, invoices, and PDF downloads.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleResetTerms}
+              className="text-xs text-[#8c5e39] hover:text-[#59371d] font-semibold flex items-center gap-1 self-start sm:self-auto"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset to Defaults</span>
+            </button>
+          </div>
+
+          <div className="space-y-4 pt-1">
+            {((settings.termsAndConditions && settings.termsAndConditions.length > 0)
+              ? settings.termsAndConditions
+              : OFFICIAL_TERMS_AND_CONDITIONS
+            ).map((term: BusinessTerm, idx: number) => (
+              <div key={term.id || idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 font-bold text-slate-900 text-xs">
+                    <span className="w-5 h-5 rounded-full bg-[#322016] text-white flex items-center justify-center text-[10px]">
+                      {idx + 1}
+                    </span>
+                    <span>{term.title}</span>
+                  </div>
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-semibold">
+                    {term.category}
+                  </span>
+                </div>
+                <textarea
+                  rows={2}
+                  value={term.fullText}
+                  onChange={(e) => handleTermChange(idx, e.target.value)}
+                  className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs leading-relaxed text-slate-800 focus:ring-1 focus:ring-[#8c5e39] focus:border-[#8c5e39]"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="flex justify-end pt-2">
           <button
             type="submit"
-            className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 bg-[#322016] hover:bg-[#4d3221] text-[#fdf8f4] rounded-lg font-bold shadow-xs transition flex items-center justify-center"
+            disabled={saving}
+            className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 bg-[#322016] hover:bg-[#4d3221] text-[#fdf8f4] rounded-lg font-bold shadow-xs transition flex items-center justify-center disabled:opacity-50"
           >
-            Save Configuration
+            {saving ? 'Saving Configuration...' : 'Save Configuration & Terms'}
           </button>
         </div>
       </form>

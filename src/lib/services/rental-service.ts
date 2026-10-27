@@ -4,6 +4,8 @@ import { dbStore } from '../db/store';
 import { Project, BufferRequest, RentalExtension } from '../schema';
 import { addCalendarMonths, addDays } from '../formatters';
 
+import { RENTAL_CONSTANTS } from '../constants/terms-and-conditions';
+
 export class RentalService {
   /**
    * Request / Apply Buffer Period (2 to 3 days for removal planning)
@@ -102,7 +104,8 @@ export class RentalService {
       }
 
       const currentEnd = project.rentalEndDate ? new Date(project.rentalEndDate) : new Date();
-      const newEnd = addCalendarMonths(currentEnd, data.durationMonths);
+      // Official Term 2: 28 days = 1 rental period month
+      const newEnd = addDays(currentEnd, data.durationMonths * RENTAL_CONSTANTS.RENTAL_DAYS_PER_MONTH);
       const newEndStr = newEnd.toISOString().split('T')[0];
       const previousEndStr = project.rentalEndDate || '';
 

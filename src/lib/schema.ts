@@ -151,6 +151,16 @@ export interface Project {
   quotationDate?: string;
   paymentTerms?: string;
   siteRemarks?: string;
+  termsSnapshot?: any;
+  ratePerSqFt?: number;
+  totalAreaSqFt?: number;
+  extraJaliQuantity?: number;
+  extraJaliCharges?: number;
+  twoWayTransportCharges?: number;
+  advancePercentage?: number;
+  advanceRequiredAmount?: number;
+  advancePaidAmount?: number;
+  completionDueAmount?: number;
   materials?: ProjectMaterialRequirement[];
   photos?: FileAttachment[];
   measurements?: SiteMeasurement;
@@ -605,4 +615,5 @@ export interface CompanySettings {
   extensionDurationMonthsDefault: number;
   lowStockThresholdDefault: number;
   rentalCurrency: string;
+  termsAndConditions?: any[];
 }

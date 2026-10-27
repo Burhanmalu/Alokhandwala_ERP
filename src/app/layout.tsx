@@ -42,8 +42,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="font-sans antialiased text-slate-800 bg-[#fdfcf9] min-h-screen">
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} h-full overflow-hidden`}>
+      <body className="font-sans antialiased text-slate-800 bg-[#fdfcf9] h-full overflow-hidden">
         <AuthProvider>
           {children}
         </AuthProvider>

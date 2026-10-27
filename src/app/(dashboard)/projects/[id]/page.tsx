@@ -32,11 +32,14 @@ import {
   X,
   Maximize2,
   ImageIcon,
-  Sparkles
+  Sparkles,
+  FileDown
 } from 'lucide-react';
 import { formatINR, formatQuantity, formatDate, formatDateTime, getStatusBadgeConfig, getDaysDifference } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
 import { processAndUploadImage, SAMPLE_SITE_PHOTOS } from '@/lib/image-utils';
+import { generateConfirmationPdf, generateInstallationPdf } from '@/lib/pdf/project-pdf';
+import { OFFICIAL_TERMS_AND_CONDITIONS } from '@/lib/constants/terms-and-conditions';
 
 export default function ProjectWorkspacePage({
   params,
@@ -53,7 +56,55 @@ export default function ProjectWorkspacePage({
   const [closing, setClosing] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState<any | null>(null);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const photoInputRef = React.useRef<HTMLInputElement>(null);
+
+  // PDF Download States
+  const [downloadingConfPdf, setDownloadingConfPdf] = useState(false);
+  const [downloadingInstPdf, setDownloadingInstPdf] = useState(false);
+
+  // Status checks for PDF availability
+  const isConfirmed = Boolean(
+    project && (
+      (project.status !== 'NOT_INSTALLED' && project.status !== 'CANCELLED') ||
+      project.quotationNumber ||
+      (project.materials && project.materials.some((m: any) => (m.reservedQuantity || 0) > 0 || (m.installedQuantity || 0) > 0))
+    )
+  );
+
+  const isInstalled = Boolean(
+    project && (
+      ['INSTALLED', 'ACTIVE_RENTAL', 'BUFFER_PERIOD', 'EXTENSION_REQUESTED', 'EXTENDED', 'SHIFTING_PENDING', 'SHIFTING_IN_PROGRESS', 'REMOVAL_PENDING', 'RETURNED_RECONCILIATION', 'CLOSED'].includes(project.status) ||
+      project.actualInstallationDate ||
+      (project.materials && project.materials.some((m: any) => (m.installedQuantity || 0) > 0))
+    )
+  );
+
+  const handleDownloadConfirmationPdf = async () => {
+    if (!project || !isConfirmed) return;
+    setDownloadingConfPdf(true);
+    try {
+      await generateConfirmationPdf(project);
+    } catch (err: any) {
+      console.error('Failed to generate Confirmation PDF:', err);
+      alert('Failed to generate Confirmation PDF: ' + (err?.message || 'Unknown error occurred'));
+    } finally {
+      setDownloadingConfPdf(false);
+    }
+  };
+
+  const handleDownloadInstallationPdf = async () => {
+    if (!project || !isInstalled) return;
+    setDownloadingInstPdf(true);
+    try {
+      await generateInstallationPdf(project);
+    } catch (err: any) {
+      console.error('Failed to generate Installation PDF:', err);
+      alert('Failed to generate Installation PDF: ' + (err?.message || 'Unknown error occurred'));
+    } finally {
+      setDownloadingInstPdf(false);
+    }
+  };
 
   useEffect(() => {
     fetchProjectDetails();
@@ -242,8 +293,8 @@ export default function ProjectWorkspacePage({
       </div>
 
       {/* Project Master Hero Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-5 sm:gap-6">
-        <div className="space-y-2">
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row lg:items-start justify-between gap-5 sm:gap-6">
+        <div className="space-y-2.5">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <h1 className="text-xl sm:text-2xl font-bold font-mono text-slate-900 tracking-tight">
               {project.projectCode}
@@ -277,86 +328,156 @@ export default function ProjectWorkspacePage({
           </div>
         </div>
 
-        {/* Dynamic Action Buttons Based on Project Status */}
-        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-          {/* Status NOT_INSTALLED -> Confirm Action */}
-          {project.status === 'NOT_INSTALLED' && can('PROJECT_CONFIRM') && (
-            <Link
-              href={`/projects/${project.id}/confirm`}
-              className="w-full sm:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5 min-h-[42px]"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Confirm Project & Reserve Stock</span>
-            </Link>
-          )}
+        {/* Dynamic Action Buttons & Customer PDF Downloads */}
+        <div className="flex flex-col sm:items-end justify-center gap-2.5 w-full lg:w-auto shrink-0">
+          {/* Row 1: Workflow Lifecycle Actions */}
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
+            {/* Status NOT_INSTALLED -> Confirm Action */}
+            {project.status === 'NOT_INSTALLED' && can('PROJECT_CONFIRM') && (
+              <Link
+                href={`/projects/${project.id}/confirm`}
+                className="w-full sm:w-auto h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Confirm Project & Reserve Stock</span>
+              </Link>
+            )}
 
-          {/* Status CONFIRMED_PROJECT -> Install Action */}
-          {(project.status === 'CONFIRMED_PROJECT' || project.status === 'SCHEDULED') && can('PROJECT_INSTALL_SUBMIT') && (
-            <Link
-              href={`/projects/${project.id}/install`}
-              className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5 min-h-[42px]"
-            >
-              <Boxes className="w-4 h-4" />
-              <span>Record Installation & Activate Rental</span>
-            </Link>
-          )}
+            {/* Status CONFIRMED_PROJECT -> Install Action */}
+            {(project.status === 'CONFIRMED_PROJECT' || project.status === 'SCHEDULED') && can('PROJECT_INSTALL_SUBMIT') && (
+              <Link
+                href={`/projects/${project.id}/install`}
+                className="w-full sm:w-auto h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5"
+              >
+                <Boxes className="w-3.5 h-3.5" />
+                <span>Record Installation & Activate Rental</span>
+              </Link>
+            )}
 
-          {/* Active Rental Operations: Buffer, Extend, Shift, Dismantle */}
-          {['INSTALLED', 'ACTIVE_RENTAL', 'BUFFER_PERIOD', 'EXTENDED'].includes(project.status) && (
-            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
-              {project.status !== 'BUFFER_PERIOD' && can('PROJECT_BUFFER_REQUEST') && (
-                <Link
-                  href={`/projects/${project.id}/buffer`}
-                  className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1 min-h-[40px]"
+            {/* Active Rental Operations: Buffer, Extend, Shift, Dismantle */}
+            {['INSTALLED', 'ACTIVE_RENTAL', 'BUFFER_PERIOD', 'EXTENDED'].includes(project.status) && (
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
+                {project.status !== 'BUFFER_PERIOD' && can('PROJECT_BUFFER_REQUEST') && (
+                  <Link
+                    href={`/projects/${project.id}/buffer`}
+                    className="h-9 px-3 bg-amber-50 hover:bg-amber-100/80 text-amber-900 border border-amber-200/90 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                  >
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Buffer (2-3d)</span>
+                  </Link>
+                )}
+
+                {can('PROJECT_EXTEND') && (
+                  <Link
+                    href={`/projects/${project.id}/extend`}
+                    className="h-9 px-3 bg-teal-50 hover:bg-teal-100/80 text-teal-900 border border-teal-200/90 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                  >
+                    <Repeat className="w-3.5 h-3.5 text-teal-600" />
+                    <span>Extend Rental</span>
+                  </Link>
+                )}
+
+                {can('PROJECT_SHIFT') && (
+                  <Link
+                    href={`/projects/${project.id}/shift`}
+                    className="h-9 px-3 bg-indigo-50 hover:bg-indigo-100/80 text-indigo-900 border border-indigo-200/90 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                  >
+                    <ArrowRightLeft className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Shift Scaffolding</span>
+                  </Link>
+                )}
+
+                {can('PROJECT_DISMANTLE_SUBMIT') && (
+                  <Link
+                    href={`/projects/${project.id}/dismantle`}
+                    className="h-9 px-3.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Dismantle</span>
+                  </Link>
+                )}
+              </div>
+            )}
+
+            {/* Close Project */}
+            {project.status === 'RETURNED_RECONCILIATION' && can('PROJECT_CLOSE') && (
+              <button
+                onClick={handleCloseProject}
+                disabled={closing}
+                className="w-full sm:w-auto h-9 px-4 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5"
+              >
+                <ShieldCheck className="w-4 h-4 text-emerald-300" />
+                <span>{closing ? 'Closing Project...' : 'Finalize Closure'}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Row 2: Customer Official PDF Downloads */}
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
+            {/* Confirmation PDF Button */}
+            {isConfirmed ? (
+              <button
+                onClick={handleDownloadConfirmationPdf}
+                disabled={downloadingConfPdf}
+                title="Download official Project Confirmation & Material Reservation PDF"
+                className="h-9 px-3.5 bg-gradient-to-r from-[#2c1d13] to-[#402a1b] hover:from-[#3a271a] hover:to-[#503523] text-[#f7e7d7] border border-[#6b4528] rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow-2xs group active:scale-[0.98]"
+              >
+                {downloadingConfPdf ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#d8b292]" />
+                ) : (
+                  <FileDown className="w-3.5 h-3.5 text-[#d8b292] group-hover:scale-110 transition-transform" />
+                )}
+                <span>{downloadingConfPdf ? 'Generating PDF...' : 'Download Confirmation PDF'}</span>
+              </button>
+            ) : (
+              <div className="relative group inline-block">
+                <button
+                  disabled
+                  className="h-9 px-3.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-medium cursor-not-allowed flex items-center justify-center gap-1.5 opacity-75"
                 >
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>Buffer (2-3d)</span>
-                </Link>
-              )}
+                  <FileDown className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Download Confirmation PDF</span>
+                </button>
+                <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-40 pointer-events-none">
+                  <div className="bg-slate-900 text-slate-100 text-[11px] font-medium py-1 px-2.5 rounded-md shadow-lg border border-slate-800 whitespace-nowrap">
+                    Submit Project Confirmation Form first to enable Confirmation PDF
+                  </div>
+                </div>
+              </div>
+            )}
 
-              {can('PROJECT_EXTEND') && (
-                <Link
-                  href={`/projects/${project.id}/extend`}
-                  className="px-3 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1 min-h-[40px]"
+            {/* Installation PDF Button */}
+            {isInstalled ? (
+              <button
+                onClick={handleDownloadInstallationPdf}
+                disabled={downloadingInstPdf}
+                title="Download official Scaffolding Installation Handover Certificate PDF"
+                className="h-9 px-3.5 bg-gradient-to-r from-[#142817] to-[#1e3c23] hover:from-[#1b3620] hover:to-[#264c2d] text-[#e2fbe8] border border-[#305e38] rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow-2xs group active:scale-[0.98]"
+              >
+                {downloadingInstPdf ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#4ade80]" />
+                ) : (
+                  <FileDown className="w-3.5 h-3.5 text-[#4ade80] group-hover:scale-110 transition-transform" />
+                )}
+                <span>{downloadingInstPdf ? 'Generating PDF...' : 'Download Installation PDF'}</span>
+              </button>
+            ) : (
+              <div className="relative group inline-block">
+                <button
+                  disabled
+                  className="h-9 px-3.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-medium cursor-not-allowed flex items-center justify-center gap-1.5 opacity-75"
                 >
-                  <Repeat className="w-3.5 h-3.5" />
-                  <span>Extend Rental</span>
-                </Link>
-              )}
-
-              {can('PROJECT_SHIFT') && (
-                <Link
-                  href={`/projects/${project.id}/shift`}
-                  className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1 min-h-[40px]"
-                >
-                  <ArrowRightLeft className="w-3.5 h-3.5" />
-                  <span>Shift Scaffolding</span>
-                </Link>
-              )}
-
-              {can('PROJECT_DISMANTLE_SUBMIT') && (
-                <Link
-                  href={`/projects/${project.id}/dismantle`}
-                  className="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 shadow-xs min-h-[40px]"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Dismantle</span>
-                </Link>
-              )}
-            </div>
-          )}
-
-          {/* Close Project */}
-          {project.status === 'RETURNED_RECONCILIATION' && can('PROJECT_CLOSE') && (
-            <button
-              onClick={handleCloseProject}
-              disabled={closing}
-              className="w-full sm:w-auto px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5 min-h-[42px]"
-            >
-              <ShieldCheck className="w-4 h-4 text-emerald-300" />
-              <span>{closing ? 'Closing Project...' : 'Finalize Closure'}</span>
-            </button>
-          )}
+                  <FileDown className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Download Installation PDF</span>
+                </button>
+                <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-40 pointer-events-none">
+                  <div className="bg-slate-900 text-slate-100 text-[11px] font-medium py-1 px-2.5 rounded-md shadow-lg border border-slate-800 whitespace-nowrap">
+                    Record on-site installation first to generate Installation PDF
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -454,16 +575,28 @@ export default function ProjectWorkspacePage({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Key Quotation & Pricing Summary */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider text-slate-400">
-              Commercial Terms & Pricing
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider text-slate-400">
+                Commercial Terms & Pricing
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(true)}
+                className="text-[11px] font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md cursor-pointer transition"
+              >
+                11 Terms §
+              </button>
+            </div>
             <div className="space-y-3 text-xs">
               <div className="flex justify-between items-center py-1 border-b border-slate-100">
                 <span className="text-slate-500">Quotation Reference</span>
                 <span className="font-mono font-semibold text-slate-800">{project.quotationNumber || 'Pending Confirmation'}</span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-slate-100">
-                <span className="text-slate-500">Monthly Rental Rate</span>
+                <span className="text-slate-500">
+                  Rental Cycle Rate
+                  <span className="text-[10px] text-slate-400 block font-normal">Term 2: 28 Days / Month</span>
+                </span>
                 <span className="font-mono font-bold text-emerald-700 text-sm">
                   {project.monthlyRentalRate > 0 ? formatINR(project.monthlyRentalRate) : '-'}
                 </span>
@@ -474,13 +607,47 @@ export default function ProjectWorkspacePage({
                   {project.agreedProjectPrice > 0 ? formatINR(project.agreedProjectPrice) : '-'}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-100">
-                <span className="text-slate-500">Security Deposit</span>
-                <span className="font-mono text-slate-800">{formatINR(project.depositAmount || 0)}</span>
+              {project.totalAreaSqFt > 0 && (
+                <div className="flex justify-between items-center py-1 border-b border-slate-100 bg-amber-50/50 px-2 rounded">
+                  <span className="text-amber-800 font-semibold">Billable Façade Area (Term 1)</span>
+                  <span className="font-mono font-bold text-amber-900">
+                    {project.totalAreaSqFt} sq. ft. {project.ratePerSqFt ? `(@ ₹${project.ratePerSqFt}/sqft)` : ''}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between items-center py-1 border-b border-slate-100 bg-emerald-50/60 px-2 rounded">
+                <span className="text-emerald-800 font-semibold">
+                  75% Advance (Term 7)
+                  <span className="text-[10px] text-emerald-600 font-normal block">Required before installation</span>
+                </span>
+                <span className="font-mono font-bold text-emerald-900">
+                  {formatINR(project.advanceRequiredAmount || Math.round((project.agreedProjectPrice || 0) * 0.75))}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-100 px-2">
+                <span className="text-slate-600">
+                  25% Completion Balance
+                  <span className="text-[10px] text-slate-400 font-normal block">Payable after installation</span>
+                </span>
+                <span className="font-mono font-bold text-slate-800">
+                  {formatINR(project.completionDueAmount || Math.round((project.agreedProjectPrice || 0) * 0.25))}
+                </span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-slate-100">
-                <span className="text-slate-500">Transport & Labour Charges</span>
-                <span className="font-mono text-slate-800">{formatINR((project.transportCharges || 0) + (project.installationLabourCharges || 0))}</span>
+                <span className="text-slate-500">
+                  Transportation (Term 3)
+                  <span className="text-[10px] text-slate-400 font-normal block">2-Way (Delivery & Return)</span>
+                </span>
+                <span className="font-mono text-slate-800">{formatINR((project.twoWayTransportCharges || project.transportCharges || 0) * 2)}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-100">
+                <span className="text-slate-500">
+                  Walkway Jali (Term 4)
+                  <span className="text-[10px] text-slate-400 font-normal block">1 included per unit</span>
+                </span>
+                <span className="font-mono text-slate-800">
+                  {project.extraJaliQuantity > 0 ? `+${project.extraJaliQuantity} extra (₹${project.extraJaliCharges || project.extraJaliQuantity * 200})` : 'Standard Included'}
+                </span>
               </div>
               <div className="flex justify-between items-center py-1">
                 <span className="text-slate-500">Applicable GST Rate</span>
@@ -524,28 +691,77 @@ export default function ProjectWorkspacePage({
             </div>
           </div>
 
-          {/* Quick Health & Inspection Summary */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider text-slate-400">
-              Site Inspection Summary
-            </h3>
-            <div className="space-y-2 text-xs">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="font-semibold text-slate-800">Dimensions:</div>
-                <div className="font-mono text-emerald-800 font-bold mt-0.5">
-                  {project.measurements?.length || 0}m (L) x {project.measurements?.width || 0}m (W) x {project.measurements?.height || 0}m (H)
+          {/* Quick Health & Inspection Summary + Customer Document Handover */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4 flex flex-col justify-between">
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Site Inspection & Details
+              </h3>
+              <div className="space-y-2 text-xs">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="font-semibold text-slate-800">Dimensions:</div>
+                  <div className="font-mono text-emerald-800 font-bold mt-0.5">
+                    {project.measurements?.length || 0}m (L) x {project.measurements?.width || 0}m (W) x {project.measurements?.height || 0}m (H)
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-1">
+                    Type: {project.measurements?.measurementType?.replace(/_/g, ' ') || 'Façade Scaffold'}
+                  </div>
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1">
-                  Type: {project.measurements?.measurementType?.replace(/_/g, ' ') || 'Façade Scaffold'}
+
+                {project.siteRemarks && (
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600">
+                    <span className="font-semibold text-slate-800">Remarks: </span>
+                    {project.siteRemarks}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Official Customer Handover PDF summary in Card 3 */}
+            <div className="pt-3 border-t border-slate-100 space-y-2">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                <span>Official Customer PDFs</span>
+                <span className="font-mono text-[10px] text-slate-400 font-normal">Direct Downloads</span>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-stone-50 border border-stone-200/80">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5 text-stone-600 shrink-0" />
+                    <span className="text-stone-800 font-medium">Confirmation PDF</span>
+                  </div>
+                  {isConfirmed ? (
+                    <button
+                      onClick={handleDownloadConfirmationPdf}
+                      disabled={downloadingConfPdf}
+                      className="px-2.5 py-1 bg-[#2c1d13] hover:bg-[#3d2719] text-[#f7e7d7] rounded-lg text-[11px] font-semibold flex items-center gap-1 shadow-2xs transition active:scale-95"
+                    >
+                      {downloadingConfPdf ? <Loader2 className="w-3 h-3 animate-spin text-[#d8b292]" /> : <FileDown className="w-3 h-3 text-[#d8b292]" />}
+                      <span>{downloadingConfPdf ? 'Generating...' : 'Download'}</span>
+                    </button>
+                  ) : (
+                    <span className="text-slate-400 text-[11px] font-medium bg-slate-100 px-2 py-0.5 rounded">Pending Confirmation</span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                    <span className="text-emerald-950 font-medium">Installation PDF</span>
+                  </div>
+                  {isInstalled ? (
+                    <button
+                      onClick={handleDownloadInstallationPdf}
+                      disabled={downloadingInstPdf}
+                      className="px-2.5 py-1 bg-[#142817] hover:bg-[#1f3c23] text-[#e2fbe8] rounded-lg text-[11px] font-semibold flex items-center gap-1 shadow-2xs transition active:scale-95"
+                    >
+                      {downloadingInstPdf ? <Loader2 className="w-3 h-3 animate-spin text-[#4ade80]" /> : <FileDown className="w-3 h-3 text-[#4ade80]" />}
+                      <span>{downloadingInstPdf ? 'Generating...' : 'Download'}</span>
+                    </button>
+                  ) : (
+                    <span className="text-slate-400 text-[11px] font-medium bg-slate-100 px-2 py-0.5 rounded">Pending Installation</span>
+                  )}
                 </div>
               </div>
-
-              {project.siteRemarks && (
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600">
-                  <span className="font-semibold text-slate-800">Remarks: </span>
-                  {project.siteRemarks}
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -1234,6 +1450,66 @@ export default function ProjectWorkspacePage({
                 </div>
               ))
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Official 11 Terms & Conditions Modal */}
+      {showTermsModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs"
+          onClick={() => setShowTermsModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-hidden flex flex-col border border-amber-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-900 font-bold flex items-center justify-center text-sm">
+                  §
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Official Business Terms & Conditions</h3>
+                  <p className="text-[11px] text-slate-500">Contractual terms applicable to Project {project.projectCode}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto space-y-3.5 pr-2 divide-y divide-slate-100 text-xs">
+              {(project.termsSnapshot && project.termsSnapshot.length > 0 
+                ? project.termsSnapshot 
+                : OFFICIAL_TERMS_AND_CONDITIONS
+              ).map((term: any) => (
+                <div key={term.id} className="pt-3 first:pt-0">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] flex items-center justify-center shrink-0">
+                      {term.id}
+                    </span>
+                    <span className="font-bold text-slate-900">{term.title}</span>
+                    <span className="text-[10px] text-slate-400 uppercase font-mono ml-auto">{term.category}</span>
+                  </div>
+                  <p className="text-slate-600 text-xs mt-1 leading-relaxed pl-7">{term.content}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition"
+              >
+                Close Terms
+              </button>
+            </div>
           </div>
         </div>
       )}

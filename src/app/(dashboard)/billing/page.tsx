@@ -473,15 +473,109 @@ export default function BillingPage() {
                 <label className="block font-semibold text-slate-700 mb-1">Related Project</label>
                 <select
                   value={invProjectId}
-                  onChange={(e) => setInvProjectId(e.target.value)}
+                  onChange={(e) => {
+                    const pid = e.target.value;
+                    setInvProjectId(pid);
+                    const proj = projects.find(p => p.id === pid);
+                    if (proj) {
+                      setInvCustomerId(proj.customerId);
+                      // Default to 75% advance if project not yet installed, or 28-day monthly rental if installed
+                      if (proj.status === 'NOT_INSTALLED' || proj.status === 'CONFIRMED') {
+                        const adv = proj.advanceRequiredAmount || Math.round((proj.agreedProjectPrice || 0) * 0.75);
+                        setInvRate(adv);
+                        setInvDescription(`75% Advance Payment before installation (Term 7) - ${proj.projectCode}`);
+                      } else {
+                        setInvRate(proj.monthlyRentalRate || 0);
+                        setInvDescription(`28-Day Monthly Rental Cycle (Term 2) - ${proj.projectCode}`);
+                      }
+                    }
+                  }}
                   className="w-full p-2.5 border border-slate-300 rounded-lg font-mono text-xs"
                 >
                   <option value="">None / General Billing</option>
                   {projects.map(p => (
-                    <option key={p.id} value={p.id}>{p.projectCode} - {p.siteName}</option>
+                    <option key={p.id} value={p.id}>{p.projectCode} - {p.siteName} ({p.status})</option>
                   ))}
                 </select>
               </div>
+
+              {/* Terms Quick Pre-set Buttons */}
+              {invProjectId && (() => {
+                const proj = projects.find(p => p.id === invProjectId);
+                if (!proj) return null;
+                const adv75 = proj.advanceRequiredAmount || Math.round((proj.agreedProjectPrice || 0) * 0.75);
+                const bal25 = proj.completionDueAmount || Math.round((proj.agreedProjectPrice || 0) * 0.25);
+                const shiftCost = Math.round((proj.totalAreaSqFt || 0) * 6) || Math.round((proj.monthlyRentalRate || 0) * 0.6);
+                const transport2Way = (proj.twoWayTransportCharges || proj.transportCharges || 0) * 2;
+
+                return (
+                  <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Quick Commercial Preset (Terms 1-11):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInvRate(adv75);
+                          setInvDescription(`75% Advance Payment before installation (Term 7) - ${proj.projectCode}`);
+                        }}
+                        className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded font-semibold text-[10px]"
+                      >
+                        75% Advance: ₹{formatINR(adv75, false)}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInvRate(bal25);
+                          setInvDescription(`25% Completion Balance after installation (Term 7) - ${proj.projectCode}`);
+                        }}
+                        className="px-2 py-1 bg-teal-100 hover:bg-teal-200 text-teal-800 rounded font-semibold text-[10px]"
+                      >
+                        25% Balance: ₹{formatINR(bal25, false)}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInvRate(proj.monthlyRentalRate || 0);
+                          setInvDescription(`28-Day Monthly Rental (Term 2) - ${proj.projectCode}`);
+                        }}
+                        className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded font-semibold text-[10px]"
+                      >
+                        28d Rental: ₹{formatINR(proj.monthlyRentalRate || 0, false)}
+                      </button>
+
+                      {transport2Way > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInvRate(transport2Way);
+                            setInvDescription(`2-Way Transportation (Delivery & Return - Term 3) - ${proj.projectCode}`);
+                          }}
+                          className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-semibold text-[10px]"
+                        >
+                          2-Way Transport: ₹{formatINR(transport2Way, false)}
+                        </button>
+                      )}
+
+                      {shiftCost > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInvRate(shiftCost);
+                            setInvDescription(`Shifting Charges (Term 5) - ${proj.projectCode}`);
+                          }}
+                          className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded font-semibold text-[10px]"
+                        >
+                          Shifting: ₹{formatINR(shiftCost, false)}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>

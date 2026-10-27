@@ -20,9 +20,8 @@ export async function POST(
       durationMonths: validated.durationMonths,
       extensionReason: validated.extensionReason,
       monthlyRentalRate: validated.monthlyRentalRate,
-      additionalCharges: validated.additionalCharges,
-      actorId: body.actorId || 'usr-pm-01',
-      actorName: body.actorName || 'Taha Merchant',
+      actorId: body.actorId || 'system',
+      actorName: body.actorName || 'Authorized User',
     });
 
     return NextResponse.json({ success: true, data: result }, { status: 200 });

@@ -21,10 +21,15 @@ export async function GET(
     const relatedExtensions = dbStore.getRentalExtensions().filter(e => e.projectId === project.id);
     const relatedBuffers = dbStore.getBufferRequests().filter(b => b.projectId === project.id);
 
+    const customer = dbStore.getCustomers().find(c => c.id === project.customerId);
+    const site = dbStore.getSites().find(s => s.id === project.siteId);
+
     return NextResponse.json({
       success: true,
       data: {
         ...project,
+        customer,
+        site,
         activity,
         invoices: relatedInvoices,
         shiftings: relatedShiftings,

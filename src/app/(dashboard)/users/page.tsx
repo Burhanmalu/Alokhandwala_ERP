@@ -57,7 +57,7 @@ export default function UserManagementPage() {
 
   const handleOpenChangePassword = (u: UserProfile) => {
     setTargetUser(u);
-    setNewPassword(u.password || 'demo2026');
+    setNewPassword(u.password || '');
     setShowNewPassword(false);
     setPasswordModalOpen(true);
   };
@@ -80,9 +80,12 @@ export default function UserManagementPage() {
         setUsers(prev => prev.map(u => u.id === targetUser.id ? { ...u, password: newPassword.trim() } : u));
         setSuccessToast(`Password updated successfully for ${targetUser.fullName}`);
         setTimeout(() => setSuccessToast(null), 3000);
+      } else {
+        alert(json.error || 'Failed to update password');
       }
     } catch (err) {
       console.error('Failed to update password:', err);
+      alert('Error updating password');
     } finally {
       setPasswordSaving(false);
       setPasswordModalOpen(false);
@@ -91,46 +94,36 @@ export default function UserManagementPage() {
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!fullName.trim() || !email.trim()) {
+      alert('Full Name and Email are required.');
+      return;
+    }
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fullName,
-          email,
-          phone,
+          fullName: fullName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
           role,
-          password: password.trim() || 'demo2026',
+          password: password.trim(),
         }),
       });
       const json = await res.json();
       if (json.success && json.data) {
         setUsers(prev => [...prev, json.data]);
+        setFullName('');
+        setEmail('');
+        setPhone('');
+        setPassword('');
+        setModalOpen(false);
       } else {
-        const fallbackUser: UserProfile = {
-          id: `usr-${Date.now()}`,
-          fullName,
-          email,
-          phone,
-          role,
-          password: password.trim() || 'demo2026',
-          isActive: true,
-          createdAt: new Date().toISOString(),
-        };
-        setUsers(prev => [...prev, fallbackUser]);
+        alert(json.error || 'Failed to add user to database.');
       }
-    } catch {
-      const fallbackUser: UserProfile = {
-        id: `usr-${Date.now()}`,
-        fullName,
-        email,
-        phone,
-        role,
-        password: password.trim() || 'demo2026',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      };
-      setUsers(prev => [...prev, fallbackUser]);
+    } catch (err) {
+      console.error('Failed to add user:', err);
+      alert('Failed to connect to server to create user.');
     }
 
     setModalOpen(false);
@@ -239,7 +232,7 @@ export default function UserManagementPage() {
               </span>
               <div className="flex items-center gap-1.5 font-mono">
                 <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
-                  {visiblePasswords[u.id] ? (u.password || 'demo2026') : '••••••••'}
+                  {visiblePasswords[u.id] ? (u.password || '(not set)') : '••••••••'}
                 </span>
                 <button
                   type="button"
@@ -310,7 +303,7 @@ export default function UserManagementPage() {
                   <td className="px-4 py-3 font-mono">
                     <div className="flex items-center gap-1.5">
                       <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-xs">
-                        {visiblePasswords[u.id] ? (u.password || 'demo2026') : '••••••••'}
+                        {visiblePasswords[u.id] ? (u.password || '(not set)') : '••••••••'}
                       </span>
                       <button
                         type="button"

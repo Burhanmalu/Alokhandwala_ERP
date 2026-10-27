@@ -21,8 +21,7 @@ import {
   ImageIcon
 } from 'lucide-react';
 import { Customer, UserProfile } from '@/lib/schema';
-import { useAuth } from '@/lib/auth/auth-context';
-import { SAMPLE_SITE_PHOTOS, processAndUploadImage } from '@/lib/image-utils';
+import { processAndUploadImage } from '@/lib/image-utils';
 
 export default function NewSiteInspectionPage() {
   const router = useRouter();
@@ -432,6 +431,32 @@ export default function NewSiteInspectionPage() {
                 className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none"
               />
             </div>
+
+            {/* Live Billable Area & Commercial Quotation Preview */}
+            {length && height ? (() => {
+              const lFt = unit === 'METERS' ? Number(length) * 3.28084 : Number(length);
+              const hFt = unit === 'METERS' ? Number(height) * 3.28084 : Number(height);
+              const areaSqFt = Math.round(lFt * hFt);
+
+              return (
+                <div className="col-span-2 md:col-span-4 p-3.5 bg-amber-50/70 border border-amber-200/90 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                      <span>Term 1: Estimated Billable Façade Area</span>
+                    </span>
+                    <span className="text-xs font-mono font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full">
+                      {areaSqFt} sq. ft. ({Math.round(lFt * 10) / 10}&apos; L × {Math.round(hFt * 10) / 10}&apos; H)
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-amber-900 pt-1">
+                    <div>• <span className="font-semibold">Pricing Basis:</span> Per sq. ft. actual area (Term 1)</div>
+                    <div>• <span className="font-semibold">Rental Cycle:</span> 28 days = 1 month (Term 2)</div>
+                    <div>• <span className="font-semibold">Transportation:</span> 2-Way charges extra (Term 3)</div>
+                    <div>• <span className="font-semibold">Payment Terms:</span> 75% advance before installation, 25% on completion (Term 7)</div>
+                  </div>
+                </div>
+              );
+            })() : null}
           </div>
         </div>
 
@@ -513,34 +538,8 @@ export default function NewSiteInspectionPage() {
             </div>
           </div>
 
-          {/* Quick presets & URL input */}
-          <div className="space-y-3 pt-2 border-t border-slate-100">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Sample Presets:</span>
-              </span>
-              {SAMPLE_SITE_PHOTOS.map((preset, idx) => {
-                const isAdded = photoUrls.includes(preset.url);
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      if (!isAdded) setPhotoUrls([...photoUrls, preset.url]);
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition flex items-center gap-1.5 shadow-2xs ${
-                      isAdded
-                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-                    }`}
-                  >
-                    {isAdded ? <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" /> : <Plus className="w-3 h-3 text-slate-400" />}
-                    <span>{preset.title}</span>
-                  </button>
-                );
-              })}
-            </div>
+          {/* Photo URL manual input */}
+          <div className="pt-2 border-t border-slate-100">
 
             <div className="flex gap-2">
               <input

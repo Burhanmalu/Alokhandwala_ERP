@@ -6,7 +6,7 @@ import { ArrowLeft, AlertCircle } from 'lucide-react';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-[#0e1c14] text-slate-100 flex items-center justify-center p-4">
+    <div className="h-full min-h-full w-full overflow-y-auto bg-[#0e1c14] text-slate-100 flex items-center justify-center p-4">
       <div className="bg-[#14281c] border border-[#1e3b2e] rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
         <div className="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-700/50 flex items-center justify-center mx-auto text-emerald-400 mb-4">
           <AlertCircle className="w-6 h-6" />

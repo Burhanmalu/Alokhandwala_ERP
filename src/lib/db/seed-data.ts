@@ -15,6 +15,8 @@ import {
   CompanySettings 
 } from '../schema';
 
+import { OFFICIAL_TERMS_AND_CONDITIONS } from '../constants/terms-and-conditions';
+
 export const initialCompanySettings: CompanySettings = {
   companyName: 'Alokhandwala',
   gstin: '23AABCA1234F1Z5',
@@ -29,6 +31,7 @@ export const initialCompanySettings: CompanySettings = {
   extensionDurationMonthsDefault: 1,
   lowStockThresholdDefault: 50,
   rentalCurrency: 'INR',
+  termsAndConditions: OFFICIAL_TERMS_AND_CONDITIONS,
 };
 
 export const initialUsers: UserProfile[] = [

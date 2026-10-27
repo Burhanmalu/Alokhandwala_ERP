@@ -45,9 +45,9 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
   };
 
   return (
-    <aside className="w-full h-full bg-[#1c120c] text-[#debfa6] flex flex-col shrink-0 select-none overflow-hidden">
+    <div className="w-full h-full min-h-0 bg-[#1c120c] text-[#debfa6] flex flex-col shrink-0 select-none overflow-hidden">
       {/* Brand Header */}
-      <div className="p-4 border-b border-[#2f1f15] flex items-center justify-between bg-[#140c07]">
+      <div className="p-4 border-b border-[#2f1f15] flex items-center justify-between bg-[#140c07] shrink-0">
         <Link 
           href="/" 
           onClick={onClose}
@@ -79,7 +79,7 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
       </div>
 
       {/* Navigation Scroll Area */}
-      <div className="flex-1 overflow-y-auto py-3 px-2 space-y-4 text-xs">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain sidebar-scrollbar py-3 px-2 space-y-4 text-xs">
         
         {/* WORKER VIEW: Only sees sites he has worked on */}
         {currentUser.role === 'WORKER' && (
@@ -254,7 +254,7 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
       </div>
 
       {/* Footer User Card & Logout */}
-      <div className="p-3 bg-[#140c07] border-t border-[#2f1f15]">
+      <div className="p-3 bg-[#140c07] border-t border-[#2f1f15] shrink-0">
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="min-w-0">
             <div className="text-xs font-semibold text-[#fdf8f4] truncate">
@@ -274,6 +274,6 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
           <span>Sign Out</span>
         </button>
       </div>
-    </aside>
+    </div>
   );
 }

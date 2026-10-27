@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
       transactionReference: validated.transactionReference,
       bankName: validated.bankName,
       remarks: validated.remarks,
-      actorId: body.actorId || 'usr-acc-01',
-      actorName: body.actorName || 'Fatema Kapadia',
+      actorId: body.actorId || 'system',
+      actorName: body.actorName || 'Authorized User',
     });
 
     return NextResponse.json({ success: true, data: result }, { status: 201 });

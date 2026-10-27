@@ -15,6 +15,7 @@ import {
 import { Project, Material } from '@/lib/schema';
 import { formatQuantity, formatINR } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
+import { RENTAL_CONSTANTS } from '@/lib/constants/terms-and-conditions';
 
 export default function ProjectShiftingPage({
   params,
@@ -39,6 +40,7 @@ export default function ProjectShiftingPage({
   const [transportCharges, setTransportCharges] = useState<number>(0);
   const [teamMembers, setTeamMembers] = useState('');
   const [remarks, setRemarks] = useState('');
+  const [shiftingCalculationMode, setShiftingCalculationMode] = useState<'SQFT' | 'PERCENTAGE' | 'CUSTOM'>('SQFT');
 
   // Type B Material modifications
   const [modifications, setModifications] = useState<
@@ -234,18 +236,100 @@ export default function ProjectShiftingPage({
               />
             </div>
 
+            {/* Official Term 5: Shifting Charges Calculation Helper */}
+            <div className="sm:col-span-2 p-4 bg-amber-50/70 border border-amber-200/90 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-amber-200 text-amber-900 font-bold text-xs flex items-center justify-center">5</span>
+                  <span className="font-bold text-amber-950 text-xs">
+                    Term 5: Official Shifting Charges Policy
+                  </span>
+                </div>
+                <span className="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">
+                  Extra charge borne by customer
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-900 leading-relaxed">
+                Shifting charges are extra and shall be borne by the customer. Charges will be <span className="font-bold">₹6 per sq. ft.</span> or <span className="font-bold">60% of the per-unit amount</span>, as applicable.
+              </p>
+
+              {/* Mode Selection and Quick Apply */}
+              {(() => {
+                const m = project.measurements;
+                const lengthFt = m ? (m.unit === 'METERS' ? m.length * 3.28084 : m.length) : 0;
+                const heightFt = m ? (m.unit === 'METERS' ? m.height * 3.28084 : m.height) : 0;
+                const areaSqFt = project.totalAreaSqFt || Math.round(lengthFt * heightFt) || 0;
+                const mode1Cost = Math.round(areaSqFt * RENTAL_CONSTANTS.SHIFTING_RATE_PER_SQFT);
+                const mode2Cost = Math.round((project.monthlyRentalRate || 0) * RENTAL_CONSTANTS.SHIFTING_PERCENTAGE_OF_UNIT_RENTAL);
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShiftingCalculationMode('SQFT');
+                        if (mode1Cost > 0) setLabourCharges(mode1Cost);
+                      }}
+                      className={`p-2.5 rounded-lg border text-left cursor-pointer transition ${
+                        shiftingCalculationMode === 'SQFT'
+                          ? 'border-amber-600 bg-white ring-1 ring-amber-500 shadow-xs'
+                          : 'border-amber-200 bg-amber-100/40 hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800 text-xs">Mode 1: ₹6 / sq. ft.</span>
+                        <span className="text-xs font-mono font-bold text-amber-800">₹{formatINR(mode1Cost, false)}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">
+                        {areaSqFt > 0 ? `${areaSqFt} sq. ft. × ₹6/sq. ft.` : 'Area calculated from site dimensions'}
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShiftingCalculationMode('PERCENTAGE');
+                        if (mode2Cost > 0) setLabourCharges(mode2Cost);
+                      }}
+                      className={`p-2.5 rounded-lg border text-left cursor-pointer transition ${
+                        shiftingCalculationMode === 'PERCENTAGE'
+                          ? 'border-amber-600 bg-white ring-1 ring-amber-500 shadow-xs'
+                          : 'border-amber-200 bg-amber-100/40 hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800 text-xs">Mode 2: 60% of Unit Rate</span>
+                        <span className="text-xs font-mono font-bold text-amber-800">₹{formatINR(mode2Cost, false)}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">
+                        60% of monthly rental (₹{formatINR(project.monthlyRentalRate || 0, false)})
+                      </div>
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
+
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Shifting Labour Charges (INR)</label>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Applied Shifting Labour Charges (INR) *
+              </label>
               <input
                 type="number"
                 value={labourCharges}
-                onChange={(e) => setLabourCharges(Number(e.target.value))}
-                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono"
+                onChange={(e) => {
+                  setLabourCharges(Number(e.target.value));
+                  setShiftingCalculationMode('CUSTOM');
+                }}
+                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-amber-900"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Transport Mobilization (INR)</label>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Transport Mobilization (INR)
+                <span className="text-[10px] text-slate-500 font-normal block">Term 3: Extra if mobilization is needed</span>
+              </label>
               <input
                 type="number"
                 value={transportCharges}

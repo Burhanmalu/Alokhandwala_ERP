@@ -24,7 +24,7 @@ export default function DashboardLayout({
   // If verifying session or unauthenticated, show corporate loading state to prevent UI flash
   if (isLoading || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#140c07] flex flex-col items-center justify-center text-slate-300 p-6">
+      <div className="h-full h-[100dvh] w-full bg-[#140c07] flex flex-col items-center justify-center text-slate-300 p-6 overflow-hidden">
         <div className="p-4 rounded-2xl bg-[#24150c] flex items-center justify-center shadow-xl shadow-black/60 border border-[#59371d]/60 mb-4 animate-pulse">
           <img 
             src="/logo-white.png" 
@@ -44,11 +44,11 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-800">
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block">
+    <div className="flex h-full h-[100dvh] w-full overflow-hidden bg-slate-50 text-slate-800">
+      {/* Desktop Sidebar Container */}
+      <aside className="hidden md:flex md:w-64 md:shrink-0 h-full min-h-0 flex-col z-20">
         <Sidebar />
-      </div>
+      </aside>
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
@@ -58,17 +58,19 @@ export default function DashboardLayout({
             onClick={() => setMobileMenuOpen(false)}
             aria-label="Close mobile navigation overlay"
           />
-          <div className="relative z-10 w-72 max-w-[85vw] h-full bg-[#1c120c] shadow-2xl flex flex-col animate-in slide-in-from-left duration-250">
+          <div className="relative z-10 w-72 max-w-[85vw] h-full min-h-0 bg-[#1c120c] shadow-2xl flex flex-col animate-in slide-in-from-left duration-250 overflow-hidden">
             <Sidebar onClose={() => setMobileMenuOpen(false)} />
           </div>
         </div>
       )}
 
-      {/* Main Content Viewport */}
-      <div className="flex-1 flex flex-col min-w-0 max-w-full overflow-x-hidden">
+      {/* Main Content Area Container */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden">
         <Header onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
-        <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0">
-          {children}
+        <main className="flex-1 min-h-0 min-w-0 overflow-y-auto overscroll-y-contain p-3 sm:p-4 md:p-6 lg:p-8 main-scrollbar">
+          <div className="max-w-7xl w-full mx-auto min-w-0">
+            {children}
+          </div>
         </main>
       </div>
     </div>

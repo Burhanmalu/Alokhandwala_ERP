@@ -16,8 +16,10 @@
 
   html,
   body {
+    height: 100%;
+    height: 100dvh;
     max-width: 100vw;
-    overflow-x: hidden;
+    overflow: hidden;
     position: relative;
     -webkit-tap-highlight-color: transparent;
   }
@@ -48,20 +50,47 @@
   scrollbar-width: none;
 }
 
-/* Custom industrial scrollbars in warm cream and warm brown */
+/* Sidebar dark-themed custom scrollbar */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: #1c120c;
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: #3e281c;
+  border-radius: 4px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #5a3a29;
+}
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #3e281c #1c120c;
+}
+
+/* Main content area custom scrollbars in warm cream and warm brown */
+.main-scrollbar::-webkit-scrollbar,
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+.main-scrollbar::-webkit-scrollbar-track,
 ::-webkit-scrollbar-track {
   background: #f4ece0;
 }
+.main-scrollbar::-webkit-scrollbar-thumb,
 ::-webkit-scrollbar-thumb {
   background: #d4c2aa;
   border-radius: 3px;
 }
+.main-scrollbar::-webkit-scrollbar-thumb:hover,
 ::-webkit-scrollbar-thumb:hover {
   background: #a98f70;
+}
+.main-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #d4c2aa #f4ece0;
 }
 
 /* Printable Invoice Specifics */

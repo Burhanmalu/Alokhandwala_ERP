@@ -21,12 +21,10 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
-import { initialUsers } from '@/lib/db/seed-data';
-
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated, login, loginAsUser } = useAuth();
+  const { isAuthenticated, login } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,7 +32,6 @@ function LoginForm() {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDemoId, setSelectedDemoId] = useState<string | null>(null);
 
   const redirectUrl = searchParams.get('redirect') || '/';
 
@@ -53,6 +50,10 @@ function LoginForm() {
       setError('Please enter your corporate email address.');
       return;
     }
+    if (!password) {
+      setError('Please enter your password.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -69,23 +70,6 @@ function LoginForm() {
     }
   };
 
-  const handleQuickLogin = async (user: typeof initialUsers[0]) => {
-    setSelectedDemoId(user.id);
-    setEmail(user.email);
-    setPassword('demo2026');
-    setError(null);
-    setLoading(true);
-
-    try {
-      loginAsUser(user.id);
-      setTimeout(() => {
-        router.replace(redirectUrl);
-      }, 350);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const roleBadgeColors: Record<string, string> = {
     ADMIN: 'bg-purple-950/80 text-purple-300 border-purple-800/60',
     SUPERVISOR: 'bg-emerald-950/80 text-emerald-300 border-emerald-800/60',
@@ -93,7 +77,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#100905] flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden font-sans">
+    <div className="h-full min-h-full w-full bg-[#100905] flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-y-auto font-sans main-scrollbar">
       {/* Background Ambience & Scaffold Grid Aesthetic */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
         <div 
@@ -222,14 +206,9 @@ function LoginForm() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-slate-700" htmlFor="password-input">
-                    Account Password
-                  </label>
-                  <span className="text-[11px] text-[#8c5e39] hover:underline cursor-pointer">
-                    Demo Mode: Any password
-                  </span>
-                </div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5" htmlFor="password-input">
+                  Account Password
+                </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -284,59 +263,6 @@ function LoginForm() {
                 )}
               </button>
             </form>
-
-            {/* Quick One-Click Demo Role Selectors */}
-            <div className="mt-7 pt-6 border-t border-slate-200">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                  <UserCheck className="w-3.5 h-3.5 text-[#8c5e39]" />
-                  Instant Persona Login (1-Click)
-                </span>
-                <span className="text-[10px] text-slate-400">Click any persona below</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {initialUsers.slice(0, 3).map((user) => {
-                  const isChosen = selectedDemoId === user.id;
-                  const roleTag = 
-                    user.role === 'ADMIN' ? 'All Powers' :
-                    user.role === 'SUPERVISOR' ? 'Site & Install' : 'Worked Sites';
-                  return (
-                    <button
-                      key={user.id}
-                      type="button"
-                      onClick={() => handleQuickLogin(user)}
-                      className={`text-left p-2.5 rounded-xl border transition flex flex-col justify-between group ${
-                        isChosen 
-                          ? 'border-[#8c5e39] bg-[#f8f3ec] ring-1 ring-[#8c5e39]' 
-                          : 'border-slate-200 hover:border-[#dfcaa9] hover:bg-[#faf6ef] bg-white'
-                      }`}
-                    >
-                      <div className="min-w-0 mb-1.5">
-                        <div className="text-xs font-bold text-slate-800 truncate group-hover:text-[#6a3f1d]">
-                          {user.fullName}
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono truncate">
-                          {user.email}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between gap-1 mt-auto">
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 border ${
-                          user.role === 'ADMIN' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                          user.role === 'SUPERVISOR' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                          'bg-amber-50 text-amber-700 border-amber-200'
-                        }`}>
-                          {user.role}
-                        </span>
-                        <span className="text-[9px] text-slate-400 font-medium truncate">
-                          {roleTag}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
 
           {/* Footer Security Notice */}

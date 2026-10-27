@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Search, 
-  RotateCcw, 
   Menu,
   LogOut
 } from 'lucide-react';
@@ -14,7 +13,6 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
   const { currentUser, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [resetting, setResetting] = useState(false);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,25 +20,8 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     router.push(`/projects?search=${encodeURIComponent(searchQuery.trim())}`);
   };
 
-  const handleResetData = async () => {
-    if (!confirm('Reset entire ERP database to fresh demonstration seed state? Any unsaved edits will be refreshed.')) {
-      return;
-    }
-    setResetting(true);
-    try {
-      const res = await fetch('/api/seed', { method: 'POST' });
-      if (res.ok) {
-        window.location.reload();
-      }
-    } catch (e) {
-      alert('Failed to reset data');
-    } finally {
-      setResetting(false);
-    }
-  };
-
   return (
-    <header className="h-16 bg-[#fdfbf7] border-b border-[#ede4d5] px-3 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs gap-2">
+    <header className="h-16 bg-[#fdfbf7] border-b border-[#ede4d5] px-3 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs gap-2 shrink-0">
       <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 max-w-xl">
         {onMenuClick && (
           <button 
@@ -70,17 +51,6 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-        {/* Reset Demo Data Button */}
-        <button
-          onClick={handleResetData}
-          disabled={resetting}
-          title="Reset all projects, inventory and balances to default seed data"
-          className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[#5c3c26] hover:text-[#2d1b0f] bg-[#f4ece0] hover:bg-[#ebdcc9] border border-[#dfccb4] rounded-lg transition"
-        >
-          <RotateCcw className={`w-3.5 h-3.5 ${resetting ? 'animate-spin' : ''}`} />
-          <span>{resetting ? 'Resetting...' : 'Reset Seed Data'}</span>
-        </button>
-
         {/* User Avatar & Logout */}
         <div className="flex items-center gap-1.5 pl-1.5 sm:pl-2">
           <div 
