@@ -5,8 +5,12 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const role = searchParams.get('role');
+    const id = searchParams.get('id');
 
     let users = dbStore.getUsers().filter(u => u.isActive);
+    if (id) {
+      users = users.filter(u => u.id === id);
+    }
     if (role) {
       users = users.filter(u => u.role === role);
     }
@@ -14,6 +18,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       data: users,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      },
     });
   } catch (err: any) {
     return NextResponse.json(
@@ -38,12 +46,16 @@ export async function POST(req: NextRequest) {
         createdAt: new Date().toISOString(),
       };
       state.users.push(user);
-      return user;
+      return { ...user };
     });
 
     return NextResponse.json({
       success: true,
       data: newUser,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache',
+      },
     });
   } catch (err: any) {
     return NextResponse.json(
@@ -72,12 +84,16 @@ export async function PATCH(req: NextRequest) {
       if (phone !== undefined) user.phone = phone;
       if (password !== undefined) user.password = password;
       if (isActive !== undefined) user.isActive = isActive;
-      return user;
+      return { ...user };
     });
 
     return NextResponse.json({
       success: true,
       data: updatedUser,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache',
+      },
     });
   } catch (err: any) {
     return NextResponse.json(

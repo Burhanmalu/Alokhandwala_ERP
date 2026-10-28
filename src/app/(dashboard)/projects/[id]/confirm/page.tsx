@@ -149,7 +149,7 @@ export default function ProjectConfirmationPage({
     const firstMat = catalogMaterials[0];
     setSelectedMaterials([
       ...selectedMaterials,
-      { materialId: firstMat.id, requiredQuantity: 50, monthlyRentalRate: firstMat.rentalRatePerMonth },
+      { materialId: firstMat.id, requiredQuantity: 1, monthlyRentalRate: firstMat.rentalRatePerMonth },
     ]);
   };
 

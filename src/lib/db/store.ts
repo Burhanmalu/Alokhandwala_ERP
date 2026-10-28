@@ -60,7 +60,8 @@ interface DatabaseState {
 }
 
 const DATA_DIR = path.join(process.cwd(), '.data');
-const DATA_FILE = path.join(DATA_DIR, 'alokhandwala-erp.json');
+const isTestEnv = process.env.NODE_ENV === 'test' || Boolean(process.env.IS_TEST);
+const DATA_FILE = path.join(DATA_DIR, isTestEnv ? 'alokhandwala-erp-test.json' : 'alokhandwala-erp.json');
 
 class ERPDataStore {
   private state: DatabaseState;
@@ -95,7 +96,7 @@ class ERPDataStore {
         // Ensure users are strictly mapped to the 3 roles: ADMIN, SUPERVISOR, WORKER
         if (parsed.users) {
           parsed.users = parsed.users.map((u: any) => {
-            if (u.role === 'SUPER_ADMIN' || u.role === 'ADMIN_PM' || u.role === 'INVENTORY_MGR' || u.role === 'ACCOUNTANT') {
+            if (u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role === 'ADMIN_PM' || u.role === 'INVENTORY_MGR' || u.role === 'ACCOUNTANT') {
               return { ...u, role: 'ADMIN' };
             }
             if (u.role === 'SUPERVISOR') {
@@ -252,4 +253,8 @@ class ERPDataStore {
   }
 }
 
-export const dbStore = new ERPDataStore();
+const globalForStore = globalThis as unknown as { erpDataStore: ERPDataStore | undefined };
+export const dbStore = globalForStore.erpDataStore ?? new ERPDataStore();
+if (process.env.NODE_ENV !== 'production') {
+  globalForStore.erpDataStore = dbStore;
+}

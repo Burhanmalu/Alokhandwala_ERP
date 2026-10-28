@@ -36,6 +36,7 @@ import { formatINR, formatDate } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
 import { processAndUploadImage } from '@/lib/image-utils';
 import { OFFICIAL_TERMS_AND_CONDITIONS, DEFAULT_PAYMENT_TERMS_TEXT, RENTAL_CONSTANTS, BusinessTerm } from '@/lib/constants/terms-and-conditions';
+import { SmartMaterialRecommendation } from '@/components/scaffolding/SmartMaterialRecommendation';
 
 export default function ConfirmationFormPage() {
   return (
@@ -283,7 +284,7 @@ function ConfirmationFormContent() {
     const firstMat = catalogMaterials[0];
     setSelectedMaterials([
       ...selectedMaterials,
-      { materialId: firstMat.id, requiredQuantity: 50, monthlyRentalRate: firstMat.rentalRatePerMonth },
+      { materialId: firstMat.id, requiredQuantity: 1, monthlyRentalRate: firstMat.rentalRatePerMonth },
     ]);
   };
 

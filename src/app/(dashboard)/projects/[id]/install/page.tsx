@@ -111,9 +111,9 @@ export default function ProjectInstallationPage({
 
           // Initialize dimensions from project measurements if available
           const meas = p.measurements;
-          const pLen = meas?.length || 20;
-          const pWid = meas?.width || 2;
-          const pHgt = meas?.height || 15;
+          const pLen = meas?.length || 0;
+          const pWid = meas?.width || 0;
+          const pHgt = meas?.height || 0;
           const unit = meas?.unit || 'METERS';
           const type = meas?.measurementType || 'FAÇADE_SCAFFOLD';
 

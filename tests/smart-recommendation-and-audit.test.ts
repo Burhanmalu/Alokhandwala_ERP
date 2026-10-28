@@ -1,5 +1,8 @@
 // Alokhandwala Scaffolding ERP - Smart Material Recommendation & Comprehensive Audit Test Suite
 
+process.env.NODE_ENV = 'test';
+process.env.IS_TEST = 'true';
+
 import assert from 'assert';
 import { dbStore } from '../src/lib/db/store';
 import { ScaffoldingCalculatorService } from '../src/lib/services/scaffolding-calculator';

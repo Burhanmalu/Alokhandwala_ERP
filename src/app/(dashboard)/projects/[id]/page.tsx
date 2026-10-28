@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { formatINR, formatQuantity, formatDate, formatDateTime, getStatusBadgeConfig, getDaysDifference } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
-import { processAndUploadImage, SAMPLE_SITE_PHOTOS } from '@/lib/image-utils';
+import { processAndUploadImage } from '@/lib/image-utils';
 import { generateConfirmationPdf, generateInstallationPdf } from '@/lib/pdf/project-pdf';
 import { OFFICIAL_TERMS_AND_CONDITIONS } from '@/lib/constants/terms-and-conditions';
 

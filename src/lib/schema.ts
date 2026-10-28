@@ -240,7 +240,7 @@ export interface ScaffoldingPlanItem {
 }
 
 export interface ScaffoldingMaterialPlanOption {
-  planId: 'PLAN_STANDARD' | 'PLAN_STOCK_OPTIMIZED' | 'PLAN_ALTERNATIVE_HEAVY' | 'PLAN_PROCUREMENT_HYBRID';
+  planId: 'PLAN_AVAILABLE_STOCK' | 'PLAN_STANDARD' | 'PLAN_ALTERNATIVE_HEAVY' | 'PLAN_CUSTOM' | 'PLAN_STOCK_OPTIMIZED' | 'PLAN_PROCUREMENT_HYBRID' | string;
   planName: string;
   badge: string;
   description: string;

@@ -97,12 +97,39 @@ export class ScaffoldingCalculatorService {
       );
     }
 
-    // 1. OPTION 1 — STANDARD PLAN (Engineering preferred 8ft bays)
+    // 1. OPTION 1 — AVAILABLE STOCK PRIORITY PLAN
+    // Prioritizes scaffolding materials currently available in sufficient quantities (usableWarehouseQty - reservedQty).
+    // Never recommends quantities that exceed available stock.
+    const stock8ft = (invMap.get('L-8FT-2.5M')?.usableWarehouseQty || 0) - (invMap.get('L-8FT-2.5M')?.reservedQty || 0);
+    const stock7ft = (invMap.get('L-7FT-2M')?.usableWarehouseQty || 0) - (invMap.get('L-7FT-2M')?.reservedQty || 0);
+    const stock5ft = (invMap.get('L-5FT-1.5M')?.usableWarehouseQty || 0) - (invMap.get('L-5FT-1.5M')?.reservedQty || 0);
+
+    const bestBayLength = (stock8ft >= stock7ft && stock8ft >= stock5ft) ? 8 : (stock7ft >= stock5ft ? 7 : 5);
+
+    const planAvailableStock = this.buildPlan({
+      planId: 'PLAN_AVAILABLE_STOCK',
+      planName: 'Option 1 — Available Stock Priority Plan',
+      badge: 'Available Stock Guaranteed',
+      description: `Prioritizes currently available warehouse inventory (${bestBayLength}ft bays & high-availability standards). Reservations never exceed available stock.`,
+      input,
+      normalized,
+      invMap,
+      bayLengthFt: bestBayLength,
+      transomWidthFt: 4,
+      liftHeightFt: 6.5,
+      preferredJali: 'MS',
+      stockOptimization: 'PREFER_ABUNDANT',
+      capAtStock: true, // Strictly never exceed available stock!
+    });
+    planAvailableStock.isRecommended = true;
+    options.push(planAvailableStock);
+
+    // 2. OPTION 2 — STANDARD ENGINEERING PLAN (IS 4014 Standard 8ft Grid)
     const planStandard = this.buildPlan({
       planId: 'PLAN_STANDARD',
-      planName: 'Option 1 — Standard Engineering Plan',
-      badge: 'IS 4014 Recommended',
-      description: 'Standard 8ft (2.5m) cuplock bay grid with 10ft standards, MS anti-skid Jali decks, and standard safety guardrails.',
+      planName: 'Option 2 — Standard 8ft Engineering Plan',
+      badge: 'IS 4014 Standard Grid',
+      description: 'Standard 8ft (2.5m) cuplock bay grid with 10ft standards, 8ft horizontal ledgers, MS anti-skid Jali decks, and safety guardrails.',
       input,
       normalized,
       invMap,
@@ -115,37 +142,12 @@ export class ScaffoldingCalculatorService {
     });
     options.push(planStandard);
 
-    // 2. OPTION 2 — STOCK-OPTIMIZED PLAN (Analyzes inventory abundance)
-    // Checks if 7ft or 5ft ledgers/standards have higher warehouse stock
-    const stock7ft = (invMap.get('L-7FT-2M')?.usableWarehouseQty || 0) - (invMap.get('L-7FT-2M')?.reservedQty || 0);
-    const stock8ft = (invMap.get('L-8FT-2M')?.usableWarehouseQty || 0) - (invMap.get('L-8FT-2M')?.reservedQty || 0);
-    const stock5ft = (invMap.get('L-5FT-1.5M')?.usableWarehouseQty || 0) - (invMap.get('L-5FT-1.5M')?.reservedQty || 0);
-
-    const optimizedBay = (stock7ft > stock8ft && stock7ft > stock5ft) ? 7 : (stock5ft > stock8ft ? 5 : 8);
-
-    const planStockOptimized = this.buildPlan({
-      planId: 'PLAN_STOCK_OPTIMIZED',
-      planName: 'Option 2 — Stock-Optimized Plan',
-      badge: 'Maximum Warehouse Availability',
-      description: `Optimized around warehouse stock depth (${optimizedBay}ft bays and high-availability standards) to eliminate shortages and allow instant dispatch.`,
-      input,
-      normalized,
-      invMap,
-      bayLengthFt: optimizedBay,
-      transomWidthFt: 4,
-      liftHeightFt: 6.5,
-      preferredJali: 'MS',
-      stockOptimization: 'PREFER_ABUNDANT',
-      capAtStock: false,
-    });
-    options.push(planStockOptimized);
-
-    // 3. OPTION 3 — ALTERNATIVE CONFIGURATION / HEAVY-DUTY SAFETY PLAN
+    // 3. OPTION 3 — ALTERNATIVE HEAVY-DUTY GRID PLAN
     const planAlternative = this.buildPlan({
       planId: 'PLAN_ALTERNATIVE_HEAVY',
       planName: 'Option 3 — Alternative Heavy-Duty Plan',
-      badge: 'High SWL Load Rating',
-      description: 'High load capacity configuration with Heavy Bass Walkway Jali, tighter 5ft bay grid, reinforced diagonal bracing, and dual handrails.',
+      badge: 'Reinforced 5ft Heavy-Duty Grid',
+      description: 'High safe working load (SWL) configuration with dense 5ft bay grid, 8ft/5ft vertical standards, 5ft horizontal ledgers, and heavy-duty walkway platforms.',
       input,
       normalized,
       invMap,
@@ -157,34 +159,6 @@ export class ScaffoldingCalculatorService {
       capAtStock: false,
     });
     options.push(planAlternative);
-
-    // 4. OPTION 4 — PARTIAL STOCK / PROCUREMENT HYBRID PLAN
-    // Caps reservations strictly to what is available; provides clear procurement shortfall list
-    const planProcurement = this.buildPlan({
-      planId: 'PLAN_PROCUREMENT_HYBRID',
-      planName: 'Option 4 — Partial Stock / Procurement Plan',
-      badge: 'Ready for Sourcing',
-      description: 'Reserves 100% of available warehouse stock without exceeding limits, and isolates required purchase/hire quantities for immediate procurement.',
-      input,
-      normalized,
-      invMap,
-      bayLengthFt: 8,
-      transomWidthFt: 4,
-      liftHeightFt: 6.5,
-      preferredJali: input.jaliPreference || 'MS',
-      stockOptimization: 'NONE',
-      capAtStock: true, // Strictly caps reservation to available stock!
-    });
-    options.push(planProcurement);
-
-    // Mark the best recommended plan (either standard if 100% in stock, or stock-optimized)
-    if (planStandard.totals.stockReadinessPercentage >= 100) {
-      planStandard.isRecommended = true;
-    } else if (planStockOptimized.totals.stockReadinessPercentage > planStandard.totals.stockReadinessPercentage) {
-      planStockOptimized.isRecommended = true;
-    } else {
-      planStandard.isRecommended = true;
-    }
 
     return {
       input,

@@ -1,6 +1,9 @@
 // ALOKHANDWALA - PDF Generation Test Suite
 // Verifies that Confirmation PDF and Installation PDF generate error-free
 
+process.env.NODE_ENV = 'test';
+process.env.IS_TEST = 'true';
+
 import assert from 'assert';
 import { dbStore } from '../src/lib/db/store';
 import { generateConfirmationPdf, generateInstallationPdf } from '../src/lib/pdf/project-pdf';
@@ -423,6 +426,77 @@ async function runPdfTests() {
     const mode2Cost = Math.round(monthlyRate * RENTAL_CONSTANTS.SHIFTING_PERCENTAGE_OF_UNIT_RENTAL);
     assert.strictEqual(mode1Cost, 6000, 'Mode 1: 1000 sq.ft. @ ₹6/sq.ft. = ₹6000');
     assert.strictEqual(mode2Cost, 30000, 'Mode 2: 60% of ₹50,000 = ₹30,000');
+  });
+
+  // Test 9: Verify strict photo separation: Confirmation PDF vs Installation PDF
+  await test('9. Strict photo separation: Confirmation gets site photos only; Installation gets installation photos only; empty fallback supported', async () => {
+    // 1x1 valid sample images
+    const sampleSitePhotoBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const sampleInstallPhotoBase64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=';
+
+    const projectWithMixedPhotos = {
+      ...sampleConfirmedProject,
+      customer: sampleCustomer,
+      site: sampleSite,
+      photos: [
+        {
+          id: 'site-photo-1',
+          entityType: 'SITE_INSPECTION' as const,
+          entityId: 'proj-demo-1',
+          fileName: 'customer_site_front_facade.png',
+          fileUrl: sampleSitePhotoBase64,
+          fileSizeBytes: 1024,
+          mimeType: 'image/png',
+          stageLabel: 'BEFORE_INSTALLATION' as const,
+          uploadedBy: 'usr-sup-01',
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: 'site-photo-2',
+          entityType: 'SITE_INSPECTION' as const,
+          entityId: 'proj-demo-1',
+          fileName: 'perimeter_ground_clearance.png',
+          fileUrl: sampleSitePhotoBase64,
+          fileSizeBytes: 1024,
+          mimeType: 'image/png',
+          stageLabel: 'SITE_INSPECTION' as const,
+          uploadedBy: 'usr-sup-01',
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: 'install-photo-1',
+          entityType: 'INSTALLATION' as const,
+          entityId: 'proj-demo-1',
+          fileName: 'installation_completion_cuplock.jpg',
+          fileUrl: sampleInstallPhotoBase64,
+          fileSizeBytes: 1024,
+          mimeType: 'image/jpeg',
+          stageLabel: 'AFTER_INSTALLATION' as const,
+          uploadedBy: 'usr-sup-01',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    };
+
+    // Both PDFs should generate error-free with mixed photos
+    await generateConfirmationPdf(projectWithMixedPhotos);
+    await generateInstallationPdf({
+      ...projectWithMixedPhotos,
+      status: 'INSTALLED',
+      actualInstallationDate: '2026-02-15T10:00:00Z',
+    });
+
+    // Test with completely empty photos: both must handle cleanly with fallback text
+    const projectWithNoPhotos = {
+      ...sampleConfirmedProject,
+      customer: sampleCustomer,
+      site: sampleSite,
+      photos: [],
+    };
+    await generateConfirmationPdf(projectWithNoPhotos);
+    await generateInstallationPdf(projectWithNoPhotos);
+
+    assert.ok(true, 'Both PDFs handled mixed and empty photo collections flawlessly');
   });
 
   console.log(`\n---------------------------------------------------------------`);

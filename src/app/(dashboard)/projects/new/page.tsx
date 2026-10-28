@@ -56,6 +56,8 @@ export default function NewSiteInspectionPage() {
   const [newCustPhone, setNewCustPhone] = useState('');
   const [newCustEmail, setNewCustEmail] = useState('');
   const [newCustAddress, setNewCustAddress] = useState('');
+  const [newCustCity, setNewCustCity] = useState('');
+  const [newCustState, setNewCustState] = useState('');
 
   useEffect(() => {
     // Load customers
@@ -111,8 +113,8 @@ export default function NewSiteInspectionPage() {
 
   const handleCreateFastCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCustName.trim() || !newCustPhone.trim()) {
-      alert('Company Name and Phone are required');
+    if (!newCustName.trim() || !newCustPhone.trim() || !newCustEmail.trim() || !newCustAddress.trim()) {
+      alert('Company Name, Phone, Email, and Billing Address are required.');
       return;
     }
     try {
@@ -120,13 +122,13 @@ export default function NewSiteInspectionPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          companyName: newCustName,
-          contactPerson: newCustContact || newCustName,
-          phone: newCustPhone,
-          email: newCustEmail || 'billing@client.com',
-          billingAddress: newCustAddress || 'Mumbai, Maharashtra',
-          city: 'Mumbai',
-          state: 'Maharashtra',
+          companyName: newCustName.trim(),
+          contactPerson: newCustContact.trim() || newCustName.trim(),
+          phone: newCustPhone.trim(),
+          email: newCustEmail.trim(),
+          billingAddress: newCustAddress.trim(),
+          city: newCustCity.trim() || undefined,
+          state: newCustState.trim() || undefined,
         }),
       });
       const json = await res.json();
@@ -137,6 +139,10 @@ export default function NewSiteInspectionPage() {
         setNewCustName('');
         setNewCustContact('');
         setNewCustPhone('');
+        setNewCustEmail('');
+        setNewCustAddress('');
+        setNewCustCity('');
+        setNewCustState('');
       } else {
         alert(json.error || 'Failed to create customer');
       }
@@ -624,14 +630,48 @@ export default function NewSiteInspectionPage() {
                 />
               </div>
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Billing Address</label>
-                <textarea
-                  rows={2}
-                  placeholder="Billing address in Mumbai / Maharashtra..."
-                  value={newCustAddress}
-                  onChange={(e) => setNewCustAddress(e.target.value)}
+                <label className="block font-semibold text-slate-700 mb-1">Email Address *</label>
+                <input
+                  type="email"
+                  placeholder="e.g. contact@clientcorp.com"
+                  value={newCustEmail}
+                  onChange={(e) => setNewCustEmail(e.target.value)}
+                  required
                   className="w-full p-2 border border-slate-300 rounded-lg"
                 />
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Billing Address *</label>
+                <textarea
+                  rows={2}
+                  placeholder="Official billing address..."
+                  value={newCustAddress}
+                  onChange={(e) => setNewCustAddress(e.target.value)}
+                  required
+                  className="w-full p-2 border border-slate-300 rounded-lg"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">City</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Indore"
+                    value={newCustCity}
+                    onChange={(e) => setNewCustCity(e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">State</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Madhya Pradesh"
+                    value={newCustState}
+                    onChange={(e) => setNewCustState(e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded-lg"
+                  />
+                </div>
               </div>
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button

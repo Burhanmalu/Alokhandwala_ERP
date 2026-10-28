@@ -53,16 +53,18 @@ function formatINR(amount?: number | null): string {
 }
 
 // Helper: Convert image URL or path to Base64 safely (Supports Browser & Node.js environments)
-async function loadImageAsBase64(url: string): Promise<string | null> {
-  if (!url) return null;
-  if (url.startsWith('data:image/')) return url;
+async function loadImageAsBase64(url?: string | null): Promise<string | null> {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('data:image/')) return trimmed;
 
   // Node.js test environment: attempt to load from local public/ directory
   if (typeof window === 'undefined') {
     try {
       const fs = await import('fs');
       const path = await import('path');
-      const cleanRelative = url.replace(/^\//, '');
+      const cleanRelative = trimmed.replace(/^\//, '');
       const localFilePath = path.join(process.cwd(), 'public', cleanRelative);
       if (fs.existsSync(localFilePath)) {
         const buffer = fs.readFileSync(localFilePath);
@@ -71,24 +73,62 @@ async function loadImageAsBase64(url: string): Promise<string | null> {
         return `data:${mime};base64,${buffer.toString('base64')}`;
       }
     } catch {
-      // Fallback to fetch if fs import fails
+      // Fallback
     }
   }
 
   // Browser environment
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch(trimmed);
+      if (res.ok) {
+        const blob = await res.blob();
+        return new Promise<string | null>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+              resolve(reader.result);
+            } else {
+              resolve(null);
+            }
+          };
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(blob);
+        });
+      }
+    } catch {
+      // fetch failed, try HTML Image element fallback
+    }
+
+    try {
+      return new Promise<string | null>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || img.width || 400;
+            canvas.height = img.naturalHeight || img.height || 300;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              resolve(null);
+              return;
+            }
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          } catch {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = trimmed;
+      });
+    } catch {
+      return null;
+    }
   }
+
+  return null;
 }
 
 /**
@@ -645,6 +685,18 @@ export async function generateConfirmationPdf(project: ProjectWithRelations): Pr
 
   currentY += cardHeight + 5;
 
+  // --- Site Inspection & Customer Premises Photographs ---
+  const confirmationPhotos = await loadAndPreparePhotos(project.photos || [], 'CONFIRMATION');
+  currentY = drawPhotoSection(
+    doc,
+    currentY,
+    pageWidth,
+    'SITE INSPECTION & CUSTOMER PREMISES PHOTOGRAPHS',
+    'No site inspection images uploaded for this project.',
+    confirmationPhotos,
+    'Site Photo'
+  );
+
   // --- Official Business Terms & Conditions (All 11 Clauses) ---
   // Ensure the 11 legal terms start on a clean, dedicated section or page
   if (currentY + 110 > 270) {
@@ -987,87 +1039,16 @@ export async function generateInstallationPdf(project: ProjectWithRelations): Pr
   currentY = (doc as any).lastAutoTable.finalY + 5;
 
   // Site Photographs (Proof of Installation)
-  const photos = (project.photos || []).filter(p => 
-    p.stageLabel === 'AFTER_INSTALLATION' || 
-    p.entityType === 'INSTALLATION' || 
-    p.fileUrl
-  ).slice(0, 4);
-
-  if (photos.length > 0) {
-    // If less than 48mm remains, move photo section to next page
-    if (currentY + 48 > 270) {
-      doc.addPage();
-      currentY = 20;
-    }
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(...COLORS.secondary);
-    doc.text('SITE PHOTOGRAPHS & ERECTION EVIDENCE', 14, currentY);
-    currentY += 3.5;
-
-    const photoWidth = (pageWidth - 28 - 6) / 2; // 88mm
-    const photoHeight = 36;
-
-    for (let i = 0; i < photos.length; i += 2) {
-      if (currentY + photoHeight + 8 > 270) {
-        doc.addPage();
-        currentY = 20;
-      }
-
-      // Photo 1 (Left)
-      const p1 = photos[i];
-      const p1Base64 = await loadImageAsBase64(p1.fileUrl);
-      if (p1Base64) {
-        try {
-          doc.addImage(p1Base64, 'JPEG', 14, currentY, photoWidth, photoHeight, undefined, 'FAST');
-        } catch {
-          renderPhotoPlaceholder(doc, 14, currentY, photoWidth, photoHeight, p1.fileName || 'Site Photo');
-        }
-      } else {
-        renderPhotoPlaceholder(doc, 14, currentY, photoWidth, photoHeight, p1.fileName || 'Site Photo');
-      }
-
-      // Caption bar 1
-      doc.setFillColor(255, 255, 255);
-      doc.setDrawColor(...COLORS.cardBorder);
-      doc.setLineWidth(0.2);
-      doc.rect(14, currentY + photoHeight - 5, photoWidth, 5, 'FD');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(6.5);
-      doc.setTextColor(...COLORS.textDark);
-      doc.text(`Photo ${i + 1}: ${p1.fileName || 'Installation Evidence'}`, 16, currentY + photoHeight - 1.5);
-
-      // Photo 2 (Right, if available)
-      if (i + 1 < photos.length) {
-        const p2 = photos[i + 1];
-        const p2Base64 = await loadImageAsBase64(p2.fileUrl);
-        const p2X = 14 + photoWidth + 6;
-
-        if (p2Base64) {
-          try {
-            doc.addImage(p2Base64, 'JPEG', p2X, currentY, photoWidth, photoHeight, undefined, 'FAST');
-          } catch {
-            renderPhotoPlaceholder(doc, p2X, currentY, photoWidth, photoHeight, p2.fileName || 'Site Photo');
-          }
-        } else {
-          renderPhotoPlaceholder(doc, p2X, currentY, photoWidth, photoHeight, p2.fileName || 'Site Photo');
-        }
-
-        // Caption bar 2
-        doc.setFillColor(255, 255, 255);
-        doc.setDrawColor(...COLORS.cardBorder);
-        doc.setLineWidth(0.2);
-        doc.rect(p2X, currentY + photoHeight - 5, photoWidth, 5, 'FD');
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6.5);
-        doc.setTextColor(...COLORS.textDark);
-        doc.text(`Photo ${i + 2}: ${p2.fileName || 'Installation Evidence'}`, p2X + 2, currentY + photoHeight - 1.5);
-      }
-
-      currentY += photoHeight + 5;
-    }
-  }
+  const installationPhotos = await loadAndPreparePhotos(project.photos || [], 'INSTALLATION');
+  currentY = drawPhotoSection(
+    doc,
+    currentY,
+    pageWidth,
+    'SITE PHOTOGRAPHS & ERECTION EVIDENCE',
+    'No installation images uploaded for this project.',
+    installationPhotos,
+    'Installation Photo'
+  );
 
   // Check room for Handover Terms (26mm) + Safety Declaration (16mm) + Signatures (30mm) = 72mm
   if (currentY + 76 > 270) {
@@ -1195,20 +1176,196 @@ export async function generateInstallationPdf(project: ProjectWithRelations): Pr
   doc.save(`${project.projectCode}-Installation.pdf`);
 }
 
+interface ValidatedPdfPhoto {
+  base64: string;
+  format: 'JPEG' | 'PNG';
+  label: string;
+}
+
 /**
- * Renders an architectural placeholder box when photo image cannot be loaded
+ * Filters and validates photos specifically for Confirmation or Installation PDFs.
+ * Enforces strict separation:
+ * - CONFIRMATION: Includes only customer/site inspection photos. Never includes installation photos.
+ * - INSTALLATION: Includes only actual installation photos. Never includes confirmation/site inspection photos.
+ * Never inserts dummy, sample, or placeholder images.
  */
-function renderPhotoPlaceholder(doc: jsPDF, x: number, y: number, w: number, h: number, label: string) {
-  doc.setFillColor(...COLORS.cardBg);
+async function loadAndPreparePhotos(
+  rawPhotos: any[],
+  type: 'CONFIRMATION' | 'INSTALLATION'
+): Promise<ValidatedPdfPhoto[]> {
+  const isInstallTarget = type === 'INSTALLATION';
+  const prepared: ValidatedPdfPhoto[] = [];
+
+  for (const p of rawPhotos) {
+    if (!p) continue;
+    const url = typeof p === 'string' ? p : (p.fileUrl || p.url || '');
+    if (!url || typeof url !== 'string' || !url.trim()) continue;
+
+    const stage = String(p.stageLabel || '').toUpperCase();
+    const entity = String(p.entityType || '').toUpperCase();
+    const name = String(p.fileName || p.name || '').toLowerCase();
+    const u = url.toLowerCase();
+
+    const isInstallPhoto =
+      stage === 'AFTER_INSTALLATION' ||
+      entity === 'INSTALLATION' ||
+      name.includes('installation') ||
+      name.includes('after_install') ||
+      name.includes('after-install') ||
+      name.includes('installed') ||
+      u.includes('installation') ||
+      u.includes('after_install') ||
+      u.includes('after-install');
+
+    // Strict separation:
+    // Confirmation PDF must NEVER include installation photos.
+    // Installation PDF must NEVER include confirmation/site inspection photos.
+    if (isInstallTarget !== isInstallPhoto) {
+      continue;
+    }
+
+    const base64 = await loadImageAsBase64(url);
+    if (!base64) {
+      // Do not use dummy, sample, or placeholder images if URL fails to load
+      continue;
+    }
+
+    const format: 'JPEG' | 'PNG' = base64.toLowerCase().startsWith('data:image/png') ? 'PNG' : 'JPEG';
+    const rawFileName = (typeof p === 'object' && (p.fileName || p.name)) ? (p.fileName || p.name) : '';
+    const fallbackLabel = isInstallTarget ? 'Handover Completion Record' : 'Site Inspection Record';
+    const cleanLabel = rawFileName
+      ? rawFileName.replace(/[_-]/g, ' ').replace(/\.[a-zA-Z0-9]+$/, '').trim()
+      : fallbackLabel;
+
+    prepared.push({
+      base64,
+      format,
+      label: cleanLabel || fallbackLabel,
+    });
+
+    if (prepared.length >= 4) break; // Display top 4 photos for clean A4 layout
+  }
+
+  return prepared;
+}
+
+/**
+ * Draws the professional photo evidence section on A4 PDF.
+ * If no images are available, renders a clean, styled message box instead of dummy placeholders.
+ */
+function drawPhotoSection(
+  doc: jsPDF,
+  startY: number,
+  pageWidth: number,
+  title: string,
+  emptyMessage: string,
+  photos: ValidatedPdfPhoto[],
+  prefix: string
+): number {
+  let y = startY;
+
+  // Space check: Section Header (10mm) + Photo Row (50mm) or Empty Notice Banner (18mm)
+  const neededSpace = photos.length > 0 ? 58 : 26;
+  if (y + neededSpace > 270) {
+    doc.addPage();
+    y = 20;
+  }
+
+  // Section Header Banner
+  doc.setFillColor(...COLORS.cardHeaderBg);
+  doc.roundedRect(14, y, pageWidth - 28, 6.5, 1.2, 1.2, 'F');
+  doc.setDrawColor(...COLORS.accent);
+  doc.setLineWidth(0.4);
+  doc.line(14, y + 6.5, pageWidth - 14, y + 6.5);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.8);
+  doc.setTextColor(...COLORS.primary);
+  doc.text(title, 18, y + 4.5);
+
+  y += 9.5;
+
+  // If no photos uploaded or loaded, render a clear, professional fallback notice
+  if (photos.length === 0) {
+    doc.setFillColor(...COLORS.cardBg);
+    doc.setDrawColor(...COLORS.cardBorder);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(14, y, pageWidth - 28, 14, 1.2, 1.2, 'FD');
+
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...COLORS.textMuted);
+    doc.text(emptyMessage, pageWidth / 2, y + 8.5, { align: 'center' });
+
+    return y + 18;
+  }
+
+  // Render photos in 2-column grid
+  const colWidth = (pageWidth - 28 - 6) / 2; // 88mm
+  const imageHeight = 40; // 40mm image area
+  const captionHeight = 6; // 6mm caption strip
+  const cardHeight = imageHeight + captionHeight; // 46mm total card height
+
+  for (let i = 0; i < photos.length; i += 2) {
+    if (y + cardHeight + 4 > 270) {
+      doc.addPage();
+      y = 20;
+    }
+
+    // Left photo
+    const p1 = photos[i];
+    renderSinglePhotoCard(doc, 14, y, colWidth, imageHeight, captionHeight, p1, `${prefix} ${i + 1}`);
+
+    // Right photo (if available)
+    if (i + 1 < photos.length) {
+      const p2 = photos[i + 1];
+      const p2X = 14 + colWidth + 6; // 108mm
+      renderSinglePhotoCard(doc, p2X, y, colWidth, imageHeight, captionHeight, p2, `${prefix} ${i + 2}`);
+    }
+
+    y += cardHeight + 4.5;
+  }
+
+  return y;
+}
+
+/**
+ * Draws an individual photo card with clean border, image area, and caption strip
+ */
+function renderSinglePhotoCard(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  imgH: number,
+  capH: number,
+  photo: ValidatedPdfPhoto,
+  numberLabel: string
+) {
+  // Draw Image
+  try {
+    doc.addImage(photo.base64, photo.format, x, y, w, imgH, undefined, 'FAST');
+  } catch {
+    doc.setFillColor(...COLORS.cardBg);
+    doc.rect(x, y, w, imgH, 'F');
+  }
+
+  // Card Outer Border
   doc.setDrawColor(...COLORS.cardBorder);
   doc.setLineWidth(0.3);
-  doc.rect(x, y, w, h, 'FD');
+  doc.rect(x, y, w, imgH + capH, 'D');
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7);
-  doc.setTextColor(...COLORS.textMuted);
-  doc.text('Erection Record Photo', x + w / 2, y + h / 2 - 2, { align: 'center' });
+  // Caption Banner
+  doc.setFillColor(...COLORS.cardHeaderBg);
+  doc.rect(x, y + imgH, w, capH, 'FD');
+  doc.setDrawColor(...COLORS.cardBorder);
+  doc.setLineWidth(0.2);
+  doc.line(x, y + imgH, x + w, y + imgH);
+
+  // Caption Text
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(6.5);
-  doc.text(label, x + w / 2, y + h / 2 + 3, { align: 'center' });
+  doc.setFontSize(6.8);
+  doc.setTextColor(...COLORS.textDark);
+  const truncatedLabel = doc.splitTextToSize(`${numberLabel}: ${photo.label}`, w - 6)[0] || `${numberLabel}`;
+  doc.text(truncatedLabel, x + 3, y + imgH + 4.2);
 }

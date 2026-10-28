@@ -10,8 +10,9 @@ import { formatDate } from '@/lib/formatters';
 
 export default function UserManagementPage() {
   const router = useRouter();
-  const { currentUser } = useAuth();
-  const [users, setUsers] = useState<UserProfile[]>(initialUsers);
+  const { currentUser, updateUserRole, refreshUsers } = useAuth();
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
@@ -25,15 +26,15 @@ export default function UserManagementPage() {
   }, [currentUser, router]);
 
   useEffect(() => {
-    fetch('/api/users')
-      .then(r => r.json())
-      .then(json => {
-        if (json.success && json.data && json.data.length > 0) {
-          setUsers(json.data);
+    refreshUsers()
+      .then(liveData => {
+        if (liveData && liveData.length > 0) {
+          setUsers(liveData);
         }
       })
-      .catch(console.error);
-  }, []);
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [refreshUsers]);
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -78,6 +79,7 @@ export default function UserManagementPage() {
       const json = await res.json();
       if (json.success) {
         setUsers(prev => prev.map(u => u.id === targetUser.id ? { ...u, password: newPassword.trim() } : u));
+        await refreshUsers();
         setSuccessToast(`Password updated successfully for ${targetUser.fullName}`);
         setTimeout(() => setSuccessToast(null), 3000);
       } else {
@@ -113,11 +115,14 @@ export default function UserManagementPage() {
       const json = await res.json();
       if (json.success && json.data) {
         setUsers(prev => [...prev, json.data]);
+        await refreshUsers();
         setFullName('');
         setEmail('');
         setPhone('');
         setPassword('');
         setModalOpen(false);
+        setSuccessToast(`User ${json.data.fullName} registered successfully.`);
+        setTimeout(() => setSuccessToast(null), 3000);
       } else {
         alert(json.error || 'Failed to add user to database.');
       }
@@ -125,29 +130,21 @@ export default function UserManagementPage() {
       console.error('Failed to add user:', err);
       alert('Failed to connect to server to create user.');
     }
-
-    setModalOpen(false);
-    setFullName('');
-    setEmail('');
-    setPhone('');
-    setPassword('');
-    setShowPassword(false);
   };
 
   const handleUpdateUserRole = async (userId: string, newRole: UserRole) => {
+    // Optimistic UI state update
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
-    try {
-      const res = await fetch('/api/users', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: userId, role: newRole }),
-      });
-      const json = await res.json();
-      if (!json.success) {
-        console.error('Failed to update role:', json.error);
-      }
-    } catch (err) {
-      console.error('Network error updating role:', err);
+    
+    // Synchronize to database and global AuthContext
+    const ok = await updateUserRole(userId, newRole);
+    if (ok) {
+      setSuccessToast(`Role permanently updated to ${newRole}. Permissions synchronized.`);
+      setTimeout(() => setSuccessToast(null), 3500);
+    } else {
+      alert('Failed to update role in the database. Please try again.');
+      const live = await refreshUsers();
+      setUsers(live);
     }
   };
 
@@ -195,8 +192,17 @@ export default function UserManagementPage() {
 
       {/* Mobile User Card View */}
       <div className="block md:hidden space-y-3">
-        {users.map((u) => (
-          <div key={u.id} className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs space-y-2.5 text-xs">
+        {loading ? (
+          <div className="p-8 text-center text-xs text-slate-400 bg-white rounded-xl border border-slate-200">
+            Loading user profiles...
+          </div>
+        ) : users.length === 0 ? (
+          <div className="p-8 text-center text-xs text-slate-400 bg-white rounded-xl border border-slate-200">
+            No users found. Add your first user to get started.
+          </div>
+        ) : (
+          users.map((u) => (
+            <div key={u.id} className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs space-y-2.5 text-xs">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <div className="font-bold text-slate-900 text-sm">{u.fullName}</div>
@@ -261,7 +267,7 @@ export default function UserManagementPage() {
               <span>Joined: {formatDate(u.createdAt)}</span>
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
       {/* Desktop User Table */}
@@ -280,8 +286,21 @@ export default function UserManagementPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-mono">
-              {users.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-50 transition">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-400 font-sans">
+                    Loading user profiles...
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-400 font-sans">
+                    No users found. Add your first user to get started.
+                  </td>
+                </tr>
+              ) : (
+                users.map((u) => (
+                  <tr key={u.id} className="hover:bg-slate-50 transition">
                   <td className="px-4 py-3 font-sans">
                     <div className="font-bold text-slate-900">{u.fullName}</div>
                     <div className="text-[10px] text-slate-400 font-mono">{u.id}</div>
@@ -331,7 +350,7 @@ export default function UserManagementPage() {
                   </td>
                   <td className="px-4 py-3 text-slate-500 font-sans">{formatDate(u.createdAt)}</td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>
