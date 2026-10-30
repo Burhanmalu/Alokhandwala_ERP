@@ -20,7 +20,10 @@ import {
   Users,
   Plus,
   X,
-  Scale
+  Scale,
+  Check,
+  ShieldCheck,
+  FileText
 } from 'lucide-react';
 import { Project } from '@/lib/schema';
 import { formatDate } from '@/lib/formatters';
@@ -44,7 +47,7 @@ const COMMON_ROLES = [
 
 export default function InstallationFormPage() {
   return (
-    <React.Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">Loading Installation Form...</div>}>
+    <React.Suspense fallback={<div className="p-8 text-center text-xs text-[#7d6553]">Loading Installation Form...</div>}>
       <InstallationFormContent />
     </React.Suspense>
   );
@@ -357,45 +360,104 @@ function InstallationFormContent() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-            <Boxes className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span>Field Installation & Material Commissioning</span>
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Verify supervisor in charge, register site workers, validate actual installed dimensions, and activate the rental cycle.
-          </p>
-        </div>
-        <Link
-          href="/projects"
-          className="text-xs text-slate-600 hover:text-emerald-700 flex items-center justify-center gap-1 border border-slate-200 px-3 py-2 rounded-lg hover:bg-slate-50 transition w-full sm:w-auto shrink-0 min-h-[38px]"
-        >
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-xs text-[#7d6553]">
+        <Link href="/projects" className="hover:text-[#24160c] flex items-center gap-1 transition">
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Projects Directory</span>
         </Link>
+        <span>/</span>
+        <span className="font-semibold text-[#24160c]">Field Installation & Material Commissioning</span>
+      </div>
+
+      {/* Enterprise Header Banner */}
+      <div className="bg-[#1c120c] p-6 rounded-2xl border border-[#382315] text-[#fbf9f5] shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#c79e7c]">
+            <span>ALOKHANDWALA Site Commissioning</span>
+            <span>•</span>
+            <span className="font-mono">Step 3: Physical Erection & Handover</span>
+          </div>
+          <h1 className="text-2xl font-bold mt-1 text-[#fdfcf9] flex items-center gap-2.5">
+            <Boxes className="w-6 h-6 text-[#c79e7c]" />
+            <span>Field Installation & Material Commissioning</span>
+          </h1>
+          <p className="text-xs text-[#dfcbab] mt-1 max-w-2xl leading-relaxed">
+            Verify executing supervisor, log site rigger roster, reconcile physically erected dimensions against plan, verify stock dispatch, and formally activate the 28-day rental billing cycle.
+          </p>
+        </div>
+        <div className="shrink-0 flex items-center">
+          <span className="text-[11px] bg-[#382315] border border-[#c79e7c]/50 text-[#fdfcf9] px-3.5 py-1.5 rounded-full font-mono font-semibold shadow-2xs">
+            {readyProjects.length} Project{readyProjects.length === 1 ? '' : 's'} Ready to Install
+          </span>
+        </div>
+      </div>
+
+      {/* Structured Progress Indicator Bar */}
+      <div className="bg-white p-3 rounded-xl border border-[#ebdcc9] shadow-2xs">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs font-medium text-[#7d6553]">
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">1</span>
+            <span className="truncate">Supervisor Check</span>
+          </div>
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">2</span>
+            <span className="truncate">Workers Roster</span>
+          </div>
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">3</span>
+            <span className="truncate">Actual Dimensions</span>
+          </div>
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">4</span>
+            <span className="truncate">Stock Reconciliation</span>
+          </div>
+          <div className="col-span-2 sm:col-span-1 flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">5</span>
+            <span className="truncate">Handover & Photos</span>
+          </div>
+        </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2.5">
-          <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-start gap-2.5 text-xs">
+          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
           <div>
-            <div className="font-bold">Installation Submission Incomplete</div>
+            <div className="font-bold">Installation Submission Requirements Incomplete</div>
             <p className="mt-0.5">{error}</p>
           </div>
         </div>
       )}
 
       {/* Select Project to Install */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-          Select Confirmed / Scheduled Project to Commission <span className="text-red-500">*</span>
-        </label>
+      <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-3">
+        <div className="flex items-center justify-between gap-3 border-b border-[#ebdcc9] pb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+              01
+            </div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#24160c]">
+              Select Confirmed / Scheduled Project to Commission <span className="text-rose-600">*</span>
+            </label>
+          </div>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono font-medium text-[#5c3e24] bg-[#fbf9f5] border border-[#ebdcc9] whitespace-nowrap shrink-0">
+            {readyProjects.length} Project{readyProjects.length === 1 ? '' : 's'} Ready
+          </span>
+        </div>
+
         {readyProjects.length === 0 ? (
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 text-center">
-            No projects currently in <code>CONFIRMED_PROJECT</code> or <code>SCHEDULED</code> status. Confirm a project first to reserve stock.
+          <div className="p-6 bg-[#fbf9f5] border border-[#ebdcc9] rounded-xl text-xs text-[#7d6553] text-center space-y-2">
+            <p className="font-semibold text-[#24160c]">No projects currently in CONFIRMED_PROJECT or SCHEDULED status.</p>
+            <p className="text-[#8c7360]">Confirm a project first to transactionally reserve stock before installation.</p>
+            <div className="pt-2">
+              <Link
+                href="/confirmation"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#24160c] hover:bg-[#382315] text-[#fdfcf9] font-bold rounded-lg transition text-xs shadow-2xs"
+              >
+                <span>+ Go to Project Confirmation</span>
+              </Link>
+            </div>
           </div>
         ) : (
           <SearchableSelect
@@ -420,26 +482,26 @@ function InstallationFormContent() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 py-1">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-emerald-700">{p.projectCode}</span>
-                    <span className="text-slate-400">•</span>
-                    <span className="font-semibold text-slate-900 truncate">{p.customerName}</span>
+                    <span className="font-mono font-bold text-[#24160c]">{p.projectCode}</span>
+                    <span className="text-[#d6c7b2]">•</span>
+                    <span className="font-semibold text-[#24160c] truncate">{p.customerName}</span>
                   </div>
-                  <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                  <div className="text-[11px] text-[#7d6553] truncate mt-0.5">
                     {p.siteName} (Planned Install: {formatDate(p.plannedInstallationDate)})
                   </div>
                 </div>
-                <div className="text-[10px] text-slate-500 font-mono shrink-0 self-start sm:self-auto bg-slate-100 px-2 py-0.5 rounded">
+                <div className="text-[10px] text-[#5c3e24] font-mono shrink-0 self-start sm:self-auto bg-[#fbf9f5] border border-[#ebdcc9] px-2 py-0.5 rounded">
                   {p.quotationNumber || 'Confirmed'}
                 </div>
               </div>
             )}
             renderSelected={(p) => (
               <div className="flex items-center gap-2 truncate">
-                <span className="font-mono font-bold text-emerald-700 shrink-0">{p.projectCode}</span>
-                <span className="font-semibold text-slate-900 truncate">{p.customerName}</span>
-                <span className="text-slate-400">|</span>
-                <span className="text-xs text-slate-600 truncate">{p.siteName}</span>
-                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
+                <span className="font-mono font-bold text-[#24160c] shrink-0">{p.projectCode}</span>
+                <span className="font-semibold text-[#24160c] truncate">{p.customerName}</span>
+                <span className="text-[#d6c7b2]">|</span>
+                <span className="text-xs text-[#5c3e24] truncate">{p.siteName}</span>
+                <span className="text-[10px] text-[#8c7360] font-mono hidden sm:inline">
                   (Install: {formatDate(p.plannedInstallationDate)})
                 </span>
               </div>
@@ -450,33 +512,33 @@ function InstallationFormContent() {
 
       {/* Auto-Loaded Project & Site Summary */}
       {selectedProject && (
-        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3 text-xs">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-            <h2 className="font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-slate-500" />
+        <div className="bg-white p-5 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-3 text-xs">
+          <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-2">
+            <h2 className="font-bold text-[#24160c] uppercase tracking-wider flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-[#8f6541]" />
               <span>Project Commercial Details: {selectedProject.projectCode}</span>
             </h2>
-            <span className="font-mono text-[11px] font-bold text-blue-700">
+            <span className="font-mono text-[11px] font-bold text-[#24160c] bg-[#ebdcc9] px-2.5 py-0.5 rounded">
               Quotation: {selectedProject.quotationNumber || 'Confirmed'}
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div>
-              <div className="text-slate-400">Customer</div>
-              <div className="font-semibold text-slate-900">{selectedProject.customerName}</div>
+            <div className="bg-[#fbf9f5] p-2.5 rounded-lg border border-[#ebdcc9]">
+              <div className="text-[#7d6553] text-[10px] uppercase font-bold">Customer</div>
+              <div className="font-semibold text-[#24160c] mt-0.5 truncate">{selectedProject.customerName}</div>
             </div>
-            <div>
-              <div className="text-slate-400">Site Location</div>
-              <div className="font-semibold text-slate-900">{selectedProject.siteName}</div>
+            <div className="bg-[#fbf9f5] p-2.5 rounded-lg border border-[#ebdcc9]">
+              <div className="text-[#7d6553] text-[10px] uppercase font-bold">Site Location</div>
+              <div className="font-semibold text-[#24160c] mt-0.5 truncate">{selectedProject.siteName}</div>
             </div>
-            <div>
-              <div className="text-slate-400">Assigned Site Supervisor</div>
-              <div className="font-semibold text-slate-900">{selectedProject.supervisorName || 'Not Assigned'}</div>
+            <div className="bg-[#fbf9f5] p-2.5 rounded-lg border border-[#ebdcc9]">
+              <div className="text-[#7d6553] text-[10px] uppercase font-bold">Assigned Supervisor</div>
+              <div className="font-semibold text-[#24160c] mt-0.5 truncate">{selectedProject.supervisorName || 'Not Assigned'}</div>
             </div>
-            <div>
-              <div className="text-slate-400">Planned Install Date</div>
-              <div className="font-mono font-bold text-slate-900">
+            <div className="bg-[#fbf9f5] p-2.5 rounded-lg border border-[#ebdcc9]">
+              <div className="text-[#7d6553] text-[10px] uppercase font-bold">Planned Install Date</div>
+              <div className="font-mono font-bold text-[#24160c] mt-0.5">
                 {formatDate(selectedProject.plannedInstallationDate)}
               </div>
             </div>
@@ -490,46 +552,55 @@ function InstallationFormContent() {
           {/* ======================================================== */}
           {/* 1. TIMESTAMPS & SUPERVISOR IN CHARGE VERIFICATION        */}
           {/* ======================================================== */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Calendar className="w-4 h-4 text-emerald-600" />
-              <span>1. Erection Timestamps & Supervisor in Charge Check</span>
-            </h2>
+          <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+                  01
+                </div>
+                <h2 className="text-sm font-bold text-[#24160c] uppercase tracking-wider">
+                  Erection Timestamps & Supervisor in Charge Check
+                </h2>
+              </div>
+              <span className="text-[11px] font-mono text-[#7d6553] bg-[#fbf9f5] px-2.5 py-1 rounded border border-[#ebdcc9]">
+                Site Authorization
+              </span>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Actual Installation Date & Time <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                  Actual Installation Date & Time <span className="text-rose-600">*</span>
                 </label>
                 <input
                   type="datetime-local"
                   value={actualInstallationDate}
                   onChange={(e) => setActualInstallationDate(e.target.value)}
                   required
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-slate-800"
+                  className="w-full p-2.5 bg-white border border-[#d6c7b2] rounded-lg font-mono font-bold text-[#24160c] focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] focus:outline-hidden"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
                   Assigned Site Supervisor (From Project Record)
                 </label>
-                <div className="p-2.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 flex items-center justify-between">
+                <div className="p-2.5 bg-[#fbf9f5] border border-[#ebdcc9] rounded-lg text-[#24160c] flex items-center justify-between">
                   <span className="font-semibold">{selectedProject.supervisorName || 'Not Assigned'}</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-mono">
-                    Site Assigned
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-[#ebdcc9] text-[#24160c] font-mono">
+                    Site Record
                   </span>
                 </div>
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Supervisor in Charge (Executing Installation) <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                  Supervisor in Charge (Executing Installation) <span className="text-rose-600">*</span>
                 </label>
                 <select
                   value={selectedSupervisorId}
                   onChange={(e) => handleSupervisorChange(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-medium text-slate-800"
+                  className="w-full p-2.5 bg-white border border-[#d6c7b2] rounded-lg font-medium text-[#24160c] focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] focus:outline-hidden"
                 >
                   {availableUsers.map(u => (
                     <option key={u.id} value={u.id}>
@@ -542,32 +613,32 @@ function InstallationFormContent() {
               {/* LIVE SUPERVISOR MATCH CHECK RESULT */}
               <div className="sm:col-span-2">
                 {isSupervisorSame ? (
-                  <div className="flex items-center gap-2.5 p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs">
+                  <div className="flex items-center gap-2.5 p-3.5 bg-[#fbf9f5] border border-[#ebdcc9] rounded-xl text-xs">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                     <div>
-                      <span className="font-bold text-emerald-800">Supervisor Verified (Same Supervisor): </span>
-                      <span>The Supervisor in Charge matches the assigned site supervisor ({selectedProject.supervisorName || selectedSupervisorName}).</span>
+                      <span className="font-bold text-[#24160c]">Supervisor Verified (Exact Match): </span>
+                      <span className="text-[#5c3e24]">The Supervisor in Charge matches the registered site supervisor ({selectedProject.supervisorName || selectedSupervisorName}).</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-950 space-y-2.5">
-                    <div className="flex items-center gap-2 font-bold text-amber-900">
+                  <div className="p-3.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-xl text-xs space-y-2.5">
+                    <div className="flex items-center gap-2 font-bold text-[#714f36]">
                       <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                       <span>Supervisor in Charge Mismatch Detected</span>
                     </div>
-                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                    <p className="text-[11px] text-[#5c3e24] leading-relaxed">
                       The assigned Project Supervisor is <strong>{selectedProject.supervisorName || 'Unassigned'}</strong>, but <strong>{selectedSupervisorName}</strong> is conducting and reporting this installation.
                     </p>
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                        Reason for Supervisor Delegation / Handover <span className="text-red-500">*</span>
+                      <label className="block text-[11px] font-semibold text-[#4a3525] mb-1">
+                        Reason for Supervisor Delegation / Handover <span className="text-rose-600">*</span>
                       </label>
                       <input
                         type="text"
                         value={supervisorDelegationRemarks}
                         onChange={(e) => setSupervisorDelegationRemarks(e.target.value)}
                         placeholder="e.g. Assigned supervisor attending BKC structural audit; substitute authorized by PM"
-                        className="w-full p-2 bg-white border border-amber-300 rounded-lg text-xs"
+                        className="w-full p-2 bg-white border border-[#d6c7b2] rounded-lg text-xs text-[#24160c]"
                       />
                     </div>
                     <label className="flex items-center gap-2 pt-1 cursor-pointer">
@@ -575,9 +646,9 @@ function InstallationFormContent() {
                         type="checkbox"
                         checked={supervisorDelegationConfirmed}
                         onChange={(e) => setSupervisorDelegationConfirmed(e.target.checked)}
-                        className="w-4 h-4 text-amber-600 rounded"
+                        className="w-4 h-4 text-[#24160c] rounded"
                       />
-                      <span className="font-semibold text-amber-950">
+                      <span className="font-semibold text-[#24160c]">
                         Confirm supervisor delegation / substitute authorized on site
                       </span>
                     </label>
@@ -590,25 +661,29 @@ function InstallationFormContent() {
           {/* ======================================================== */}
           {/* 2. WORKERS WORKING ON THE PROJECT                        */}
           {/* ======================================================== */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-            <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Users className="w-4 h-4 text-emerald-600" />
-                <span>2. Workers & Erection Crew on Site</span>
-              </h2>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+          <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
+            <div className="border-b border-[#ebdcc9] pb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+                  02
+                </div>
+                <h2 className="text-sm font-bold text-[#24160c] uppercase tracking-wider">
+                  Workers & Erection Crew on Site
+                </h2>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#fbf9f5] border border-[#ebdcc9] text-[#5c3e24]">
                 {workersList.length} Worker{workersList.length === 1 ? '' : 's'} Registered
               </span>
             </div>
 
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[#7d6553]">
               Specify the names of riggers, fitters, and helpers actively working on the installation of this project.
             </p>
 
             {/* Quick Registered Worker Chips */}
             {availableUsers.filter(u => u.role === 'WORKER').length > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap pt-0.5 pb-1 text-xs">
-                <span className="text-[11px] text-slate-500 font-semibold">Registered Workers:</span>
+                <span className="text-[11px] text-[#7d6553] font-semibold">Registered Workforce:</span>
                 {availableUsers.filter(u => u.role === 'WORKER').map(u => {
                   const isAdded = workersList.some(w => w.id === u.id || w.name.toLowerCase() === u.fullName.toLowerCase());
                   return (
@@ -619,10 +694,11 @@ function InstallationFormContent() {
                       onClick={() => {
                         setWorkersList([...workersList, { id: u.id, name: u.fullName, role: 'Scaffolder' }]);
                       }}
-                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition flex items-center gap-1 ${isAdded
-                          ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                          : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-pointer'
-                        }`}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition flex items-center gap-1 ${
+                        isAdded
+                          ? 'bg-[#fbf9f5] text-[#8c7360] border border-[#ebdcc9] cursor-not-allowed'
+                          : 'bg-[#ebdcc9]/50 hover:bg-[#ebdcc9] text-[#24160c] border border-[#d6c7b2] cursor-pointer'
+                      }`}
                     >
                       <span>{isAdded ? '✓' : '+'}</span>
                       <span>{u.fullName}</span>
@@ -646,7 +722,7 @@ function InstallationFormContent() {
                       handleAddWorker();
                     }
                   }}
-                  className="w-full p-2 text-xs bg-slate-50 border border-slate-300 rounded-lg"
+                  className="w-full p-2.5 text-xs bg-white border border-[#d6c7b2] rounded-lg text-[#24160c] focus:outline-hidden focus:border-[#8f6541]"
                 />
               </div>
 
@@ -654,7 +730,7 @@ function InstallationFormContent() {
                 <select
                   value={newWorkerRole}
                   onChange={(e) => setNewWorkerRole(e.target.value)}
-                  className="w-full p-2 text-xs bg-slate-50 border border-slate-300 rounded-lg font-medium"
+                  className="w-full p-2.5 text-xs bg-white border border-[#d6c7b2] rounded-lg font-medium text-[#24160c] focus:outline-hidden focus:border-[#8f6541]"
                 >
                   {COMMON_ROLES.map(role => (
                     <option key={role} value={role}>{role}</option>
@@ -665,25 +741,25 @@ function InstallationFormContent() {
               <button
                 type="button"
                 onClick={handleAddWorker}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition flex items-center justify-center gap-1.5 shrink-0"
+                className="px-4 py-2.5 bg-[#24160c] hover:bg-[#382315] text-[#fdfcf9] font-semibold text-xs rounded-lg transition flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-2xs"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 text-[#c79e7c]" />
                 <span>Add Worker</span>
               </button>
             </div>
 
             {/* Added Workers List */}
             {workersList.length > 0 ? (
-              <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 text-xs">
+              <div className="border border-[#ebdcc9] rounded-xl overflow-hidden divide-y divide-[#ebdcc9] text-xs">
                 {workersList.map((worker, index) => (
-                  <div key={worker.id} className="p-3 bg-slate-50/50 flex items-center justify-between hover:bg-slate-50 transition">
+                  <div key={worker.id} className="p-3 bg-[#fbf9f5] flex items-center justify-between hover:bg-white transition">
                     <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-[10px]">
+                      <span className="w-6 h-6 rounded-full bg-[#ebdcc9] text-[#24160c] font-bold flex items-center justify-center text-[10px]">
                         {index + 1}
                       </span>
                       <div>
-                        <span className="font-semibold text-slate-900">{worker.name}</span>
-                        <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-medium">
+                        <span className="font-semibold text-[#24160c]">{worker.name}</span>
+                        <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-white border border-[#ebdcc9] text-[#5c3e24] font-medium">
                           {worker.role}
                         </span>
                       </div>
@@ -691,7 +767,7 @@ function InstallationFormContent() {
                     <button
                       type="button"
                       onClick={() => handleRemoveWorker(worker.id)}
-                      className="p-1 text-slate-400 hover:text-red-600 transition"
+                      className="p-1 text-[#8c7360] hover:text-rose-600 transition cursor-pointer"
                       title="Remove worker"
                     >
                       <X className="w-4 h-4" />
@@ -700,7 +776,7 @@ function InstallationFormContent() {
                 ))}
               </div>
             ) : (
-              <div className="p-4 border-2 border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400">
+              <div className="p-4 border-2 border-dashed border-[#d6c7b2] rounded-xl text-center text-xs text-[#8c7360] bg-[#fbf9f5]">
                 No workers added yet. Type worker names above to add them to this project's erection crew.
               </div>
             )}
@@ -709,96 +785,100 @@ function InstallationFormContent() {
           {/* ======================================================== */}
           {/* 3. SCAFFOLDING DIMENSIONS & ACTUAL SIZE VERIFICATION     */}
           {/* ======================================================== */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-            <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Ruler className="w-4 h-4 text-emerald-600" />
-                <span>3. Scaffolding Dimensions & Actual Size Verification</span>
-              </h2>
-              <span className="text-[11px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+          <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
+            <div className="border-b border-[#ebdcc9] pb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+                  03
+                </div>
+                <h2 className="text-sm font-bold text-[#24160c] uppercase tracking-wider">
+                  Scaffolding Dimensions & Actual Size Verification
+                </h2>
+              </div>
+              <span className="text-[11px] font-mono font-bold text-[#5c3e24] bg-[#ebdcc9] px-2 py-0.5 rounded border border-[#d6c7b2]">
                 {structureType.replace('_', ' ')}
               </span>
             </div>
 
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[#7d6553]">
               Compare the physical erected scaffolding dimensions on site against the approved site inspection measurements.
             </p>
 
             {/* Planned vs Actual Dimension Comparison */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Planned Dimensions (Read-only reference) */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 text-xs">
-                <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                  <Scale className="w-3.5 h-3.5 text-slate-500" />
+              <div className="p-4 bg-[#fbf9f5] border border-[#ebdcc9] rounded-xl space-y-3 text-xs">
+                <div className="font-bold text-[#4a3525] uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                  <Scale className="w-3.5 h-3.5 text-[#8f6541]" />
                   <span>Planned Inspection Dimensions</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center font-mono">
-                  <div className="p-2 bg-white rounded border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-sans">Length</div>
-                    <div className="font-bold text-slate-800 text-sm">{plannedLength} {dimUnit === 'METERS' ? 'm' : 'ft'}</div>
+                  <div className="p-2 bg-white rounded border border-[#ebdcc9]">
+                    <div className="text-[10px] text-[#7d6553] font-sans">Length</div>
+                    <div className="font-bold text-[#24160c] text-sm">{plannedLength} {dimUnit === 'METERS' ? 'm' : 'ft'}</div>
                   </div>
-                  <div className="p-2 bg-white rounded border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-sans">Width</div>
-                    <div className="font-bold text-slate-800 text-sm">{plannedWidth} {dimUnit === 'METERS' ? 'm' : 'ft'}</div>
+                  <div className="p-2 bg-white rounded border border-[#ebdcc9]">
+                    <div className="text-[10px] text-[#7d6553] font-sans">Width</div>
+                    <div className="font-bold text-[#24160c] text-sm">{plannedWidth} {dimUnit === 'METERS' ? 'm' : 'ft'}</div>
                   </div>
-                  <div className="p-2 bg-white rounded border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-sans">Height</div>
-                    <div className="font-bold text-slate-800 text-sm">{plannedHeight} {dimUnit === 'METERS' ? 'm' : 'ft'}</div>
+                  <div className="p-2 bg-white rounded border border-[#ebdcc9]">
+                    <div className="text-[10px] text-[#7d6553] font-sans">Height</div>
+                    <div className="font-bold text-[#24160c] text-sm">{plannedHeight} {dimUnit === 'METERS' ? 'm' : 'ft'}</div>
                   </div>
                 </div>
-                <div className="text-[11px] text-slate-500 flex justify-between pt-1 border-t border-slate-200">
-                  <span>Planned Surface Area ($L \times H$):</span>
-                  <span className="font-mono font-bold text-slate-700">{plannedArea.toFixed(1)} {dimUnit === 'METERS' ? 'sq.m' : 'sq.ft'}</span>
+                <div className="text-[11px] text-[#7d6553] flex justify-between pt-1 border-t border-[#ebdcc9]">
+                  <span>Planned Surface Area (L × H):</span>
+                  <span className="font-mono font-bold text-[#24160c]">{plannedArea.toFixed(1)} {dimUnit === 'METERS' ? 'sq.m' : 'sq.ft'}</span>
                 </div>
               </div>
 
               {/* Actual Installed Dimensions Inputs */}
-              <div className="p-4 bg-emerald-50/40 border border-emerald-200 rounded-xl space-y-3 text-xs">
-                <div className="font-bold text-emerald-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                  <Ruler className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="p-4 bg-[#fbf9f5] border border-[#ebdcc9] rounded-xl space-y-3 text-xs">
+                <div className="font-bold text-[#24160c] uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                  <Ruler className="w-3.5 h-3.5 text-[#8f6541]" />
                   <span>Actual Installed Dimensions On Site *</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-600 mb-1">Actual Length</label>
+                    <label className="block text-[10px] font-semibold text-[#4a3525] mb-1">Actual Length</label>
                     <input
                       type="number"
                       step="0.1"
                       min="0"
                       value={actualLength}
                       onChange={(e) => setActualLength(Number(e.target.value))}
-                      className="w-full p-2 bg-white border border-emerald-300 rounded font-mono font-bold text-slate-900 text-center"
+                      className="w-full p-2 bg-white border border-[#d6c7b2] rounded font-mono font-bold text-[#24160c] text-center"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-600 mb-1">Actual Width</label>
+                    <label className="block text-[10px] font-semibold text-[#4a3525] mb-1">Actual Width</label>
                     <input
                       type="number"
                       step="0.1"
                       min="0"
                       value={actualWidth}
                       onChange={(e) => setActualWidth(Number(e.target.value))}
-                      className="w-full p-2 bg-white border border-emerald-300 rounded font-mono font-bold text-slate-900 text-center"
+                      className="w-full p-2 bg-white border border-[#d6c7b2] rounded font-mono font-bold text-[#24160c] text-center"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-600 mb-1">Actual Height</label>
+                    <label className="block text-[10px] font-semibold text-[#4a3525] mb-1">Actual Height</label>
                     <input
                       type="number"
                       step="0.1"
                       min="0"
                       value={actualHeight}
                       onChange={(e) => setActualHeight(Number(e.target.value))}
-                      className="w-full p-2 bg-white border border-emerald-300 rounded font-mono font-bold text-slate-900 text-center"
+                      className="w-full p-2 bg-white border border-[#d6c7b2] rounded font-mono font-bold text-[#24160c] text-center"
                       required
                     />
                   </div>
                 </div>
-                <div className="text-[11px] text-emerald-800 flex justify-between pt-1 border-t border-emerald-200">
-                  <span>Actual Surface Area ($L \times H$):</span>
-                  <span className="font-mono font-bold text-emerald-900">{actualArea.toFixed(1)} {dimUnit === 'METERS' ? 'sq.m' : 'sq.ft'}</span>
+                <div className="text-[11px] text-[#5c3e24] flex justify-between pt-1 border-t border-[#ebdcc9]">
+                  <span>Actual Surface Area (L × H):</span>
+                  <span className="font-mono font-bold text-[#24160c]">{actualArea.toFixed(1)} {dimUnit === 'METERS' ? 'sq.m' : 'sq.ft'}</span>
                 </div>
               </div>
             </div>
@@ -806,22 +886,22 @@ function InstallationFormContent() {
             {/* LIVE SIZE VERIFICATION RESULT */}
             <div>
               {isExactSizeMatch ? (
-                <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-900 flex items-start gap-2.5">
+                <div className="p-3.5 bg-[#fbf9f5] border border-[#ebdcc9] rounded-xl text-xs text-[#24160c] flex items-start gap-2.5">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-bold text-emerald-800">Actual Size Verified: Dimensions Correct (100% Match)</div>
-                    <p className="text-[11px] text-emerald-700 mt-0.5">
+                    <div className="font-bold text-[#24160c]">Actual Size Verified: Dimensions Correct (100% Match)</div>
+                    <p className="text-[11px] text-[#5c3e24] mt-0.5">
                       Physical erected structure ({actualLength}m length × {actualWidth}m width × {actualHeight}m height = {actualArea.toFixed(1)} sq.m) matches the approved site inspection dimensions precisely.
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-950 space-y-2.5">
-                  <div className="flex items-center gap-2 font-bold text-amber-900">
+                <div className="p-3.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-xl text-xs space-y-2.5">
+                  <div className="flex items-center gap-2 font-bold text-[#714f36]">
                     <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                     <span>Actual Size Variance Detected</span>
                   </div>
-                  <div className="text-[11px] text-amber-800 space-y-1">
+                  <div className="text-[11px] text-[#5c3e24] space-y-1">
                     <div>
                       Planned: <strong>{plannedLength}m × {plannedWidth}m × {plannedHeight}m</strong> ({plannedArea.toFixed(1)} sq.m)
                     </div>
@@ -829,22 +909,22 @@ function InstallationFormContent() {
                       Actual Installed: <strong>{actualLength}m × {actualWidth}m × {actualHeight}m</strong> ({actualArea.toFixed(1)} sq.m)
                     </div>
                     <div>
-                      Variance: <strong className={variancePercentage > 0 ? "text-blue-800 font-bold" : "text-amber-800 font-bold"}>
+                      Variance: <strong className="text-[#24160c] font-bold">
                         {variancePercentage > 0 ? `+${variancePercentage.toFixed(1)}% (Area Enlarged)` : `${variancePercentage.toFixed(1)}% (Area Reduced)`}
                       </strong>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                      Reason for Size Difference on Site <span className="text-red-500">*</span>
+                    <label className="block text-[11px] font-semibold text-[#4a3525] mb-1">
+                      Reason for Size Difference on Site <span className="text-rose-600">*</span>
                     </label>
                     <input
                       type="text"
                       value={sizeVarianceReason}
                       onChange={(e) => setSizeVarianceReason(e.target.value)}
                       placeholder="e.g. Parapet height increased by 2m as requested by client engineer"
-                      className="w-full p-2 bg-white border border-amber-300 rounded-lg text-xs"
+                      className="w-full p-2 bg-white border border-[#d6c7b2] rounded-lg text-xs text-[#24160c]"
                     />
                   </div>
 
@@ -853,9 +933,9 @@ function InstallationFormContent() {
                       type="checkbox"
                       checked={sizeVarianceConfirmed}
                       onChange={(e) => setSizeVarianceConfirmed(e.target.checked)}
-                      className="w-4 h-4 text-amber-600 rounded"
+                      className="w-4 h-4 text-[#24160c] rounded"
                     />
-                    <span className="font-semibold text-amber-950">
+                    <span className="font-semibold text-[#24160c]">
                       Confirm actual installed dimensions inspected and approved on site
                     </span>
                   </label>
@@ -878,14 +958,18 @@ function InstallationFormContent() {
             const hasMaterialDiscrepancy = lessMaterialsCount > 0 || moreMaterialsCount > 0;
 
             return (
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
+                <div className="border-b border-[#ebdcc9] pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <Boxes className="w-4 h-4 text-emerald-600" />
-                      <span>4. Actual Materials Issued & Installed (Accuracy & Variance Check)</span>
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+                        04
+                      </div>
+                      <h2 className="text-sm font-bold text-[#24160c] uppercase tracking-wider">
+                        Actual Materials Issued & Installed (Stock Reconciliation)
+                      </h2>
+                    </div>
+                    <p className="text-xs text-[#7d6553] mt-1">
                       Verify whether the issued material is accurate or if there is any shortage (less) or surplus (more).
                     </p>
                   </div>
@@ -895,7 +979,7 @@ function InstallationFormContent() {
                     <button
                       type="button"
                       onClick={handleSetAllInstalled}
-                      className="px-2.5 py-1 text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition"
+                      className="px-2.5 py-1 text-[11px] font-semibold bg-[#24160c] text-[#fdfcf9] rounded-lg hover:bg-[#382315] transition cursor-pointer shadow-2xs"
                       title="Set actual installed quantity equal to reserved quantity for all items"
                     >
                       Set 100% Installed
@@ -903,7 +987,7 @@ function InstallationFormContent() {
                     <button
                       type="button"
                       onClick={handleAutoBalanceUnused}
-                      className="px-2.5 py-1 text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-200 transition"
+                      className="px-2.5 py-1 text-[11px] font-semibold bg-[#fbf9f5] text-[#24160c] border border-[#d6c7b2] rounded-lg hover:bg-[#ebdcc9] transition cursor-pointer"
                       title="Automatically fill unused returned quantity to balance reserved"
                     >
                       Auto-Balance Unused
@@ -913,29 +997,26 @@ function InstallationFormContent() {
 
                 {/* Material Accuracy Summary KPI Bar */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Total Reserved</div>
-                    <div className="text-lg font-bold font-mono text-slate-800 mt-0.5">{totalReserved} <span className="text-[10px] text-slate-400 font-normal">Nos</span></div>
+                  <div className="p-3 bg-[#fbf9f5] rounded-xl border border-[#ebdcc9]">
+                    <div className="text-[10px] text-[#7d6553] font-semibold uppercase tracking-wider">Total Reserved</div>
+                    <div className="text-lg font-bold font-mono text-[#24160c] mt-0.5">{totalReserved} <span className="text-[10px] text-[#7d6553] font-normal">Nos</span></div>
                   </div>
 
-                  <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-200">
-                    <div className="text-[10px] text-emerald-700 font-semibold uppercase tracking-wider">Actual Installed</div>
-                    <div className="text-lg font-bold font-mono text-emerald-900 mt-0.5">{totalInstalled} <span className="text-[10px] text-emerald-700 font-normal">Nos</span></div>
+                  <div className="p-3 bg-[#fbf9f5] rounded-xl border border-[#ebdcc9]">
+                    <div className="text-[10px] text-[#5c3e24] font-semibold uppercase tracking-wider">Actual Installed</div>
+                    <div className="text-lg font-bold font-mono text-[#24160c] mt-0.5">{totalInstalled} <span className="text-[10px] text-[#5c3e24] font-normal">Nos</span></div>
                   </div>
 
-                  <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-200">
-                    <div className="text-[10px] text-blue-700 font-semibold uppercase tracking-wider">Unused Returning</div>
-                    <div className="text-lg font-bold font-mono text-blue-900 mt-0.5">{totalUnused} <span className="text-[10px] text-blue-700 font-normal">Nos</span></div>
+                  <div className="p-3 bg-[#fbf9f5] rounded-xl border border-[#ebdcc9]">
+                    <div className="text-[10px] text-[#5c3e24] font-semibold uppercase tracking-wider">Unused Returning</div>
+                    <div className="text-lg font-bold font-mono text-[#24160c] mt-0.5">{totalUnused} <span className="text-[10px] text-[#5c3e24] font-normal">Nos</span></div>
                   </div>
 
-                  <div className={`p-3 rounded-xl border ${!hasMaterialDiscrepancy
-                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                      : 'bg-amber-50 border-amber-300 text-amber-950'
-                    }`}>
-                    <div className="text-[10px] font-semibold uppercase tracking-wider">
+                  <div className="p-3 rounded-xl border border-[#ebdcc9] bg-[#fbf9f5]">
+                    <div className="text-[10px] text-[#7d6553] font-semibold uppercase tracking-wider">
                       {!hasMaterialDiscrepancy ? 'Stock Accuracy' : 'Discrepancy'}
                     </div>
-                    <div className="text-sm font-bold font-mono mt-0.5 flex items-center justify-center gap-1">
+                    <div className="text-sm font-bold font-mono text-[#24160c] mt-0.5 flex items-center justify-center gap-1">
                       {!hasMaterialDiscrepancy ? (
                         <>
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 inline" />
@@ -968,40 +1049,37 @@ function InstallationFormContent() {
                     const isMore = diff > 0;
 
                     return (
-                      <div key={idx} className={`p-3.5 rounded-xl border text-xs space-y-2.5 ${isLess ? 'bg-red-50/40 border-red-200' :
-                          isMore ? 'bg-blue-50/40 border-blue-200' :
-                            'bg-slate-50 border-slate-200'
-                        }`}>
+                      <div key={idx} className="p-3.5 rounded-xl border border-[#ebdcc9] bg-[#fbf9f5] text-xs space-y-2.5">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <div className="font-semibold text-slate-900">{row.materialName}</div>
-                            <div className="font-mono text-[11px] text-slate-500">{row.itemCode}</div>
+                            <div className="font-semibold text-[#24160c]">{row.materialName}</div>
+                            <div className="font-mono text-[11px] text-[#7d6553]">{row.itemCode}</div>
                           </div>
                           <div>
                             {isExact && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#ebdcc9] text-[#24160c] font-bold text-[10px]">
+                                <CheckCircle2 className="w-3 h-3 text-[#8f6541]" />
                                 <span>Exact</span>
                               </span>
                             )}
                             {isLess && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-800 font-bold text-[10px]">
-                                <AlertTriangle className="w-3 h-3 text-red-600" />
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold text-[10px]">
+                                <AlertTriangle className="w-3 h-3 text-rose-600" />
                                 <span>-{Math.abs(diff)} Short</span>
                               </span>
                             )}
                             {isMore && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[10px]">
-                                <Plus className="w-3 h-3 text-blue-600" />
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px]">
+                                <Plus className="w-3 h-3 text-amber-700" />
                                 <span>+{diff} Extra</span>
                               </span>
                             )}
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60">
+                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#ebdcc9]">
                           <div>
-                            <label className="block text-[10px] font-semibold text-emerald-800 mb-1">
+                            <label className="block text-[10px] font-semibold text-[#4a3525] mb-1">
                               Installed Qty (Nos) *
                             </label>
                             <input
@@ -1009,11 +1087,11 @@ function InstallationFormContent() {
                               min="0"
                               value={row.installedQuantity}
                               onChange={(e) => handleMaterialChange(idx, 'installedQuantity', Number(e.target.value))}
-                              className="w-full min-h-[38px] p-2 border border-emerald-300 rounded-lg font-mono font-bold text-emerald-900 text-center bg-white"
+                              className="w-full min-h-[38px] p-2 border border-[#d6c7b2] rounded-lg font-mono font-bold text-[#24160c] text-center bg-white"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-semibold text-blue-800 mb-1">
+                            <label className="block text-[10px] font-semibold text-[#4a3525] mb-1">
                               Unused Return (Nos)
                             </label>
                             <input
@@ -1021,14 +1099,14 @@ function InstallationFormContent() {
                               min="0"
                               value={row.unusedReturnedQty}
                               onChange={(e) => handleMaterialChange(idx, 'unusedReturnedQty', Number(e.target.value))}
-                              className="w-full min-h-[38px] p-2 border border-blue-300 rounded-lg font-mono font-bold text-blue-900 text-center bg-white"
+                              className="w-full min-h-[38px] p-2 border border-[#d6c7b2] rounded-lg font-mono font-bold text-[#24160c] text-center bg-white"
                             />
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-[11px] font-mono text-slate-600 pt-1 border-t border-slate-200/60">
-                          <span>Reserved: <strong className="text-slate-800">{reserved}</strong></span>
-                          <span>Accounted: <strong className="text-slate-800">{accounted}</strong></span>
+                        <div className="flex items-center justify-between text-[11px] font-mono text-[#7d6553] pt-1 border-t border-[#ebdcc9]">
+                          <span>Reserved: <strong className="text-[#24160c]">{reserved}</strong></span>
+                          <span>Accounted: <strong className="text-[#24160c]">{accounted}</strong></span>
                         </div>
                       </div>
                     );
@@ -1038,18 +1116,18 @@ function InstallationFormContent() {
                 {/* Desktop Material Accuracy & Quantity Table */}
                 <div className="hidden md:block overflow-x-auto responsive-table-container">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-600 uppercase tracking-wider text-[10px] font-semibold border-b border-slate-200">
+                    <thead className="bg-[#fbf9f5] text-[#4a3525] uppercase tracking-wider text-[10px] font-semibold border-b border-[#ebdcc9]">
                       <tr>
-                        <th className="px-3 py-2.5">Material Description</th>
-                        <th className="px-3 py-2.5">SKU Code</th>
-                        <th className="px-3 py-2.5 text-center">Reserved Qty</th>
-                        <th className="px-3 py-2.5 text-center font-bold text-emerald-800">Actual Installed Qty *</th>
-                        <th className="px-3 py-2.5 text-center font-bold text-blue-800">Unused Returned Qty</th>
-                        <th className="px-3 py-2.5 text-center font-bold text-slate-700">Accounted Total</th>
-                        <th className="px-3 py-2.5 text-center font-bold">Accuracy / Variance Status</th>
+                        <th className="px-3.5 py-3">Material Description</th>
+                        <th className="px-3.5 py-3">SKU Code</th>
+                        <th className="px-3.5 py-3 text-center">Reserved Qty</th>
+                        <th className="px-3.5 py-3 text-center font-bold text-[#24160c]">Actual Installed Qty *</th>
+                        <th className="px-3.5 py-3 text-center font-bold text-[#24160c]">Unused Returned Qty</th>
+                        <th className="px-3.5 py-3 text-center font-bold text-[#24160c]">Accounted Total</th>
+                        <th className="px-3.5 py-3 text-center font-bold">Accuracy / Variance</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 font-mono">
+                    <tbody className="divide-y divide-[#ebdcc9] font-mono">
                       {materialUsage.map((row, idx) => {
                         const reserved = Number(row.reserved || 0);
                         const installed = Number(row.installedQuantity || 0);
@@ -1062,50 +1140,47 @@ function InstallationFormContent() {
                         const isMore = diff > 0;
 
                         return (
-                          <tr key={idx} className={`transition ${isLess ? 'bg-red-50/30 hover:bg-red-50/50' :
-                              isMore ? 'bg-blue-50/30 hover:bg-blue-50/50' :
-                                'hover:bg-slate-50'
-                            }`}>
-                            <td className="px-3 py-2.5 font-sans font-medium text-slate-900">{row.materialName}</td>
-                            <td className="px-3 py-2.5 text-slate-500 text-[11px]">{row.itemCode}</td>
-                            <td className="px-3 py-2.5 text-center text-slate-700 font-bold">{reserved}</td>
-                            <td className="px-3 py-2.5 text-center">
+                          <tr key={idx} className="hover:bg-[#fbf9f5] transition">
+                            <td className="px-3.5 py-2.5 font-sans font-medium text-[#24160c]">{row.materialName}</td>
+                            <td className="px-3.5 py-2.5 text-[#7d6553] text-[11px]">{row.itemCode}</td>
+                            <td className="px-3.5 py-2.5 text-center text-[#24160c] font-bold">{reserved}</td>
+                            <td className="px-3.5 py-2.5 text-center">
                               <input
                                 type="number"
                                 min="0"
                                 value={row.installedQuantity}
                                 onChange={(e) => handleMaterialChange(idx, 'installedQuantity', Number(e.target.value))}
-                                className="w-20 p-1.5 border border-emerald-300 rounded font-mono font-bold text-emerald-800 text-center bg-emerald-50/50"
+                                className="w-20 p-1.5 border border-[#d6c7b2] rounded font-mono font-bold text-[#24160c] text-center bg-white focus:outline-hidden focus:border-[#8f6541]"
                               />
                             </td>
-                            <td className="px-3 py-2.5 text-center">
+                            <td className="px-3.5 py-2.5 text-center">
                               <input
                                 type="number"
                                 min="0"
                                 value={row.unusedReturnedQty}
                                 onChange={(e) => handleMaterialChange(idx, 'unusedReturnedQty', Number(e.target.value))}
-                                className="w-20 p-1.5 border border-blue-300 rounded font-mono font-bold text-blue-800 text-center bg-blue-50/50"
+                                className="w-20 p-1.5 border border-[#d6c7b2] rounded font-mono font-bold text-[#24160c] text-center bg-white focus:outline-hidden focus:border-[#8f6541]"
                               />
                             </td>
-                            <td className="px-3 py-2.5 text-center font-bold text-slate-800">
+                            <td className="px-3.5 py-2.5 text-center font-bold text-[#24160c]">
                               {accounted}
                             </td>
-                            <td className="px-3 py-2.5 text-center">
+                            <td className="px-3.5 py-2.5 text-center">
                               {isExact && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
-                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#ebdcc9] text-[#24160c] font-bold text-[10px]">
+                                  <CheckCircle2 className="w-3 h-3 text-[#8f6541]" />
                                   <span>Accurate (Exact)</span>
                                 </span>
                               )}
                               {isLess && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-100 text-red-800 font-bold text-[10px]">
-                                  <AlertTriangle className="w-3 h-3 text-red-600" />
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold text-[10px]">
+                                  <AlertTriangle className="w-3 h-3 text-rose-600" />
                                   <span>Less (-{Math.abs(diff)} Short)</span>
                                 </span>
                               )}
                               {isMore && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 font-bold text-[10px]">
-                                  <Plus className="w-3 h-3 text-blue-600" />
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px]">
+                                  <Plus className="w-3 h-3 text-amber-700" />
                                   <span>More (+{diff} Extra)</span>
                                 </span>
                               )}
@@ -1119,26 +1194,26 @@ function InstallationFormContent() {
 
                 {/* DISCREPANCY WARNING & EXPLANATION NOTE */}
                 {hasMaterialDiscrepancy && (
-                  <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-950 space-y-3">
-                    <div className="flex items-center gap-2 font-bold text-amber-900">
+                  <div className="p-4 bg-[#fbf9f5] border border-[#d6c7b2] rounded-xl text-xs space-y-3">
+                    <div className="flex items-center gap-2 font-bold text-[#714f36]">
                       <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                       <span>Material Quantity Discrepancy Detected (Less / More than Reserved)</span>
                     </div>
-                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                    <p className="text-[11px] text-[#5c3e24] leading-relaxed">
                       Some items do not match the reserved quantities ({lessMaterialsCount > 0 ? `${lessMaterialsCount} item(s) are LESS than reserved` : ''}{lessMaterialsCount > 0 && moreMaterialsCount > 0 ? '; ' : ''}{moreMaterialsCount > 0 ? `${moreMaterialsCount} item(s) are MORE than reserved` : ''}).
                       Please verify if materials were damaged in transit, left on the truck, or extra pieces were utilized from site storage.
                     </p>
 
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                        Reason for Material Shortage / Surplus on Site <span className="text-red-500">*</span>
+                      <label className="block text-[11px] font-semibold text-[#4a3525] mb-1">
+                        Reason for Material Shortage / Surplus on Site <span className="text-rose-600">*</span>
                       </label>
                       <input
                         type="text"
                         value={materialVarianceReason}
                         onChange={(e) => setMaterialVarianceReason(e.target.value)}
                         placeholder="e.g. 2 vertical standards damaged in transit, returning to yard under inspection; 5 extra ledgers added for extra bracing"
-                        className="w-full p-2 bg-white border border-amber-300 rounded-lg text-xs"
+                        className="w-full p-2 bg-white border border-[#d6c7b2] rounded-lg text-xs text-[#24160c]"
                       />
                     </div>
 
@@ -1147,9 +1222,9 @@ function InstallationFormContent() {
                         type="checkbox"
                         checked={materialVarianceConfirmed}
                         onChange={(e) => setMaterialVarianceConfirmed(e.target.checked)}
-                        className="w-4 h-4 text-amber-600 rounded"
+                        className="w-4 h-4 text-[#24160c] rounded"
                       />
-                      <span className="font-semibold text-amber-950">
+                      <span className="font-semibold text-[#24160c]">
                         Confirm material variance and physical counts inspected on site
                       </span>
                     </label>
@@ -1162,24 +1237,40 @@ function InstallationFormContent() {
           {/* ======================================================== */}
           {/* 5. AFTER-INSTALLATION PHOTOGRAPHS & CLIENT CLEARANCE     */}
           {/* ======================================================== */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+          <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+                  05
+                </div>
+                <h2 className="text-sm font-bold text-[#24160c] uppercase tracking-wider">
+                  After-Installation Photographs & Handover Clearance
+                </h2>
+              </div>
+              <span className="text-[11px] font-mono text-[#7d6553] bg-[#fbf9f5] px-2.5 py-1 rounded border border-[#ebdcc9]">
+                Commissioning Sign-off
+              </span>
+            </div>
+
             <ImageUploaderWithLightbox
               images={afterPhotoUrls}
               onChange={setAfterPhotoUrls}
-              title="5. After-Installation Completed Photographs & Sign-off"
-              subtitle="Take live site camera photos or upload multiple images directly from device gallery. Click any photo to preview, zoom in/out, or replace before saving."
+              title="Post-Erection Scaffolding Photographs"
+              subtitle="Take live site camera photos or upload multiple completed images directly from your device gallery. Click any photo to preview, zoom in/out, or replace before saving."
               maxFiles={20}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-3 border-t border-slate-100">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-3 border-t border-[#ebdcc9]">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Client Site Representative Name</label>
+                <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                  Client Site Representative Name
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g. Mahesh Jadhav (Site Engineer)"
+                  placeholder="e.g. Mahesh Jadhav (Site Engineer / Project Manager)"
                   value={clientRepresentativeName}
                   onChange={(e) => setClientRepresentativeName(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg"
+                  className="w-full p-2.5 bg-white border border-[#d6c7b2] rounded-lg text-[#24160c] focus:outline-hidden focus:border-[#8f6541]"
                 />
               </div>
 
@@ -1189,25 +1280,38 @@ function InstallationFormContent() {
                   id="signoff"
                   checked={clientSignOff}
                   onChange={(e) => setClientSignOff(e.target.checked)}
-                  className="w-4 h-4 text-emerald-600 rounded"
+                  className="w-4 h-4 text-[#24160c] rounded cursor-pointer"
                 />
-                <label htmlFor="signoff" className="font-semibold text-slate-800">
+                <label htmlFor="signoff" className="font-semibold text-[#24160c] cursor-pointer">
                   Client representative signed / verbal erection acceptance verified
                 </label>
               </div>
             </div>
           </div>
 
-          {/* Submit Actions */}
-          <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-end gap-3 pt-4">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition flex items-center justify-center gap-2"
-            >
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>{submitting ? 'Commissioning...' : 'Commission Installation & Activate Rental'}</span>
-            </button>
+          {/* Bottom Action Bar */}
+          <div className="bg-white p-4 rounded-xl border border-[#ebdcc9] shadow-2xs flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="text-xs text-[#7d6553] flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#8f6541]"></span>
+              <span>Submitting commissions the physical scaffolding and activates the 28-day rental billing clock.</span>
+            </div>
+
+            <div className="flex items-center gap-3 justify-end">
+              <Link
+                href="/projects"
+                className="px-5 py-2.5 rounded-lg border border-[#d6c7b2] text-[#24160c] hover:bg-[#fbf9f5] text-xs font-semibold transition text-center min-h-[40px] flex items-center justify-center cursor-pointer"
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#24160c] hover:bg-[#382315] disabled:bg-[#d6c7b2] text-[#fbf9f5] text-xs font-bold rounded-lg shadow-sm transition cursor-pointer min-h-[40px]"
+              >
+                <CheckCircle2 className="w-4 h-4 text-[#c79e7c]" />
+                <span>{submitting ? 'Commissioning Installation...' : 'Commission Installation & Activate Rental'}</span>
+              </button>
+            </div>
           </div>
         </form>
       )}

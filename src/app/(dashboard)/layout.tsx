@@ -44,9 +44,9 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-full h-[100dvh] w-full overflow-hidden bg-slate-50 text-slate-800">
+    <div className="flex h-full h-[100dvh] w-full overflow-hidden bg-[#f7f4ed] text-[#24160c]">
       {/* Desktop Sidebar Container */}
-      <aside className="hidden md:flex md:w-64 md:shrink-0 h-full min-h-0 flex-col z-20">
+      <aside className="hidden md:flex md:w-60 md:shrink-0 h-full min-h-0 flex-col z-20">
         <Sidebar />
       </aside>
 
@@ -58,7 +58,7 @@ export default function DashboardLayout({
             onClick={() => setMobileMenuOpen(false)}
             aria-label="Close mobile navigation overlay"
           />
-          <div className="relative z-10 w-72 max-w-[85vw] h-full min-h-0 bg-[#1c120c] shadow-2xl flex flex-col animate-in slide-in-from-left duration-250 overflow-hidden">
+          <div className="relative z-10 w-72 max-w-[85vw] h-full min-h-0 bg-[#19100a] shadow-2xl flex flex-col animate-in slide-in-from-left duration-250 overflow-hidden">
             <Sidebar onClose={() => setMobileMenuOpen(false)} />
           </div>
         </div>
@@ -67,8 +67,8 @@ export default function DashboardLayout({
       {/* Main Content Area Container */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden">
         <Header onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
-        <main className="flex-1 min-h-0 min-w-0 overflow-y-auto overscroll-y-contain p-3 sm:p-4 md:p-6 lg:p-8 main-scrollbar">
-          <div className="max-w-7xl w-full mx-auto min-w-0">
+        <main className="flex-1 min-h-0 min-w-0 overflow-y-auto overscroll-y-contain p-3.5 sm:p-5 md:p-6 main-scrollbar">
+          <div className="max-w-[1500px] w-full mx-auto min-w-0">
             {children}
           </div>
         </main>

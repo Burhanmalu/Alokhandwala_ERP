@@ -346,7 +346,9 @@ export async function runAuditTests() {
 }
 
 // Run when executed directly
-runAuditTests().catch((e) => {
-  console.error('Fatal test error:', e);
-  process.exit(1);
-});
+if (process.argv[1]?.includes('smart-recommendation-and-audit.test')) {
+  runAuditTests().catch((e) => {
+    console.error('Fatal test error:', e);
+    process.exit(1);
+  });
+}

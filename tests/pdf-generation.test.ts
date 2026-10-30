@@ -506,5 +506,12 @@ async function runPdfTests() {
   if (failed > 0) process.exit(1);
 }
 
-runPdfTests();
+export { runPdfTests };
+
+if (process.argv[1]?.includes('pdf-generation.test')) {
+  runPdfTests().catch((e) => {
+    console.error('Fatal test error:', e);
+    process.exit(1);
+  });
+}
 

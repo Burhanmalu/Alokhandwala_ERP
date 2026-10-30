@@ -396,7 +396,9 @@ function drawPartyDetailsCard(
  * Draws Document Running Footers and Page Numbers on all pages
  */
 function applyFooters(doc: jsPDF, docCode: string, docType: string) {
-  const totalPages = doc.internal.getNumberOfPages();
+  const totalPages = typeof (doc as any).getNumberOfPages === 'function' 
+    ? (doc as any).getNumberOfPages() 
+    : (doc.internal as any).getNumberOfPages();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 

@@ -24,7 +24,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 
 export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
   const pathname = usePathname();
-  const { can, currentUser, logout } = useAuth();
+  const { currentUser, logout } = useAuth();
 
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
@@ -33,36 +33,40 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
 
   const navLinkClass = (path: string) => {
     const active = isActive(path);
-    return `flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all min-h-[42px] ${
+    return `flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
       active
-        ? 'bg-[#382315] text-[#fdf8f4] font-semibold border-l-2 border-[#c79e7c]'
-        : 'text-[#debfa6] hover:bg-[#281910] hover:text-white'
+        ? 'bg-[#2a1a11] text-[#fdfbf7] font-semibold border-l-2 border-[#c79e7c] shadow-2xs'
+        : 'text-[#d6beaa] hover:bg-[#22150e] hover:text-white'
     }`;
   };
 
   const iconClass = (path: string) => {
-    return `w-4 h-4 shrink-0 ${isActive(path) ? 'text-[#c79e7c]' : 'text-[#a9927d]'}`;
+    return `w-4 h-4 shrink-0 transition-colors ${isActive(path) ? 'text-[#c79e7c]' : 'text-[#9c826e]'}`;
   };
 
   return (
-    <div className="w-full h-full min-h-0 bg-[#1c120c] text-[#debfa6] flex flex-col shrink-0 select-none overflow-hidden">
+    <div className="w-full h-full min-h-0 bg-[#19100a] text-[#debfa6] flex flex-col shrink-0 select-none border-r border-[#2a1a11] overflow-hidden">
       {/* Brand Header */}
-      <div className="p-4 border-b border-[#2f1f15] flex items-center justify-between bg-[#140c07] shrink-0">
+      <div className="px-4 py-3.5 border-b border-[#2a1a11] flex items-center justify-between bg-[#120b06] shrink-0">
         <Link 
           href="/" 
           onClick={onClose}
-          className="flex items-center gap-3 hover:opacity-90 transition group min-w-0"
+          className="flex items-center gap-2.5 hover:opacity-95 transition group min-w-0"
         >
-          <div className="w-10 h-10 rounded-xl bg-[#23150c] flex items-center justify-center p-1.5 shadow-md shadow-black/50 border border-[#59371d]/60 group-hover:border-[#c79e7c]/70 transition-colors shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[#24150c] flex items-center justify-center p-1 border border-[#4d301c] shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src="/logo-icon-accent.png" 
               alt="Alokhandwala Scaffold Mark" 
-              className="w-full h-full object-contain filter drop-shadow"
+              className="w-full h-full object-contain"
             />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="font-bold text-[#fdf8f4] text-base tracking-wider truncate uppercase">
+            <div className="font-bold text-[#fdf8f4] text-xs tracking-wider truncate uppercase">
               ALOKHANDWALA
+            </div>
+            <div className="text-[10px] text-[#9c826e] font-medium tracking-tight truncate">
+              Enterprise ERP System
             </div>
           </div>
         </Link>
@@ -70,10 +74,10 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
         {onClose && (
           <button
             onClick={onClose}
-            className="md:hidden p-2 rounded-lg text-[#a9927d] hover:text-white hover:bg-[#281910] transition min-w-[40px] min-h-[40px] flex items-center justify-center shrink-0"
+            className="md:hidden p-1.5 rounded-md text-[#a9927d] hover:text-white hover:bg-[#24150c] transition"
             aria-label="Close Navigation"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         )}
       </div>
@@ -83,9 +87,9 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
         
         {/* WORKER VIEW: Only sees sites he has worked on */}
         {currentUser.role === 'WORKER' && (
-          <div className="space-y-0.5">
-            <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#8f745f]">
-              My Work Sites
+          <div className="space-y-1">
+            <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#8a705e]">
+              My Operations
             </div>
             
             <Link href="/projects" onClick={onClose} className={navLinkClass('/projects')}>
@@ -97,12 +101,12 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
           </div>
         )}
 
-        {/* SUPERVISOR VIEW: Only has Site Form and Installation Form (+ My Projects) */}
+        {/* SUPERVISOR VIEW */}
         {currentUser.role === 'SUPERVISOR' && (
           <div className="space-y-4">
-            <div className="space-y-0.5">
-              <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#8f745f]">
-                Supervisor Forms
+            <div className="space-y-1">
+              <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#8a705e]">
+                Field Operations
               </div>
 
               <Link href="/sites/new" onClick={onClose} className={navLinkClass('/sites/new')}>
@@ -120,9 +124,9 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
               </Link>
             </div>
 
-            <div className="space-y-0.5 pt-1 border-t border-[#2a1b12]">
-              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#8f745f]">
-                Sites & Projects
+            <div className="space-y-1 pt-2 border-t border-[#23150d]">
+              <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#8a705e]">
+                Sites & Records
               </div>
 
               <Link href="/projects" onClick={onClose} className={navLinkClass('/projects')}>
@@ -135,13 +139,13 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
           </div>
         )}
 
-        {/* ADMIN VIEW: Has all the power (full operations, workflow, management) */}
+        {/* ADMIN VIEW */}
         {currentUser.role === 'ADMIN' && (
           <>
             {/* Section: Main Operations */}
-            <div className="space-y-0.5">
-              <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#8f745f]">
-                Operations
+            <div className="space-y-1">
+              <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#8a705e]">
+                Core Modules
               </div>
               
               <Link href="/" onClick={onClose} className={navLinkClass('/')}>
@@ -175,14 +179,14 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
               <Link href="/billing" onClick={onClose} className={navLinkClass('/billing')}>
                 <div className="flex items-center gap-2.5">
                   <ReceiptIndianRupee className={iconClass('/billing')} />
-                  <span>Billing & Invoices</span>
+                  <span>Billing & Accounts</span>
                 </div>
               </Link>
             </div>
 
-            {/* Section: Field Workflow */}
-            <div className="space-y-0.5 pt-1 border-t border-[#2a1b12]">
-              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#8f745f]">
+            {/* Section: Field Operations Workflow */}
+            <div className="space-y-1 pt-2 border-t border-[#23150d]">
+              <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#8a705e]">
                 Field Workflow
               </div>
 
@@ -203,15 +207,15 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
               <Link href="/installation" onClick={onClose} className={navLinkClass('/installation')}>
                 <div className="flex items-center gap-2.5">
                   <Truck className={iconClass('/installation')} />
-                  <span>Installation Form</span>
+                  <span>Installation & Handover</span>
                 </div>
               </Link>
             </div>
 
             {/* Section: Insights & Management */}
-            <div className="space-y-0.5 pt-1 border-t border-[#2a1b12]">
-              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#8f745f]">
-                Management
+            <div className="space-y-1 pt-2 border-t border-[#23150d]">
+              <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#8a705e]">
+                Administration
               </div>
 
               <Link href="/reports" onClick={onClose} className={navLinkClass('/reports')}>
@@ -254,25 +258,31 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
       </div>
 
       {/* Footer User Card & Logout */}
-      <div className="p-3 bg-[#140c07] border-t border-[#2f1f15] shrink-0">
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="min-w-0">
-            <div className="text-xs font-semibold text-[#fdf8f4] truncate">
-              {currentUser.fullName}
+      <div className="p-2.5 bg-[#120b06] border-t border-[#2a1a11] shrink-0">
+        <div className="flex items-center justify-between gap-2 px-1 py-1">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-md bg-[#24150c] text-[#fdf8f4] flex items-center justify-center font-bold text-xs border border-[#4d301c] shrink-0">
+              {currentUser.fullName ? currentUser.fullName[0] : 'U'}
             </div>
-            <div className="text-[10px] text-[#9f836c] font-mono uppercase tracking-wide">
-              {currentUser.role.replace('_', ' ')}
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold text-[#fdf8f4] truncate">
+                {currentUser.fullName}
+              </div>
+              <div className="text-[10px] text-[#9c826e] font-mono uppercase tracking-wide truncate">
+                {currentUser.role.replace('_', ' ')}
+              </div>
             </div>
           </div>
-        </div>
 
-        <button
-          onClick={logout}
-          className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs text-[#debfa6] hover:text-white bg-[#24150c] hover:bg-[#341e12] border border-[#3e271a] transition"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          <span>Sign Out</span>
-        </button>
+          <button
+            onClick={logout}
+            title="Sign Out"
+            className="p-1.5 rounded-md text-[#9c826e] hover:text-rose-400 hover:bg-[#24150c] transition cursor-pointer"
+            aria-label="Sign Out"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );

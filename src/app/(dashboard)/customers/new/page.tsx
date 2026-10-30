@@ -13,7 +13,9 @@ import {
   MapPin, 
   ReceiptIndianRupee, 
   FileText,
-  UserCheck
+  UserCheck,
+  ShieldCheck,
+  CreditCard
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 
@@ -66,8 +68,8 @@ export default function NewCustomerPage() {
           state,
           gstin: gstin.trim().toUpperCase() || undefined,
           creditLimit: Number(creditLimit),
-          actorId: currentUser.id,
-          actorName: currentUser.fullName,
+          actorId: currentUser?.id,
+          actorName: currentUser?.fullName,
         }),
       });
 
@@ -76,7 +78,6 @@ export default function NewCustomerPage() {
         throw new Error(json.error || 'Failed to register customer');
       }
 
-      // Redirect to Customers directory or Site Inspection
       router.push('/customers');
     } catch (err: any) {
       setError(err.message);
@@ -86,59 +87,66 @@ export default function NewCustomerPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-2 text-xs text-slate-500">
-        <Link href="/customers" className="hover:text-emerald-700 flex items-center gap-1">
+      <div className="flex items-center gap-2 text-xs text-stone-500">
+        <Link href="/customers" className="hover:text-[#24160c] flex items-center gap-1">
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Customers & Sites</span>
+          <span>Customers & Corporate Accounts</span>
         </Link>
         <span>/</span>
-        <span className="font-semibold text-slate-800">Customer Registration Form</span>
+        <span className="font-semibold text-stone-800">New Registration Form</span>
       </div>
 
-      {/* Page Header */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+      {/* Header Banner */}
+      <div className="bg-[#24160c] border border-[#19100a] rounded-lg p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-emerald-600" />
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] font-mono tracking-widest text-[#c79e7c] uppercase">Commercial Onboarding</span>
+            <span className="text-stone-500">|</span>
+            <span className="text-xs text-stone-300">Master Record</span>
+          </div>
+          <h1 className="text-xl font-serif font-bold tracking-tight text-white flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-[#c79e7c]" />
             <span>Customer Registration Form</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Register new builders, general contractors, developers, and infrastructure partners.
+          <p className="text-xs text-stone-300 mt-1">
+            Establish new contractor and developer accounts for formal quotes, dispatch orders, and GST billing.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/sites/new"
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5"
-          >
-            <span>Open Site Form</span>
-            <Building2 className="w-3.5 h-3.5" />
-          </Link>
-        </div>
+
+        <Link
+          href="/sites/new"
+          className="px-3.5 py-2 bg-[#c79e7c] hover:bg-[#dfcbab] text-[#1c120c] rounded-md text-xs font-bold transition shadow-xs flex items-center gap-1.5 self-start sm:self-auto"
+        >
+          <span>Open Site Form</span>
+          <Building2 className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+        <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800 flex items-center gap-2.5">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Main Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* Company Identity */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-            <Building2 className="w-4 h-4 text-emerald-600" />
-            <span>1. Corporate Identity & Reference</span>
-          </h2>
+        <div className="bg-white p-5 rounded-lg border border-[#e8decb] shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[#f0e8db] pb-3">
+            <h2 className="text-sm font-bold text-[#24160c] flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-[#8f6541]" />
+              <span>1. Corporate Identity & Reference</span>
+            </h2>
+            <span className="text-[11px] text-stone-400 font-mono">STEP 1 OF 3</span>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="sm:col-span-2">
-              <label className="block font-semibold text-slate-700 mb-1">
-                Company / Contractor Name <span className="text-red-500">*</span>
+              <label className="block font-semibold text-stone-700 mb-1">
+                Company / Contractor Legal Name <span className="text-rose-600">*</span>
               </label>
               <input
                 type="text"
@@ -146,48 +154,51 @@ export default function NewCustomerPage() {
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 required
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none font-semibold text-slate-900"
+                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none font-semibold text-stone-900"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Internal Reference / Project Division
+              <label className="block font-semibold text-stone-700 mb-1">
+                Internal Reference / Division Tag
               </label>
               <input
                 type="text"
-                placeholder="e.g. B&F Division / Western Region"
+                placeholder="e.g. Western Region Commercial Hub"
                 value={referenceName}
                 onChange={(e) => setReferenceName(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Customer Status
+              <label className="block font-semibold text-stone-700 mb-1">
+                Account Status
               </label>
               <input
                 type="text"
                 disabled
-                value="ACTIVE (New Account)"
-                className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-lg text-emerald-800 font-bold"
+                value="ACTIVE (Pre-Approved Commercial Client)"
+                className="w-full p-2.5 bg-[#f7f3ec] border border-[#d6c7b2] rounded-md text-[#714f36] font-semibold text-xs"
               />
             </div>
           </div>
         </div>
 
-        {/* Contact Persons */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-            <UserCheck className="w-4 h-4 text-emerald-600" />
-            <span>2. Key Contact & Commercial Communication</span>
-          </h2>
+        {/* Contact Details */}
+        <div className="bg-white p-5 rounded-lg border border-[#e8decb] shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[#f0e8db] pb-3">
+            <h2 className="text-sm font-bold text-[#24160c] flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-[#8f6541]" />
+              <span>2. Commercial Communication & Credit Parameters</span>
+            </h2>
+            <span className="text-[11px] text-stone-400 font-mono">STEP 2 OF 3</span>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Primary Contact Person <span className="text-red-500">*</span>
+              <label className="block font-semibold text-stone-700 mb-1">
+                Primary Contact Person <span className="text-rose-600">*</span>
               </label>
               <input
                 type="text"
@@ -195,13 +206,13 @@ export default function NewCustomerPage() {
                 value={contactPerson}
                 onChange={(e) => setContactPerson(e.target.value)}
                 required
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Contact Phone / Mobile <span className="text-red-500">*</span>
+              <label className="block font-semibold text-stone-700 mb-1">
+                Direct Contact Phone / Mobile <span className="text-rose-600">*</span>
               </label>
               <input
                 type="tel"
@@ -209,13 +220,13 @@ export default function NewCustomerPage() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none font-mono"
+                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none font-mono"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Email Address (For Tax Invoices & Notices) <span className="text-red-500">*</span>
+              <label className="block font-semibold text-stone-700 mb-1">
+                Official Billing Email Address <span className="text-rose-600">*</span>
               </label>
               <input
                 type="email"
@@ -223,98 +234,103 @@ export default function NewCustomerPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none font-mono"
+                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none font-mono"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Credit Limit (INR)
+              <label className="block font-semibold text-stone-700 mb-1 flex items-center justify-between">
+                <span>Credit Limit (INR)</span>
+                <span className="text-[11px] text-stone-400 font-normal">Pre-approved ceiling</span>
               </label>
               <input
                 type="number"
                 step="50000"
                 value={creditLimit}
                 onChange={(e) => setCreditLimit(Number(e.target.value))}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none font-mono font-bold text-slate-900"
+                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none font-mono font-bold text-[#24160c]"
               />
             </div>
           </div>
         </div>
 
         {/* Billing Address & GST */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-            <MapPin className="w-4 h-4 text-emerald-600" />
-            <span>3. Registered Billing Address & GSTIN</span>
-          </h2>
+        <div className="bg-white p-5 rounded-lg border border-[#e8decb] shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[#f0e8db] pb-3">
+            <h2 className="text-sm font-bold text-[#24160c] flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-[#8f6541]" />
+              <span>3. Registered Tax Billing Address & GSTIN</span>
+            </h2>
+            <span className="text-[11px] text-stone-400 font-mono">STEP 3 OF 3</span>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="sm:col-span-2">
-              <label className="block font-semibold text-slate-700 mb-1">
-                Registered Corporate Billing Address <span className="text-red-500">*</span>
+              <label className="block font-semibold text-stone-700 mb-1">
+                Registered Corporate Billing Address <span className="text-rose-600">*</span>
               </label>
               <textarea
                 rows={2}
-                placeholder="Full registered address for GST invoicing..."
+                placeholder="Full official registered address for GST tax invoices..."
                 value={billingAddress}
                 onChange={(e) => setBillingAddress(e.target.value)}
                 required
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">City</label>
+              <label className="block font-semibold text-stone-700 mb-1">City</label>
               <input
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg"
+                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">State</label>
+              <label className="block font-semibold text-stone-700 mb-1">State</label>
               <input
                 type="text"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg"
+                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none"
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block font-semibold text-slate-700 mb-1">
-                Customer GSTIN (15 Digits)
+              <label className="block font-semibold text-stone-700 mb-1 flex items-center justify-between">
+                <span>Customer GSTIN (15 Alphanumeric Characters)</span>
+                <span className="text-[11px] text-stone-400 font-normal">State-matched for CGST / SGST</span>
               </label>
               <input
                 type="text"
-                placeholder="e.g. 27AAACG1234F1Z1 (For Intra-State CGST+SGST or Inter-State IGST)"
+                placeholder="e.g. 27AAACG1234F1Z1"
                 value={gstin}
                 onChange={(e) => setGstin(e.target.value)}
                 maxLength={15}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg uppercase font-mono font-bold text-slate-900"
+                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md uppercase font-mono font-bold text-stone-900 focus:bg-white focus:border-[#8f6541] focus:outline-none"
               />
             </div>
           </div>
         </div>
 
-        {/* Submit Actions */}
+        {/* Actions */}
         <div className="flex items-center justify-end gap-3 pt-2">
           <Link
             href="/customers"
-            className="px-5 py-2.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition"
+            className="px-4 py-2 text-xs font-medium text-stone-700 bg-white border border-[#d6c7b2] rounded-md hover:bg-[#fbf9f5] transition"
           >
             Cancel
           </Link>
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition flex items-center gap-2"
+            className="px-5 py-2 text-xs font-bold text-white bg-[#24160c] hover:bg-[#382315] border border-[#19100a] rounded-md shadow-xs transition flex items-center gap-2"
           >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{loading ? 'Registering Customer...' : 'Register Customer'}</span>
+            <CheckCircle2 className="w-4 h-4 text-[#c79e7c]" />
+            <span>{loading ? 'Registering Account...' : 'Confirm & Save Account'}</span>
           </button>
         </div>
       </form>

@@ -81,16 +81,14 @@ export function getDaysDifference(targetDate?: string | Date | null, baseDate = 
  */
 export function addCalendarMonths(startDate: string | Date, monthsToAdd: number): Date {
   const start = new Date(startDate);
-  const targetYear = start.getFullYear();
-  const targetMonth = start.getMonth() + monthsToAdd;
-  const originalDay = start.getDate();
+  // Use UTC methods to prevent local timezone offsets from shifting dates across midnight
+  const targetYear = start.getUTCFullYear();
+  const targetMonth = start.getUTCMonth() + monthsToAdd;
+  const originalDay = start.getUTCDate();
 
-  // Create date at 1st of target month
-  const result = new Date(targetYear, targetMonth, 1);
-  
-  // Find max days in the target month
-  const maxDaysInTargetMonth = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
-  result.setDate(Math.min(originalDay, maxDaysInTargetMonth));
+  const result = new Date(Date.UTC(targetYear, targetMonth, 1));
+  const maxDaysInTargetMonth = new Date(Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0)).getUTCDate();
+  result.setUTCDate(Math.min(originalDay, maxDaysInTargetMonth));
   
   return result;
 }

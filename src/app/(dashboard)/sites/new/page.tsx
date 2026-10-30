@@ -20,7 +20,10 @@ import {
   Compass,
   Check,
   Sparkles,
-  X
+  X,
+  Layers,
+  ArrowRight,
+  ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { Customer, UserProfile } from '@/lib/schema';
@@ -35,7 +38,7 @@ export default function SiteFormPage() {
   const [existingCustomers, setExistingCustomers] = useState<Customer[]>([]);
   const [supervisors, setSupervisors] = useState<UserProfile[]>([]);
 
-  // Form Fields as requested:
+  // Form Fields:
   // 1. Customer Name
   const [customerName, setCustomerName] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
@@ -215,51 +218,77 @@ export default function SiteFormPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
       {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-2 text-xs text-slate-500">
-        <Link href="/projects" className="hover:text-emerald-700 flex items-center gap-1">
+      <div className="flex items-center gap-2 text-xs text-[#7d6553]">
+        <Link href="/projects" className="hover:text-[#24160c] flex items-center gap-1 transition">
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Projects Directory</span>
         </Link>
         <span>/</span>
-        <span className="font-semibold text-slate-800">Site Form</span>
+        <span className="font-semibold text-[#24160c]">Site Inspection & Onboarding</span>
       </div>
 
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-[#0e1c14] to-[#1e3b2e] p-6 rounded-2xl border border-emerald-900/40 text-white shadow-md flex items-center justify-between">
+      {/* Enterprise Header Banner */}
+      <div className="bg-[#1c120c] p-6 rounded-2xl border border-[#382315] text-[#fbf9f5] shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-400">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#c79e7c]">
             <span>ALOKHANDWALA Field Operations</span>
             <span>•</span>
-            <span className="font-mono">Step 1: Site Details</span>
+            <span className="font-mono">Step 1: Site Inspection & Measurements</span>
           </div>
-          <h1 className="text-2xl font-bold mt-1 text-white flex items-center gap-2.5">
-            <Building2 className="w-6 h-6 text-emerald-400" />
+          <h1 className="text-2xl font-bold mt-1 text-[#fdfcf9] flex items-center gap-2.5">
+            <Building2 className="w-6 h-6 text-[#c79e7c]" />
             <span>Site Form</span>
           </h1>
-          <p className="text-xs text-slate-300 mt-1 max-w-xl">
-            Register new site details, capture dimensions, upload photos, and assign supervisors for quotation and scaffolding installation.
+          <p className="text-xs text-[#dfcbab] mt-1 max-w-2xl leading-relaxed">
+            Record customer site details, specify physical elevation dimensions, capture site condition photos, and assign supervisors for quotation confirmation.
           </p>
         </div>
-        <div className="hidden sm:block text-right">
-          <span className="text-[11px] bg-emerald-950 border border-emerald-700/60 text-emerald-300 px-3 py-1 rounded-full font-mono">
-            Status: NOT_INSTALLED
+        <div className="shrink-0 flex items-center">
+          <span className="text-[11px] bg-[#382315] border border-[#c79e7c]/50 text-[#fdfcf9] px-3.5 py-1.5 rounded-full font-mono font-semibold shadow-2xs">
+            Initial Status: NOT_INSTALLED
           </span>
         </div>
       </div>
 
+      {/* Structured Progress Indicator Bar */}
+      <div className="bg-white p-3 rounded-xl border border-[#ebdcc9] shadow-2xs">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs font-medium text-[#7d6553]">
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">1</span>
+            <span className="truncate">Client & Contact</span>
+          </div>
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">2</span>
+            <span className="truncate">Site Location</span>
+          </div>
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">3</span>
+            <span className="truncate">Dimensions</span>
+          </div>
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">4</span>
+            <span className="truncate">Site Photos</span>
+          </div>
+          <div className="col-span-2 sm:col-span-1 flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">5</span>
+            <span className="truncate">Site Remarks</span>
+          </div>
+        </div>
+      </div>
+
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center gap-3 text-sm">
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center gap-3 text-xs">
           <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
-          <span>{error}</span>
+          <span className="font-medium">{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-3 text-sm">
+        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-3 text-xs">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          <span>Site Form submitted successfully! Redirecting to project workspace...</span>
+          <span className="font-medium">Site Form submitted successfully! Initializing project workspace...</span>
         </div>
       )}
 
@@ -267,19 +296,25 @@ export default function SiteFormPage() {
         {/* ========================================================= */}
         {/* SECTION 1: CUSTOMER & REFERRAL                            */}
         {/* ========================================================= */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-emerald-600" />
-              <span>Customer & Referral Details</span>
-            </h2>
-            <span className="text-[11px] text-slate-400">Client Identification</span>
+        <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+                01
+              </div>
+              <h2 className="text-sm font-bold text-[#24160c] uppercase tracking-wider">
+                Customer & Referral Identification
+              </h2>
+            </div>
+            <span className="text-[11px] font-mono text-[#7d6553] bg-[#fbf9f5] px-2.5 py-1 rounded border border-[#ebdcc9]">
+              Client Profile
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             {/* Quick Select Existing Customer (Optional) */}
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <div>
+              <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
                 Select Existing Customer (or type new below)
               </label>
               <SearchableSelect
@@ -302,77 +337,78 @@ export default function SiteFormPage() {
                   )
                 }
                 renderOption={(c) => (
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 py-0.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 py-1">
                     <div className="min-w-0">
-                      <div className="font-semibold text-slate-900 truncate">{c.companyName}</div>
-                      <div className="text-[11px] text-slate-500 truncate">
+                      <div className="font-semibold text-[#24160c] truncate">{c.companyName}</div>
+                      <div className="text-[11px] text-[#7d6553] truncate">
                         {c.contactPerson ? `Contact: ${c.contactPerson}` : ''} {c.phone ? `• ${c.phone}` : ''}
                       </div>
                     </div>
-                    <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 shrink-0 self-start sm:self-auto">
+                    <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-[#fbf9f5] border border-[#ebdcc9] text-[#5c3e24] shrink-0 self-start sm:self-auto">
                       {c.customerCode}
                     </span>
                   </div>
                 )}
                 renderSelected={(c) => (
                   <div className="flex items-center gap-2 truncate">
-                    <span className="font-semibold text-slate-900 truncate">{c.companyName}</span>
-                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
+                    <span className="font-semibold text-[#24160c] truncate">{c.companyName}</span>
+                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#ebdcc9] text-[#24160c] border border-[#d6c7b2] shrink-0">
                       {c.customerCode}
                     </span>
-                    {c.phone && <span className="text-[11px] text-slate-500 truncate">({c.phone})</span>}
+                    {c.phone && <span className="text-[11px] text-[#7d6553] truncate">({c.phone})</span>}
                   </div>
                 )}
               />
             </div>
 
-            {/* 1. Customer Name */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Customer Name <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={customerName}
-                onChange={e => {
-                  setCustomerName(e.target.value);
-                  setSelectedCustomerId('');
-                }}
-                placeholder="e.g. Shapoorji Pallonji / Oberoi Realty"
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition"
-              />
-            </div>
+            {/* Two-Column Grid for Client Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 1. Customer Name */}
+              <div>
+                <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                  Customer Name <span className="text-rose-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={customerName}
+                  onChange={e => {
+                    setCustomerName(e.target.value);
+                    setSelectedCustomerId('');
+                  }}
+                  placeholder="e.g. Shapoorji Pallonji / Oberoi Realty"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
+                />
+              </div>
 
-            {/* 2. Referral Name */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Referral Name
-              </label>
-              <input
-                type="text"
-                value={referralName}
-                onChange={e => setReferralName(e.target.value)}
-                placeholder="e.g. Imran Builder / Architect Mehta / Contractor Rao"
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition"
-              />
-              <span className="text-[10px] text-slate-400 mt-0.5 block">
-                Broker, architect, contractor, or business source
-              </span>
-            </div>
+              {/* 2. Referral Name */}
+              <div>
+                <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                  Referral Name
+                </label>
+                <input
+                  type="text"
+                  value={referralName}
+                  onChange={e => setReferralName(e.target.value)}
+                  placeholder="e.g. Architect Mehta / Contractor Rao / Direct"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
+                />
+                <span className="text-[10px] text-[#8c7360] mt-1 block">
+                  Broker, architect, contractor, or business source
+                </span>
+              </div>
 
-            {/* 3. Supervisor Name */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Supervisor Name <span className="text-rose-500">*</span>
-              </label>
-              <div className="space-y-1.5">
+              {/* 3. Supervisor Name */}
+              <div>
+                <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                  Supervisor in Charge <span className="text-rose-600">*</span>
+                </label>
                 <select
                   value={assignedSupervisorId}
                   onChange={handleSelectSupervisor}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
                 >
-                  <option value="">Select Supervisor...</option>
+                  <option value="">-- Choose Assigned Supervisor --</option>
                   {supervisors.map(s => (
                     <option key={s.id} value={s.id}>
                       {s.fullName} ({s.role.replace('_', ' ')})
@@ -380,69 +416,75 @@ export default function SiteFormPage() {
                   ))}
                 </select>
               </div>
-            </div>
 
-            {/* 4. Phone Number */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Phone Number <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs font-medium">
-                  +91
+              {/* 4. Phone Number */}
+              <div>
+                <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                  Phone Number <span className="text-rose-600">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#7d6553] text-xs font-semibold">
+                    +91
+                  </div>
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={e => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="9820012345"
+                    maxLength={10}
+                    className="w-full text-xs pl-12 pr-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] font-mono transition"
+                  />
                 </div>
-                <input
-                  type="tel"
-                  required
-                  value={phone}
-                  onChange={e => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
-                  placeholder="9820012345"
-                  maxLength={10}
-                  className="w-full text-sm pl-11 pr-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 font-mono transition"
-                />
               </div>
             </div>
           </div>
         </div>
 
         {/* ========================================================= */}
-        {/* SECTION 2: ADDRESS                                        */}
+        {/* SECTION 2: ADDRESS & SITE LOCATION                        */}
         {/* ========================================================= */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-emerald-600" />
-              <span>Site Location & Address</span>
-            </h2>
-            <span className="text-[11px] text-slate-400">Delivery & Erection Point</span>
+        <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+                02
+              </div>
+              <h2 className="text-sm font-bold text-[#24160c] uppercase tracking-wider">
+                Site Location & Delivery Point
+              </h2>
+            </div>
+            <span className="text-[11px] font-mono text-[#7d6553] bg-[#fbf9f5] px-2.5 py-1 rounded border border-[#ebdcc9]">
+              Physical Location
+            </span>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* 5. Address */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Site Address <span className="text-rose-500">*</span>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                Site Address <span className="text-rose-600">*</span>
               </label>
               <textarea
                 required
                 rows={2}
                 value={address}
                 onChange={e => setAddress(e.target.value)}
-                placeholder="Plot No. 42, Sector 15, Near Metro Pillar 124, Andheri East"
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition"
+                placeholder="Plot No. 42, Sector 15, Near Metro Pillar 124, Andheri East, Mumbai"
+                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
-                Landmark
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                Landmark & Unloading Access Notes
               </label>
               <input
                 type="text"
                 value={landmark}
                 onChange={e => setLandmark(e.target.value)}
-                placeholder="Opposite D-Mart / Near Signal"
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition"
+                placeholder="e.g. Opposite D-Mart, gate no. 2; 14-wheeler truck entry permitted after 9 PM"
+                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
               />
             </div>
           </div>
@@ -451,24 +493,38 @@ export default function SiteFormPage() {
         {/* ========================================================= */}
         {/* SECTION 3: SIZE / MEASUREMENTS                            */}
         {/* ========================================================= */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <Ruler className="w-4 h-4 text-emerald-600" />
-              <span>Scaffolding Size & Dimensions</span>
-            </h2>
-            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-xs font-semibold">
+        <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#ebdcc9] pb-3 gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+                03
+              </div>
+              <h2 className="text-sm font-bold text-[#24160c] uppercase tracking-wider">
+                Scaffolding Engineering Dimensions
+              </h2>
+            </div>
+            
+            {/* Unit Toggle Tabs */}
+            <div className="flex items-center gap-1 bg-[#fbf9f5] border border-[#ebdcc9] p-1 rounded-lg text-xs font-semibold self-start sm:self-auto">
               <button
                 type="button"
                 onClick={() => setUnit('FEET')}
-                className={`px-3 py-1 rounded-md transition ${unit === 'FEET' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`px-3 py-1 rounded transition text-xs ${
+                  unit === 'FEET' 
+                    ? 'bg-[#24160c] text-white shadow-2xs' 
+                    : 'text-[#7d6553] hover:text-[#24160c]'
+                }`}
               >
                 Feet (ft)
               </button>
               <button
                 type="button"
                 onClick={() => setUnit('METERS')}
-                className={`px-3 py-1 rounded-md transition ${unit === 'METERS' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`px-3 py-1 rounded transition text-xs ${
+                  unit === 'METERS' 
+                    ? 'bg-[#24160c] text-white shadow-2xs' 
+                    : 'text-[#7d6553] hover:text-[#24160c]'
+                }`}
               >
                 Meters (m)
               </button>
@@ -477,8 +533,8 @@ export default function SiteFormPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Length ({unit === 'FEET' ? 'ft' : 'm'}) <span className="text-rose-500">*</span>
+              <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                Length ({unit === 'FEET' ? 'ft' : 'm'}) <span className="text-rose-600">*</span>
               </label>
               <input
                 type="number"
@@ -488,12 +544,12 @@ export default function SiteFormPage() {
                 value={length}
                 onChange={e => setLength(e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="e.g. 25"
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 font-mono transition"
+                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] font-mono transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+              <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
                 Width / Depth ({unit === 'FEET' ? 'ft' : 'm'})
               </label>
               <input
@@ -503,13 +559,13 @@ export default function SiteFormPage() {
                 value={width}
                 onChange={e => setWidth(e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="e.g. 5"
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 font-mono transition"
+                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] font-mono transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Height ({unit === 'FEET' ? 'ft' : 'm'}) <span className="text-rose-500">*</span>
+              <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                Height ({unit === 'FEET' ? 'ft' : 'm'}) <span className="text-rose-600">*</span>
               </label>
               <input
                 type="number"
@@ -519,35 +575,37 @@ export default function SiteFormPage() {
                 value={height}
                 onChange={e => setHeight(e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="e.g. 40"
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 font-mono transition"
+                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] font-mono transition"
               />
             </div>
           </div>
 
           {/* Size Calculation Card */}
-          <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-4 text-xs">
+          <div className="bg-[#fbf9f5] border border-[#ebdcc9] rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs">
             <div className="flex items-center gap-3">
-              <Compass className="w-5 h-5 text-emerald-700" />
+              <div className="w-8 h-8 rounded-lg bg-[#ebdcc9] text-[#24160c] flex items-center justify-center shrink-0">
+                <Compass className="w-4 h-4 text-[#8f6541]" />
+              </div>
               <div>
-                <span className="font-semibold text-emerald-950">Calculated Elevation Area:</span>
-                <span className="font-mono font-bold text-emerald-900 ml-1.5 text-sm">
+                <span className="font-semibold text-[#4a3525]">Calculated Elevation Area:</span>
+                <span className="font-mono font-bold text-[#24160c] ml-1.5 text-sm">
                   {facadeArea} {unit === 'FEET' ? 'sq.ft' : 'sq.m'}
                 </span>
                 {numW > 0 && (
-                  <span className="text-slate-500 ml-2 font-mono text-[11px]">
+                  <span className="text-[#7d6553] ml-2 font-mono text-[11px]">
                     (Volume: {totalVolume} {unit === 'FEET' ? 'cu.ft' : 'cu.m'})
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="flex-1 min-w-[200px]">
+            <div className="flex-1 min-w-[220px]">
               <input
                 type="text"
                 value={customSizeRemark}
                 onChange={e => setCustomSizeRemark(e.target.value)}
                 placeholder="Additional size notes: e.g. 3 façade sides + elevator shaft"
-                className="w-full text-xs px-3 py-1.5 rounded-lg border border-emerald-300/80 bg-white focus:outline-hidden focus:border-emerald-600 transition"
+                className="w-full text-xs px-3 py-1.5 rounded-md border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:border-[#8f6541] transition"
               />
             </div>
           </div>
@@ -556,11 +614,25 @@ export default function SiteFormPage() {
         {/* ========================================================= */}
         {/* SECTION 4: PHOTO OF A SITE                                */}
         {/* ========================================================= */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+        <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+                04
+              </div>
+              <h2 className="text-sm font-bold text-[#24160c] uppercase tracking-wider">
+                Photo of a Site & Field Evidence
+              </h2>
+            </div>
+            <span className="text-[11px] font-mono text-[#7d6553] bg-[#fbf9f5] px-2.5 py-1 rounded border border-[#ebdcc9]">
+              Visual Documentation
+            </span>
+          </div>
+
           <ImageUploaderWithLightbox
             images={photos}
             onChange={setPhotos}
-            title="Photo of a Site"
+            title="Site Inspection Photos"
             subtitle="Take live site camera photos or upload multiple images directly from your device gallery. Click any photo to preview, zoom in/out, or replace before saving."
             maxFiles={20}
           />
@@ -569,17 +641,23 @@ export default function SiteFormPage() {
         {/* ========================================================= */}
         {/* SECTION 5: REMARK                                         */}
         {/* ========================================================= */}
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <FileText className="w-4 h-4 text-emerald-600" />
-              <span>Remark</span>
-            </h2>
-            <span className="text-[11px] text-slate-400">Site Notes & Safety Precautions</span>
+        <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+                05
+              </div>
+              <h2 className="text-sm font-bold text-[#24160c] uppercase tracking-wider">
+                Remark & Operational Precautions
+              </h2>
+            </div>
+            <span className="text-[11px] font-mono text-[#7d6553] bg-[#fbf9f5] px-2.5 py-1 rounded border border-[#ebdcc9]">
+              Safety & Access
+            </span>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
               Site Remarks & Notes
             </label>
             <textarea
@@ -587,41 +665,48 @@ export default function SiteFormPage() {
               value={remark}
               onChange={e => setRemark(e.target.value)}
               placeholder="e.g. Ground soil is firm, no overhead electrical lines, nighttime vehicle entry only between 11 PM and 5 AM. Client requests galvanized pipes."
-              className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition"
+              className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
             />
-            <span className="text-[10px] text-slate-400 mt-1 block">
-              Include ground conditions, access restrictions, crane positioning, and special requests.
+            <span className="text-[10px] text-[#8c7360] mt-1 block">
+              Include ground conditions, overhead hazard clearances, crane positioning, and vehicle restrictions.
             </span>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-2">
-          <Link
-            href="/projects"
-            className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold transition text-center min-h-[42px] flex items-center justify-center"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={loading || success}
-            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-950/20 transition cursor-pointer min-h-[42px]"
-          >
-            {loading ? (
-              <span>Saving Site Form...</span>
-            ) : success ? (
-              <>
-                <Check className="w-4 h-4" />
-                <span>Submitted!</span>
-              </>
-            ) : (
-              <>
-                <Building2 className="w-4 h-4" />
-                <span>Submit Site Form</span>
-              </>
-            )}
-          </button>
+        {/* Bottom Action Bar */}
+        <div className="bg-white p-4 rounded-xl border border-[#ebdcc9] shadow-2xs flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="text-xs text-[#7d6553] flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#8f6541]"></span>
+            <span>All required fields (*) will create an inspected site ready for quotation confirmation.</span>
+          </div>
+
+          <div className="flex items-center gap-3 justify-end">
+            <Link
+              href="/projects"
+              className="px-5 py-2.5 rounded-lg border border-[#d6c7b2] text-[#24160c] hover:bg-[#fbf9f5] text-xs font-semibold transition text-center min-h-[40px] flex items-center justify-center cursor-pointer"
+            >
+              Cancel
+            </Link>
+            <button
+              type="submit"
+              disabled={loading || success}
+              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#24160c] hover:bg-[#382315] disabled:bg-[#d6c7b2] text-[#fbf9f5] text-xs font-bold rounded-lg shadow-sm transition cursor-pointer min-h-[40px]"
+            >
+              {loading ? (
+                <span>Saving Site Record...</span>
+              ) : success ? (
+                <>
+                  <Check className="w-4 h-4 text-[#c79e7c]" />
+                  <span>Site Record Saved!</span>
+                </>
+              ) : (
+                <>
+                  <Building2 className="w-4 h-4 text-[#c79e7c]" />
+                  <span>Submit Site Form</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </form>
     </div>

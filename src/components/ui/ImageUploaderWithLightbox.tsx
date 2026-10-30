@@ -240,16 +240,16 @@ export function ImageUploaderWithLightbox({
   return (
     <div className="space-y-4">
       {/* Header and Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#ebdcc9] pb-3">
         <div>
-          <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-            <Camera className="w-4 h-4 text-emerald-600" />
+          <h3 className="text-sm font-semibold text-[#24160c] flex items-center gap-2">
+            <Camera className="w-4 h-4 text-[#8c5e39]" />
             <span>{title}</span>
-            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-              {images.length} / {maxFiles} Uploaded
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#fbf9f5] border border-[#e8decb] text-[#574830]">
+              {images.length} / {maxFiles} Files
             </span>
           </h3>
-          {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-[#7d6553] mt-0.5">{subtitle}</p>}
         </div>
 
         {/* Upload Action Buttons */}
@@ -259,10 +259,10 @@ export function ImageUploaderWithLightbox({
             type="button"
             disabled={disabled || isUploading || images.length >= maxFiles}
             onClick={() => cameraInputRef.current?.click()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-xs transition disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#24150c] hover:bg-[#382315] text-[#fdfbf7] rounded-md text-xs font-medium border border-[#4d301c] shadow-2xs transition disabled:opacity-50 cursor-pointer"
             title="Open camera to capture photos"
           >
-            <Camera className="w-3.5 h-3.5 text-emerald-400" />
+            <Camera className="w-3.5 h-3.5 text-[#c79e7c]" />
             <span>Take Photo</span>
           </button>
 
@@ -271,10 +271,10 @@ export function ImageUploaderWithLightbox({
             type="button"
             disabled={disabled || isUploading || images.length >= maxFiles}
             onClick={() => galleryInputRef.current?.click()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#6e482f] hover:bg-[#59371d] text-white rounded-md text-xs font-medium shadow-2xs transition disabled:opacity-50 cursor-pointer"
             title="Upload one or multiple photos from device photo gallery"
           >
-            <ImageIcon className="w-3.5 h-3.5" />
+            <ImageIcon className="w-3.5 h-3.5 text-[#debfa6]" />
             <span>Upload from Gallery</span>
           </button>
 
@@ -283,10 +283,10 @@ export function ImageUploaderWithLightbox({
             type="button"
             disabled={disabled || isUploading}
             onClick={() => setShowUrlInput(!showUrlInput)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition cursor-pointer"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white hover:bg-[#faf6ee] text-[#4d301c] rounded-md text-xs font-medium border border-[#d8c8b4] transition cursor-pointer"
             title="Paste image URL"
           >
-            <LinkIcon className="w-3.5 h-3.5 text-slate-500" />
+            <LinkIcon className="w-3.5 h-3.5 text-[#9c826e]" />
             <span>URL</span>
           </button>
         </div>
@@ -324,26 +324,26 @@ export function ImageUploaderWithLightbox({
 
       {/* Optional URL Input Panel */}
       {showUrlInput && (
-        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 animate-in fade-in-50 duration-150">
+        <div className="p-2.5 bg-[#fbf9f5] border border-[#ebdcc9] rounded-md flex items-center gap-2 animate-in fade-in-50 duration-150">
           <input
             type="text"
             value={customUrl}
             onChange={(e) => setCustomUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCustomUrl())}
             placeholder="Paste image URL or cloud photo link..."
-            className="flex-1 text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono"
+            className="flex-1 text-xs px-3 py-1.5 bg-white border border-[#d8c8b4] rounded focus:outline-none focus:ring-1 focus:ring-[#8c5e39] font-mono text-[#24160c]"
           />
           <button
             type="button"
             onClick={handleAddCustomUrl}
-            className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-semibold hover:bg-slate-800 transition"
+            className="px-3 py-1.5 bg-[#24150c] text-white rounded text-xs font-medium hover:bg-[#382315] transition cursor-pointer"
           >
             Add URL
           </button>
           <button
             type="button"
             onClick={() => setShowUrlInput(false)}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+            className="p-1 text-[#9c826e] hover:text-[#24160c] rounded"
           >
             <X className="w-4 h-4" />
           </button>
@@ -352,8 +352,8 @@ export function ImageUploaderWithLightbox({
 
       {/* Uploading Status Banner */}
       {isUploading && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-xs text-emerald-800 font-medium animate-pulse">
-          <Loader2 className="w-4 h-4 animate-spin text-emerald-600 shrink-0" />
+        <div className="p-2.5 bg-[#faf6ee] border border-[#d8c8b4] rounded-md flex items-center gap-2.5 text-xs text-[#59371d] font-medium animate-pulse">
+          <Loader2 className="w-4 h-4 animate-spin text-[#8c5e39] shrink-0" />
           <span>{uploadProgressText || 'Processing & uploading image...'}</span>
         </div>
       )}
@@ -368,7 +368,7 @@ export function ImageUploaderWithLightbox({
               setActiveLightboxIndex(idx);
               setZoomLevel(1);
             }}
-            className="group relative aspect-video rounded-xl overflow-hidden border border-slate-200 bg-slate-950 shadow-2xs hover:shadow-md transition cursor-pointer select-none"
+            className="group relative aspect-video rounded-md overflow-hidden border border-[#d8c8b4] bg-[#19100a] shadow-2xs hover:border-[#8c5e39] transition cursor-pointer select-none"
             title="Click to open interactive preview and zoom"
           >
             {/* Thumbnail Image */}
@@ -376,20 +376,20 @@ export function ImageUploaderWithLightbox({
             <img
               src={url}
               alt={`Photo ${idx + 1}`}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 opacity-90 group-hover:opacity-100"
             />
 
             {/* Click to Enlarge Overlay Indicator */}
             <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none">
-              <span className="p-2 bg-black/70 rounded-full text-white shadow-md flex items-center gap-1.5 text-xs font-semibold backdrop-blur-xs">
-                <Maximize2 className="w-3.5 h-3.5" />
+              <span className="p-1.5 bg-black/75 rounded text-white shadow flex items-center gap-1.5 text-xs font-medium">
+                <Maximize2 className="w-3.5 h-3.5 text-[#c79e7c]" />
                 <span>Enlarge</span>
               </span>
             </div>
 
             {/* Badge: Photo Number */}
-            <div className="absolute bottom-1.5 left-1.5 bg-black/75 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] text-white font-mono flex items-center gap-1">
-              <ImageIcon className="w-3 h-3 text-emerald-400" />
+            <div className="absolute bottom-1.5 left-1.5 bg-black/75 px-1.5 py-0.5 rounded text-[10px] text-white font-mono flex items-center gap-1">
+              <ImageIcon className="w-3 h-3 text-[#c79e7c]" />
               <span>#{idx + 1}</span>
             </div>
 
@@ -401,7 +401,7 @@ export function ImageUploaderWithLightbox({
                   e.stopPropagation();
                   handleTriggerReplace(idx);
                 }}
-                className="p-1.5 bg-black/70 hover:bg-black/90 text-white rounded-lg backdrop-blur-xs transition shadow-sm hover:text-emerald-300"
+                className="p-1 bg-black/75 hover:bg-black text-white rounded transition shadow-sm hover:text-[#c79e7c]"
                 title="Replace with new photo"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -412,7 +412,7 @@ export function ImageUploaderWithLightbox({
                   e.stopPropagation();
                   handleRemovePhoto(idx);
                 }}
-                className="p-1.5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg shadow-sm transition"
+                className="p-1 bg-rose-700 hover:bg-rose-800 text-white rounded shadow-sm transition"
                 title="Remove photo"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -427,33 +427,33 @@ export function ImageUploaderWithLightbox({
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`aspect-video rounded-xl border-2 border-dashed p-3 flex flex-col items-center justify-center text-center transition select-none ${
+            className={`aspect-video rounded-md border-2 border-dashed p-3 flex flex-col items-center justify-center text-center transition select-none ${
               isDragging
-                ? 'border-emerald-500 bg-emerald-50/80 ring-2 ring-emerald-400/30'
-                : 'border-slate-300 hover:border-emerald-500 bg-slate-50/70 hover:bg-emerald-50/30'
+                ? 'border-[#8c5e39] bg-[#faf6ee]'
+                : 'border-[#d8c8b4] hover:border-[#8c5e39] bg-[#faf6ee]/50'
             }`}
           >
             <UploadCloud
-              className={`w-6 h-6 mb-1 transition ${
-                isDragging ? 'text-emerald-600 scale-110' : 'text-slate-400'
+              className={`w-5 h-5 mb-1 transition ${
+                isDragging ? 'text-[#8c5e39] scale-110' : 'text-[#9c826e]'
               }`}
             />
-            <div className="text-[11px] font-semibold text-slate-700">Add More Photos</div>
+            <div className="text-[11px] font-semibold text-[#4d301c]">Add Site Photos</div>
             <div className="flex items-center gap-2 mt-1.5">
               <button
                 type="button"
                 disabled={disabled || isUploading}
                 onClick={() => galleryInputRef.current?.click()}
-                className="px-2 py-0.5 bg-white border border-slate-200 text-slate-700 rounded-md text-[10px] font-semibold hover:border-emerald-500 transition shadow-2xs"
+                className="px-2 py-0.5 bg-white border border-[#d8c8b4] text-[#4d301c] rounded text-[10px] font-medium hover:border-[#8c5e39] transition shadow-2xs"
               >
                 Gallery
               </button>
-              <span className="text-[9px] text-slate-400">•</span>
+              <span className="text-[9px] text-[#9c826e]">•</span>
               <button
                 type="button"
                 disabled={disabled || isUploading}
                 onClick={() => cameraInputRef.current?.click()}
-                className="px-2 py-0.5 bg-white border border-slate-200 text-slate-700 rounded-md text-[10px] font-semibold hover:border-emerald-500 transition shadow-2xs"
+                className="px-2 py-0.5 bg-white border border-[#d8c8b4] text-[#4d301c] rounded text-[10px] font-medium hover:border-[#8c5e39] transition shadow-2xs"
               >
                 Camera
               </button>
@@ -463,10 +463,10 @@ export function ImageUploaderWithLightbox({
       </div>
 
       {images.length === 0 && !isUploading && (
-        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-center text-xs text-slate-500 space-y-1">
-          <p className="font-semibold text-slate-700">No images uploaded yet</p>
-          <p className="text-[11px] text-slate-400">
-            Use the buttons above to take camera photos or select multiple images from your device gallery.
+        <div className="p-4 bg-[#fbf9f5] border border-[#ebdcc9] rounded-md text-center text-xs text-[#7d6553] space-y-1">
+          <p className="font-semibold text-[#24160c]">No photographs attached</p>
+          <p className="text-[11px] text-[#9c826e]">
+            Capture directly from camera or choose multiple images from your device gallery.
           </p>
         </div>
       )}
@@ -487,11 +487,11 @@ export function ImageUploaderWithLightbox({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 font-mono text-xs border border-emerald-500/30">
+              <span className="px-2.5 py-1 rounded-md bg-[#24150c] text-[#fdf8f4] font-mono text-xs border border-[#4d301c]">
                 Photo {activeLightboxIndex + 1} of {images.length}
               </span>
-              <span className="hidden sm:inline text-xs text-slate-400">
-                Interactive Preview & Inspection
+              <span className="hidden sm:inline text-xs text-[#debfa6]">
+                Interactive High-Resolution Inspection
               </span>
             </div>
 
@@ -501,7 +501,7 @@ export function ImageUploaderWithLightbox({
                 type="button"
                 onClick={handleZoomOut}
                 disabled={zoomLevel <= 0.5}
-                className="p-1.5 sm:px-2.5 sm:py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs flex items-center gap-1 transition disabled:opacity-40"
+                className="p-1.5 sm:px-2.5 sm:py-1 rounded bg-white/10 hover:bg-white/20 text-white text-xs flex items-center gap-1 transition disabled:opacity-40 cursor-pointer"
                 title="Zoom Out (-)"
               >
                 <ZoomOut className="w-4 h-4" />
@@ -511,7 +511,7 @@ export function ImageUploaderWithLightbox({
               <button
                 type="button"
                 onClick={handleResetZoom}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-mono text-xs transition"
+                className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-[#fdf8f4] font-mono text-xs transition cursor-pointer"
                 title="Reset Zoom (0)"
               >
                 {Math.round(zoomLevel * 100)}%
@@ -521,7 +521,7 @@ export function ImageUploaderWithLightbox({
                 type="button"
                 onClick={handleZoomIn}
                 disabled={zoomLevel >= 3.5}
-                className="p-1.5 sm:px-2.5 sm:py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs flex items-center gap-1 transition disabled:opacity-40"
+                className="p-1.5 sm:px-2.5 sm:py-1 rounded bg-white/10 hover:bg-white/20 text-white text-xs flex items-center gap-1 transition disabled:opacity-40 cursor-pointer"
                 title="Zoom In (+)"
               >
                 <ZoomIn className="w-4 h-4" />
@@ -534,10 +534,10 @@ export function ImageUploaderWithLightbox({
               <button
                 type="button"
                 onClick={() => handleTriggerReplace(activeLightboxIndex)}
-                className="p-1.5 sm:px-2.5 sm:py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs flex items-center gap-1 transition"
+                className="p-1.5 sm:px-2.5 sm:py-1 rounded bg-white/10 hover:bg-white/20 text-white text-xs flex items-center gap-1 transition cursor-pointer"
                 title="Replace this photograph"
               >
-                <RefreshCw className="w-4 h-4 text-emerald-400" />
+                <RefreshCw className="w-4 h-4 text-[#c79e7c]" />
                 <span className="hidden sm:inline">Replace</span>
               </button>
 
@@ -545,7 +545,7 @@ export function ImageUploaderWithLightbox({
               <button
                 type="button"
                 onClick={() => handleRemovePhoto(activeLightboxIndex)}
-                className="p-1.5 sm:px-2.5 sm:py-1 rounded-lg bg-rose-600/80 hover:bg-rose-600 text-white text-xs flex items-center gap-1 transition"
+                className="p-1.5 sm:px-2.5 sm:py-1 rounded bg-rose-700/80 hover:bg-rose-700 text-white text-xs flex items-center gap-1 transition cursor-pointer"
                 title="Delete this photograph"
               >
                 <Trash2 className="w-4 h-4" />
@@ -556,7 +556,7 @@ export function ImageUploaderWithLightbox({
               <button
                 type="button"
                 onClick={() => setActiveLightboxIndex(null)}
-                className="p-1.5 sm:p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition ml-1"
+                className="p-1.5 sm:p-2 rounded bg-white/10 hover:bg-white/20 text-white transition ml-1 cursor-pointer"
                 title="Close (Esc)"
               >
                 <X className="w-5 h-5" />

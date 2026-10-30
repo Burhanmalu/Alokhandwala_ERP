@@ -27,7 +27,9 @@ export default function MaterialCataloguePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const EXCLUDED_ITEM_CODES = ['BASE-PLATE-STD', 'TOE-BOARD-8FT', 'CPL-SWIVEL', 'CPL-FIXED'];
   const filtered = materials.filter(m => {
+    if (EXCLUDED_ITEM_CODES.includes(m.itemCode)) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return m.name.toLowerCase().includes(q) || m.itemCode.toLowerCase().includes(q) || m.categoryName?.toLowerCase().includes(q);
