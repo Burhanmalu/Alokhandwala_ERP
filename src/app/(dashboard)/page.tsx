@@ -120,28 +120,18 @@ export default function DashboardPage() {
             </div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#fdfcf9]">Operations & Asset Control Hub</h1>
             <p className="text-xs text-[#dfcbab]/85 max-w-2xl leading-relaxed">
-              Real-time tracking of site inspections, warehouse reservations, active rentals, shifting logistics, and dismantling reconciliation.
+              Real-time tracking of customer sites, warehouse reservations, active rentals, shifting logistics, and dismantling reconciliation.
             </p>
           </div>
         </div>
 
         {/* Quick Actions Toolbar */}
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full xl:w-auto">
-          {can('PROJECT_CREATE_INSPECTION') && (
-            <Link
-              href="/projects/new"
-              className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-[#24160c] bg-[#faf6ee] hover:bg-white rounded-xl shadow-xs hover:shadow transition min-h-[40px]"
-            >
-              <PlusCircle className="w-3.5 h-3.5 text-[#6e482f] shrink-0" />
-              <span className="truncate">Inspection Form</span>
-            </Link>
-          )}
-
           <Link
             href="/sites/new"
-            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#fdfcf9] bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl transition min-h-[40px]"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-[#24160c] bg-[#faf6ee] hover:bg-white rounded-xl shadow-xs hover:shadow transition min-h-[40px]"
           >
-            <MapPin className="w-3.5 h-3.5 text-[#dfcbab] shrink-0" />
+            <MapPin className="w-3.5 h-3.5 text-[#6e482f] shrink-0" />
             <span className="truncate">Site Form</span>
           </Link>
 

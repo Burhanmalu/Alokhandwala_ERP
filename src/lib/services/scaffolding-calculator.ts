@@ -106,9 +106,9 @@ export class ScaffoldingCalculatorService {
 
     const bestBayLength = (stock8ft >= stock7ft && stock8ft >= stock5ft) ? 8 : (stock7ft >= stock5ft ? 7 : 5);
 
-    const planAvailableStock = this.buildPlan({
-      planId: 'PLAN_AVAILABLE_STOCK',
-      planName: 'Option 1 — Available Stock Priority Plan',
+    const planStockOptimized = this.buildPlan({
+      planId: 'PLAN_STOCK_OPTIMIZED',
+      planName: 'Option 1 — Stock-Optimized Priority Plan',
       badge: 'Available Stock Guaranteed',
       description: `Prioritizes currently available warehouse inventory (${bestBayLength}ft bays & high-availability standards). Reservations never exceed available stock.`,
       input,
@@ -121,8 +121,8 @@ export class ScaffoldingCalculatorService {
       stockOptimization: 'PREFER_ABUNDANT',
       capAtStock: true, // Strictly never exceed available stock!
     });
-    planAvailableStock.isRecommended = true;
-    options.push(planAvailableStock);
+    planStockOptimized.isRecommended = true;
+    options.push(planStockOptimized);
 
     // 2. OPTION 2 — STANDARD ENGINEERING PLAN (IS 4014 Standard 8ft Grid)
     const planStandard = this.buildPlan({
@@ -159,6 +159,24 @@ export class ScaffoldingCalculatorService {
       capAtStock: false,
     });
     options.push(planAlternative);
+
+    // 4. OPTION 4 — PARTIAL STOCK / PROCUREMENT HYBRID PLAN
+    const planHybrid = this.buildPlan({
+      planId: 'PLAN_PROCUREMENT_HYBRID',
+      planName: 'Option 4 — Partial Stock / Procurement Hybrid Plan',
+      badge: 'Stock-Capped + Shortage Procurement',
+      description: 'Caps reservation strictly to physical warehouse stock and estimates procurement replacement for deficits.',
+      input,
+      normalized,
+      invMap,
+      bayLengthFt: 8,
+      transomWidthFt: 4,
+      liftHeightFt: 6.5,
+      preferredJali: input.jaliPreference || 'MS',
+      stockOptimization: 'NONE',
+      capAtStock: true, // Strictly caps to available stock
+    });
+    options.push(planHybrid);
 
     return {
       input,

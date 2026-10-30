@@ -37,6 +37,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { processAndUploadImage } from '@/lib/image-utils';
 import { OFFICIAL_TERMS_AND_CONDITIONS, DEFAULT_PAYMENT_TERMS_TEXT, RENTAL_CONSTANTS, BusinessTerm } from '@/lib/constants/terms-and-conditions';
 import { SmartMaterialRecommendation } from '@/components/scaffolding/SmartMaterialRecommendation';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
 export default function ConfirmationFormPage() {
   return (
@@ -451,18 +452,53 @@ function ConfirmationFormContent() {
             </div>
           </div>
         ) : (
-          <select
+          <SearchableSelect
             value={selectedProjectId}
-            onChange={(e) => handleSelectProject(e.target.value)}
-            className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-medium text-xs focus:ring-2 focus:ring-blue-600 focus:outline-hidden transition"
-          >
-            <option value="">-- Choose a Not Installed Project to Confirm --</option>
-            {notInstalledProjects.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.projectCode} — {p.customerName} | {p.siteName} (Supervisor: {p.supervisorName})
-              </option>
-            ))}
-          </select>
+            onChange={(val) => handleSelectProject(val)}
+            options={notInstalledProjects}
+            getOptionValue={(p) => p.id}
+            getOptionLabel={(p) => `${p.projectCode} — ${p.customerName} | ${p.siteName} (Supervisor: ${p.supervisorName})`}
+            placeholder="-- Choose a Not Installed Project to Confirm --"
+            searchPlaceholder="Search project by ID (e.g. AW-SCF-000001), Customer, Site, or Supervisor..."
+            noResultsMessage="No matching unconfirmed projects found in NOT_INSTALLED status."
+            filterOption={(p, q) =>
+              Boolean(
+                p.projectCode?.toLowerCase().includes(q) ||
+                p.customerName?.toLowerCase().includes(q) ||
+                p.siteName?.toLowerCase().includes(q) ||
+                p.supervisorName?.toLowerCase().includes(q) ||
+                p.siteAddress?.toLowerCase().includes(q)
+              )
+            }
+            renderOption={(p) => (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 py-1">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-blue-700">{p.projectCode}</span>
+                    <span className="text-slate-400">•</span>
+                    <span className="font-semibold text-slate-900 truncate">{p.customerName}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                    {p.siteName} {p.siteAddress ? `(${p.siteAddress})` : ''}
+                  </div>
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono shrink-0 self-start sm:self-auto bg-slate-100 px-2 py-0.5 rounded">
+                  Supervisor: {p.supervisorName}
+                </div>
+              </div>
+            )}
+            renderSelected={(p) => (
+              <div className="flex items-center gap-2 truncate">
+                <span className="font-mono font-bold text-blue-700 shrink-0">{p.projectCode}</span>
+                <span className="font-semibold text-slate-900 truncate">{p.customerName}</span>
+                <span className="text-slate-400">|</span>
+                <span className="text-xs text-slate-600 truncate">{p.siteName}</span>
+                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
+                  (Sup: {p.supervisorName})
+                </span>
+              </div>
+            )}
+          />
         )}
       </div>
 

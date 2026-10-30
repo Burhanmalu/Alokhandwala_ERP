@@ -3,18 +3,18 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  Boxes, 
-  Calendar, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Camera, 
-  Building2, 
-  UserCheck, 
-  MapPin, 
-  Ruler, 
-  Trash2, 
-  UploadCloud, 
+import {
+  Boxes,
+  Calendar,
+  CheckCircle2,
+  AlertTriangle,
+  Camera,
+  Building2,
+  UserCheck,
+  MapPin,
+  Ruler,
+  Trash2,
+  UploadCloud,
   ArrowLeft,
   Clock,
   Users,
@@ -25,6 +25,8 @@ import {
 import { Project } from '@/lib/schema';
 import { formatDate } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { ImageUploaderWithLightbox } from '@/components/ui/ImageUploaderWithLightbox';
 
 interface WorkerEntry {
   id: string;
@@ -103,7 +105,6 @@ function InstallationFormContent() {
 
   // After Photos
   const [afterPhotoUrls, setAfterPhotoUrls] = useState<string[]>([]);
-  const [customPhotoInput, setCustomPhotoInput] = useState('');
 
   useEffect(() => {
     fetch('/api/projects')
@@ -190,7 +191,7 @@ function InstallationFormContent() {
   // Supervisor matching check
   const assignedSupName = selectedProject?.supervisorName?.trim().toLowerCase() || '';
   const executingSupName = selectedSupervisorName.trim().toLowerCase();
-  const isSupervisorSame = 
+  const isSupervisorSame =
     Boolean(selectedProject?.assignedSupervisorId && selectedSupervisorId && selectedProject.assignedSupervisorId === selectedSupervisorId) ||
     Boolean(assignedSupName && executingSupName && assignedSupName === executingSupName);
 
@@ -200,7 +201,7 @@ function InstallationFormContent() {
   const lengthDiff = Math.abs(actualLength - plannedLength);
   const widthDiff = Math.abs(actualWidth - plannedWidth);
   const heightDiff = Math.abs(actualHeight - plannedHeight);
-  
+
   // Exact match tolerance (within 0.05m or 5cm)
   const isExactSizeMatch = lengthDiff < 0.05 && widthDiff < 0.05 && heightDiff < 0.05;
   const variancePercentage = plannedArea > 0 ? ((actualArea - plannedArea) / plannedArea) * 100 : 0;
@@ -218,7 +219,7 @@ function InstallationFormContent() {
     const trimmed = newWorkerName.trim();
     const matched = availableUsers.find(
       u => u.role === 'WORKER' && (
-        u.fullName.toLowerCase().includes(trimmed.toLowerCase()) || 
+        u.fullName.toLowerCase().includes(trimmed.toLowerCase()) ||
         trimmed.toLowerCase().includes(u.fullName.toLowerCase())
       )
     );
@@ -256,12 +257,6 @@ function InstallationFormContent() {
     })));
   };
 
-  const handleAddPhoto = () => {
-    if (!customPhotoInput.trim()) return;
-    setAfterPhotoUrls([...afterPhotoUrls, customPhotoInput.trim()]);
-    setCustomPhotoInput('');
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -288,7 +283,7 @@ function InstallationFormContent() {
     }
 
     // Validate Material Discrepancy Acknowledgment
-    const hasDiscrepancy = materialUsage.some(m => 
+    const hasDiscrepancy = materialUsage.some(m =>
       (Number(m.installedQuantity || 0) + Number(m.unusedReturnedQty || 0)) !== Number(m.reserved || 0)
     );
     if (hasDiscrepancy && !materialVarianceConfirmed) {
@@ -403,18 +398,53 @@ function InstallationFormContent() {
             No projects currently in <code>CONFIRMED_PROJECT</code> or <code>SCHEDULED</code> status. Confirm a project first to reserve stock.
           </div>
         ) : (
-          <select
+          <SearchableSelect
             value={selectedProjectId}
-            onChange={(e) => handleSelectProject(e.target.value)}
-            className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-medium text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none"
-          >
-            <option value="">-- Choose a Confirmed Project to Install --</option>
-            {readyProjects.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.projectCode} — {p.customerName} | {p.siteName} (Planned Install: {formatDate(p.plannedInstallationDate)})
-              </option>
-            ))}
-          </select>
+            onChange={(val) => handleSelectProject(val)}
+            options={readyProjects}
+            getOptionValue={(p) => p.id}
+            getOptionLabel={(p) => `${p.projectCode} — ${p.customerName} | ${p.siteName} (Planned Install: ${formatDate(p.plannedInstallationDate)})`}
+            placeholder="-- Choose a Confirmed Project to Install --"
+            searchPlaceholder="Search by Project ID (e.g. AW-SCF-000001), Customer, Site, or Supervisor..."
+            noResultsMessage="No matching confirmed or scheduled projects found."
+            filterOption={(p, q) =>
+              Boolean(
+                p.projectCode?.toLowerCase().includes(q) ||
+                p.customerName?.toLowerCase().includes(q) ||
+                p.siteName?.toLowerCase().includes(q) ||
+                p.supervisorName?.toLowerCase().includes(q) ||
+                p.quotationNumber?.toLowerCase().includes(q)
+              )
+            }
+            renderOption={(p) => (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 py-1">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-emerald-700">{p.projectCode}</span>
+                    <span className="text-slate-400">•</span>
+                    <span className="font-semibold text-slate-900 truncate">{p.customerName}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                    {p.siteName} (Planned Install: {formatDate(p.plannedInstallationDate)})
+                  </div>
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono shrink-0 self-start sm:self-auto bg-slate-100 px-2 py-0.5 rounded">
+                  {p.quotationNumber || 'Confirmed'}
+                </div>
+              </div>
+            )}
+            renderSelected={(p) => (
+              <div className="flex items-center gap-2 truncate">
+                <span className="font-mono font-bold text-emerald-700 shrink-0">{p.projectCode}</span>
+                <span className="font-semibold text-slate-900 truncate">{p.customerName}</span>
+                <span className="text-slate-400">|</span>
+                <span className="text-xs text-slate-600 truncate">{p.siteName}</span>
+                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
+                  (Install: {formatDate(p.plannedInstallationDate)})
+                </span>
+              </div>
+            )}
+          />
         )}
       </div>
 
@@ -589,11 +619,10 @@ function InstallationFormContent() {
                       onClick={() => {
                         setWorkersList([...workersList, { id: u.id, name: u.fullName, role: 'Scaffolder' }]);
                       }}
-                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition flex items-center gap-1 ${
-                        isAdded
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition flex items-center gap-1 ${isAdded
                           ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
                           : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-pointer'
-                      }`}
+                        }`}
                     >
                       <span>{isAdded ? '✓' : '+'}</span>
                       <span>{u.fullName}</span>
@@ -899,11 +928,10 @@ function InstallationFormContent() {
                     <div className="text-lg font-bold font-mono text-blue-900 mt-0.5">{totalUnused} <span className="text-[10px] text-blue-700 font-normal">Nos</span></div>
                   </div>
 
-                  <div className={`p-3 rounded-xl border ${
-                    !hasMaterialDiscrepancy 
-                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
+                  <div className={`p-3 rounded-xl border ${!hasMaterialDiscrepancy
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
                       : 'bg-amber-50 border-amber-300 text-amber-950'
-                  }`}>
+                    }`}>
                     <div className="text-[10px] font-semibold uppercase tracking-wider">
                       {!hasMaterialDiscrepancy ? 'Stock Accuracy' : 'Discrepancy'}
                     </div>
@@ -940,11 +968,10 @@ function InstallationFormContent() {
                     const isMore = diff > 0;
 
                     return (
-                      <div key={idx} className={`p-3.5 rounded-xl border text-xs space-y-2.5 ${
-                        isLess ? 'bg-red-50/40 border-red-200' :
-                        isMore ? 'bg-blue-50/40 border-blue-200' :
-                        'bg-slate-50 border-slate-200'
-                      }`}>
+                      <div key={idx} className={`p-3.5 rounded-xl border text-xs space-y-2.5 ${isLess ? 'bg-red-50/40 border-red-200' :
+                          isMore ? 'bg-blue-50/40 border-blue-200' :
+                            'bg-slate-50 border-slate-200'
+                        }`}>
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <div className="font-semibold text-slate-900">{row.materialName}</div>
@@ -1035,11 +1062,10 @@ function InstallationFormContent() {
                         const isMore = diff > 0;
 
                         return (
-                          <tr key={idx} className={`transition ${
-                            isLess ? 'bg-red-50/30 hover:bg-red-50/50' : 
-                            isMore ? 'bg-blue-50/30 hover:bg-blue-50/50' : 
-                            'hover:bg-slate-50'
-                          }`}>
+                          <tr key={idx} className={`transition ${isLess ? 'bg-red-50/30 hover:bg-red-50/50' :
+                              isMore ? 'bg-blue-50/30 hover:bg-blue-50/50' :
+                                'hover:bg-slate-50'
+                            }`}>
                             <td className="px-3 py-2.5 font-sans font-medium text-slate-900">{row.materialName}</td>
                             <td className="px-3 py-2.5 text-slate-500 text-[11px]">{row.itemCode}</td>
                             <td className="px-3 py-2.5 text-center text-slate-700 font-bold">{reserved}</td>
@@ -1137,47 +1163,13 @@ function InstallationFormContent() {
           {/* 5. AFTER-INSTALLATION PHOTOGRAPHS & CLIENT CLEARANCE     */}
           {/* ======================================================== */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-            <div className="border-b border-slate-100 pb-3">
-              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Camera className="w-4 h-4 text-emerald-600" />
-                <span>5. After-Installation Completed Photographs & Sign-off</span>
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {afterPhotoUrls.map((url, idx) => (
-                <div key={idx} className="relative rounded-xl overflow-hidden border border-slate-200 aspect-video group bg-slate-900">
-                  <img src={url} alt={`Installed ${idx + 1}`} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                    <button
-                      type="button"
-                      onClick={() => setAfterPhotoUrls(afterPhotoUrls.filter((_, i) => i !== idx))}
-                      className="p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 transition"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-2 aspect-video bg-slate-50">
-                <UploadCloud className="w-6 h-6 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Paste after-work image URL..."
-                  value={customPhotoInput}
-                  onChange={(e) => setCustomPhotoInput(e.target.value)}
-                  className="w-full text-[11px] p-1.5 border border-slate-300 rounded bg-white"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddPhoto}
-                  className="px-3 py-1 bg-emerald-600 text-white rounded text-xs font-semibold hover:bg-emerald-700 transition"
-                >
-                  Add Photograph
-                </button>
-              </div>
-            </div>
+            <ImageUploaderWithLightbox
+              images={afterPhotoUrls}
+              onChange={setAfterPhotoUrls}
+              title="5. After-Installation Completed Photographs & Sign-off"
+              subtitle="Take live site camera photos or upload multiple images directly from device gallery. Click any photo to preview, zoom in/out, or replace before saving."
+              maxFiles={20}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-3 border-t border-slate-100">
               <div>

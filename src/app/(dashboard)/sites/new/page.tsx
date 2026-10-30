@@ -15,21 +15,17 @@ import {
   ArrowLeft, 
   CheckCircle2, 
   AlertCircle,
-  UploadCloud,
-  Trash2,
   Plus,
   Users,
   Compass,
   Check,
-  Loader2,
   Sparkles,
-  X,
-  Maximize2,
-  ImageIcon
+  X
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { Customer, UserProfile } from '@/lib/schema';
-import { processAndUploadImage } from '@/lib/image-utils';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { ImageUploaderWithLightbox } from '@/components/ui/ImageUploaderWithLightbox';
 
 export default function SiteFormPage() {
   const router = useRouter();
@@ -60,11 +56,6 @@ export default function SiteFormPage() {
 
   // 6. Photo of a site
   const [photos, setPhotos] = useState<string[]>([]);
-  const [newPhotoUrl, setNewPhotoUrl] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // 7. Size
   const [length, setLength] = useState<number | ''>('');
@@ -118,8 +109,7 @@ export default function SiteFormPage() {
   }, [currentUser, router]);
 
   // Handle existing customer selection
-  const handleSelectCustomer = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
+  const handleSelectCustomer = (val: string) => {
     setSelectedCustomerId(val);
     if (!val) {
       setCustomerName('');
@@ -146,87 +136,6 @@ export default function SiteFormPage() {
     if (sup) {
       setSupervisorName(sup.fullName);
     }
-  };
-
-
-
-  // Add custom photo URL
-  const handleAddPhotoUrl = () => {
-    let url = newPhotoUrl.trim();
-    if (!url) return;
-    if (!/^https?:\/\//i.test(url) && !url.startsWith('data:') && !url.startsWith('/')) {
-      url = `https://${url}`;
-    }
-    if (!photos.includes(url)) {
-      setPhotos(prev => [...prev, url]);
-    }
-    setNewPhotoUrl('');
-  };
-
-  // Process selected files or dropped files
-  const handleFiles = async (files: FileList | File[]) => {
-    const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
-    if (validFiles.length === 0) return;
-
-    setIsUploading(true);
-    try {
-      const uploadPromises = validFiles.map(f => processAndUploadImage(f));
-      const newUrls = await Promise.all(uploadPromises);
-      setPhotos(prev => [...prev, ...newUrls.filter(u => Boolean(u) && !prev.includes(u))]);
-    } catch (err) {
-      console.error('Error uploading site photos:', err);
-      setError('Could not process some image files. Please try again.');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // Drag and drop handlers
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files);
-    }
-  };
-
-  // Clipboard paste listener to allow pasting screenshots or copied images
-  useEffect(() => {
-    const handlePaste = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      const imageFiles: File[] = [];
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.startsWith('image/')) {
-          const file = items[i].getAsFile();
-          if (file) imageFiles.push(file);
-        }
-      }
-      if (imageFiles.length > 0) {
-        handleFiles(imageFiles);
-      }
-    };
-
-    window.addEventListener('paste', handlePaste);
-    return () => window.removeEventListener('paste', handlePaste);
-  }, []);
-
-  // Remove photo
-  const handleRemovePhoto = (index: number) => {
-    setPhotos(photos.filter((_, i) => i !== index));
   };
 
   // Calculate area
@@ -291,7 +200,7 @@ export default function SiteFormPage() {
 
       const json = await res.json();
       if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Failed to submit site inspection form.');
+        throw new Error(json.error || 'Failed to submit site form.');
       }
 
       setSuccess(true);
@@ -311,10 +220,10 @@ export default function SiteFormPage() {
       <div className="flex items-center gap-2 text-xs text-slate-500">
         <Link href="/projects" className="hover:text-emerald-700 flex items-center gap-1">
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Projects & Sites</span>
+          <span>Projects Directory</span>
         </Link>
         <span>/</span>
-        <span className="font-semibold text-slate-800">Site Registration & Inspection Form</span>
+        <span className="font-semibold text-slate-800">Site Form</span>
       </div>
 
       {/* Header Banner */}
@@ -323,7 +232,7 @@ export default function SiteFormPage() {
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-400">
             <span>ALOKHANDWALA Field Operations</span>
             <span>•</span>
-            <span className="font-mono">Step 1: Site Inspection</span>
+            <span className="font-mono">Step 1: Site Details</span>
           </div>
           <h1 className="text-2xl font-bold mt-1 text-white flex items-center gap-2.5">
             <Building2 className="w-6 h-6 text-emerald-400" />
@@ -370,21 +279,51 @@ export default function SiteFormPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Quick Select Existing Customer (Optional) */}
             <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Select Existing Customer (or type new below)
               </label>
-              <select
+              <SearchableSelect
                 value={selectedCustomerId}
                 onChange={handleSelectCustomer}
-                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
-              >
-                <option value="">-- Choose Existing Client or Enter New Below --</option>
-                {existingCustomers.map(cust => (
-                  <option key={cust.id} value={cust.id}>
-                    {cust.companyName} ({cust.customerCode}) - {cust.phone}
-                  </option>
-                ))}
-              </select>
+                options={existingCustomers}
+                getOptionValue={(c) => c.id}
+                getOptionLabel={(c) => `${c.companyName} (${c.customerCode || 'CUST'}) - ${c.phone || ''}`}
+                placeholder="-- Search & Choose Existing Client or Type New Below --"
+                searchPlaceholder="Search customer by company name, customer code, contact, phone..."
+                noResultsMessage="No matching customers found. You can type a new customer name below."
+                filterOption={(c, q) =>
+                  Boolean(
+                    c.companyName?.toLowerCase().includes(q) ||
+                    c.customerCode?.toLowerCase().includes(q) ||
+                    c.phone?.includes(q) ||
+                    c.contactPerson?.toLowerCase().includes(q) ||
+                    c.referenceName?.toLowerCase().includes(q) ||
+                    c.city?.toLowerCase().includes(q)
+                  )
+                }
+                renderOption={(c) => (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 py-0.5">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-slate-900 truncate">{c.companyName}</div>
+                      <div className="text-[11px] text-slate-500 truncate">
+                        {c.contactPerson ? `Contact: ${c.contactPerson}` : ''} {c.phone ? `• ${c.phone}` : ''}
+                      </div>
+                    </div>
+                    <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 shrink-0 self-start sm:self-auto">
+                      {c.customerCode}
+                    </span>
+                  </div>
+                )}
+                renderSelected={(c) => (
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="font-semibold text-slate-900 truncate">{c.companyName}</span>
+                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
+                      {c.customerCode}
+                    </span>
+                    {c.phone && <span className="text-[11px] text-slate-500 truncate">({c.phone})</span>}
+                  </div>
+                )}
+              />
             </div>
 
             {/* 1. Customer Name */}
@@ -618,180 +557,13 @@ export default function SiteFormPage() {
         {/* SECTION 4: PHOTO OF A SITE                                */}
         {/* ========================================================= */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <Camera className="w-4 h-4 text-emerald-600" />
-              <span>Photo of a Site</span>
-              {photos.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
-                  {photos.length} {photos.length === 1 ? 'photo' : 'photos'} attached
-                </span>
-              )}
-            </h2>
-            <span className="text-[11px] text-slate-400">Pre-Installation Site Conditions</span>
-          </div>
-
-          {/* Hidden file input for native device upload */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files) {
-                handleFiles(e.target.files);
-              }
-              e.target.value = '';
-            }}
+          <ImageUploaderWithLightbox
+            images={photos}
+            onChange={setPhotos}
+            title="Photo of a Site"
+            subtitle="Take live site camera photos or upload multiple images directly from your device gallery. Click any photo to preview, zoom in/out, or replace before saving."
+            maxFiles={20}
           />
-
-          {/* Thumbnail Gallery & Upload Card */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {photos.map((url, idx) => (
-              <div 
-                key={idx} 
-                className="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-video shadow-xs cursor-pointer"
-                onClick={() => setPreviewPhoto(url)}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src={url} 
-                  alt={`Site photo ${idx + 1}`} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-300 opacity-90 group-hover:opacity-100" 
-                />
-                
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-                  <span className="p-1.5 bg-black/60 rounded-full text-white shadow-sm">
-                    <Maximize2 className="w-3.5 h-3.5" />
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemovePhoto(idx);
-                  }}
-                  className="absolute top-1.5 right-1.5 p-1.5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition z-10"
-                  title="Remove photo"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-
-                <div className="absolute bottom-1.5 left-1.5 bg-black/75 px-2 py-0.5 rounded text-[10px] text-white font-mono flex items-center gap-1">
-                  <ImageIcon className="w-3 h-3 text-emerald-400" />
-                  <span>Photo #{idx + 1}</span>
-                </div>
-              </div>
-            ))}
-
-            {/* Quick Upload / Add Card */}
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  fileInputRef.current?.click();
-                }
-              }}
-              className={`border-2 border-dashed rounded-xl p-3 flex flex-col items-center justify-center text-center transition aspect-video cursor-pointer select-none ${
-                isDragging
-                  ? 'border-emerald-500 bg-emerald-50/80 ring-2 ring-emerald-400/30'
-                  : 'border-slate-300 hover:border-emerald-500 bg-slate-50/70 hover:bg-emerald-50/30'
-              }`}
-            >
-              {isUploading ? (
-                <div className="flex flex-col items-center">
-                  <Loader2 className="w-6 h-6 text-emerald-600 animate-spin mb-1" />
-                  <span className="text-[11px] font-semibold text-emerald-800">Processing image...</span>
-                </div>
-              ) : (
-                <>
-                  <UploadCloud className={`w-6 h-6 mb-1 transition ${isDragging ? 'text-emerald-600 scale-110' : 'text-slate-400'}`} />
-                  <span className="text-[11px] font-semibold text-slate-700">Click to Upload Photo</span>
-                  <span className="text-[9px] text-slate-400">or drag & drop / paste image</span>
-                </>
-              )}
-            </div>
-          </div>
-
-
-
-          {/* Add Photo Input */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newPhotoUrl}
-              onChange={e => setNewPhotoUrl(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddPhotoUrl();
-                }
-              }}
-              placeholder="Paste photo image URL or cloud link..."
-              className="flex-1 text-sm px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-hidden focus:border-emerald-600 transition bg-white"
-            />
-            <button
-              type="button"
-              onClick={handleAddPhotoUrl}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition"
-            >
-              Add URL
-            </button>
-          </div>
-
-          {/* Lightbox / Preview Modal */}
-          {previewPhoto && (
-            <div 
-              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4"
-              onClick={() => setPreviewPhoto(null)}
-            >
-              <div 
-                className="relative max-w-3xl w-full bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-700"
-                onClick={e => e.stopPropagation()}
-              >
-                <div className="p-3 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between text-white text-xs">
-                  <div className="flex items-center gap-2">
-                    <Camera className="w-4 h-4 text-emerald-400" />
-                    <span className="font-semibold">Site Inspection Photo Preview</span>
-                  </div>
-                  <button 
-                    type="button"
-                    onClick={() => setPreviewPhoto(null)}
-                    className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="max-h-[75vh] overflow-hidden flex items-center justify-center bg-black">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={previewPhoto} alt="Site Inspection Large Preview" className="max-w-full max-h-[75vh] object-contain" />
-                </div>
-                <div className="p-3 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-xs text-slate-300">
-                  <span className="font-mono text-[11px] text-slate-400">Pre-installation inspection record</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const idx = photos.indexOf(previewPhoto);
-                      if (idx >= 0) handleRemovePhoto(idx);
-                      setPreviewPhoto(null);
-                    }}
-                    className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-medium transition flex items-center gap-1.5"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Delete Photo</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ========================================================= */}
@@ -808,7 +580,7 @@ export default function SiteFormPage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Inspection Remark & Notes
+              Site Remarks & Notes
             </label>
             <textarea
               rows={3}

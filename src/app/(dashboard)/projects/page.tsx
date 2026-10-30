@@ -219,27 +219,27 @@ function ProjectsListContent() {
           <p className="text-xs text-slate-500 mt-0.5">
             {currentUser.role === 'WORKER'
               ? 'Showing only the sites and scaffolding installations you have worked on.'
-              : 'Manage scaffolding contracts from site inspection to installation, rental extension, shifting, and dismantling.'}
+              : 'Manage scaffolding contracts from site registration to installation, rental extension, shifting, and dismantling.'}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={exportToCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-2xs"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-2xs"
           >
             <Download className="w-3.5 h-3.5 text-slate-500" />
             <span>Export CSV</span>
           </button>
 
           {can('PROJECT_CREATE_INSPECTION') && (
-            <Link
-              href="/projects/new"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition"
+            <button
+              onClick={handleRegisterClick}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
-              <span>New Site Inspection</span>
-            </Link>
+              <span>Register New Site</span>
+            </button>
           )}
         </div>
       </div>
