@@ -10,7 +10,9 @@ import {
   Calendar, 
   Building2, 
   Boxes,
-  ReceiptIndianRupee
+  ReceiptIndianRupee,
+  Award,
+  ArrowRight
 } from 'lucide-react';
 import { formatINR, formatQuantity, formatDate } from '@/lib/formatters';
 import { useRouter } from 'next/navigation';
@@ -181,6 +183,30 @@ export default function ReportsPage() {
           }`}
         >
           Outstanding Receivables
+        </button>
+      </div>
+
+      {/* Quick link to Worker & Supervisor Performance Report */}
+      <div className="bg-[#fbf9f5] border border-[#ebdcc9] rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-[#24160c] text-[#c79e7c]">
+            <Award className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-[#24160c]">
+              Worker &amp; Supervisor Performance Analytics
+            </div>
+            <div className="text-[11px] text-[#8c5e39]">
+              Audit field workforce completions, track monthly site counts, and compare team metrics across months.
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => router.push('/reports/worker-supervisor')}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#24160c] text-[#fdf8f4] text-xs font-semibold rounded-lg hover:bg-[#3d2515] transition shrink-0 cursor-pointer self-start sm:self-auto"
+        >
+          <span>Open Performance Report</span>
+          <ArrowRight className="w-3.5 h-3.5 text-[#c79e7c]" />
         </button>
       </div>
 

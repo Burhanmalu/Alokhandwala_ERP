@@ -202,9 +202,9 @@
       "minimumStockThreshold": 100,
       "isActive": true,
       "totalOwnedQty": 2500,
-      "usableWarehouseQty": 2490,
-      "reservedQty": 0,
-      "siteAllocatedQty": 10,
+      "usableWarehouseQty": 2500,
+      "reservedQty": 10,
+      "siteAllocatedQty": 0,
       "inTransitQty": 0,
       "damagedQty": 0,
       "missingQty": 0,
@@ -713,11 +713,11 @@
       "sitesCount": 1,
       "projectsCount": 1,
       "activeRentalsCount": 1,
-      "createdAt": "2026-10-31T07:38:32.771Z",
-      "updatedAt": "2026-10-31T07:38:32.771Z"
+      "createdAt": "2026-10-31T07:07:35.245Z",
+      "updatedAt": "2026-10-31T07:07:35.245Z"
     },
     {
-      "id": "cust-1793432312771",
+      "id": "cust-1793430455246",
       "customerCode": "CUST-0002",
       "companyName": "Godrej Properties Ltd",
       "contactPerson": "Godrej Properties Ltd",
@@ -732,11 +732,11 @@
       "sitesCount": 1,
       "projectsCount": 1,
       "activeRentalsCount": 0,
-      "createdAt": "2026-10-31T07:38:32.771Z",
-      "updatedAt": "2026-10-31T07:38:32.771Z"
+      "createdAt": "2026-10-31T07:07:35.246Z",
+      "updatedAt": "2026-10-31T07:07:35.246Z"
     },
     {
-      "id": "cust-1793432312773",
+      "id": "cust-1793430455248",
       "customerCode": "CUST-0003",
       "companyName": "Shapoorji Pallonji Real Estate",
       "contactPerson": "Shapoorji Pallonji Real Estate",
@@ -751,15 +751,15 @@
       "sitesCount": 1,
       "projectsCount": 1,
       "activeRentalsCount": 0,
-      "createdAt": "2026-10-31T07:38:32.773Z",
-      "updatedAt": "2026-10-31T07:38:32.773Z"
+      "createdAt": "2026-10-31T07:07:35.248Z",
+      "updatedAt": "2026-10-31T07:07:35.248Z"
     }
   ],
   "sites": [
     {
-      "id": "site-1793432312771",
+      "id": "site-1793430455246",
       "siteCode": "SITE-0001",
-      "customerId": "cust-1793432312771",
+      "customerId": "cust-1793430455246",
       "customerName": "Godrej Properties Ltd",
       "siteName": "Godrej Vistas Tower C",
       "siteAddress": "Vikhroli East, Mumbai",
@@ -770,12 +770,12 @@
       "assignedSupervisorId": "usr-sup-01",
       "supervisorName": "Mustafa Alokhandwala (Supervisor)",
       "status": "ACTIVE",
-      "createdAt": "2026-10-31T07:38:32.771Z"
+      "createdAt": "2026-10-31T07:07:35.246Z"
     },
     {
-      "id": "site-1793432312773",
+      "id": "site-1793430455248",
       "siteCode": "SITE-0002",
-      "customerId": "cust-1793432312773",
+      "customerId": "cust-1793430455248",
       "customerName": "Shapoorji Pallonji Real Estate",
       "siteName": "Imperial Heights Tower 2",
       "siteAddress": "Worli Naka, Mumbai",
@@ -786,301 +786,31 @@
       "assignedSupervisorId": "usr-sup-01",
       "supervisorName": "Mustafa Alokhandwala (Supervisor)",
       "status": "ACTIVE",
-      "createdAt": "2026-10-31T07:38:32.773Z"
+      "createdAt": "2026-10-31T07:07:35.248Z"
     }
   ],
   "projects": [
     {
-      "id": "proj-1793432312773",
-      "projectCode": "AW-SCF-000002",
-      "customerId": "cust-1793432312773",
-      "customerName": "Shapoorji Pallonji Real Estate",
-      "siteId": "site-1793432312773",
-      "siteName": "Imperial Heights Tower 2",
-      "siteAddress": "Worli Naka, Mumbai",
-      "assignedSupervisorId": "usr-sup-01",
-      "supervisorName": "Mustafa Alokhandwala (Supervisor)",
-      "status": "NOT_INSTALLED",
-      "pricingModel": "MONTHLY_RENTAL",
-      "monthlyRentalRate": 0,
-      "agreedProjectPrice": 0,
-      "depositAmount": 0,
-      "transportCharges": 0,
-      "installationLabourCharges": 0,
-      "shiftingCharges": 0,
-      "dismantlingLabourCharges": 0,
-      "gstPercentage": 18,
-      "measurements": {
-        "id": "meas-1793432312773",
-        "siteId": "site-1793432312773",
-        "projectId": "proj-1793432312773",
-        "length": 50,
-        "width": 15,
-        "height": 35,
-        "unit": "FEET",
-        "measurementType": "FAÇADE_SCAFFOLD",
-        "measuredBy": "Mustafa Alokhandwala (Supervisor)",
-        "measuredAt": "2026-10-31T07:38:32.773Z"
-      },
-      "photos": [
-        {
-          "id": "pht-1793432312773-0",
-          "entityType": "SITE_INSPECTION",
-          "entityId": "proj-1793432312773",
-          "fileName": "site_inspection_1.jpg",
-          "fileUrl": "/uploads/gallery_photo_1.jpg",
-          "fileSizeBytes": 2048000,
-          "mimeType": "image/jpeg",
-          "stageLabel": "BEFORE_INSTALLATION",
-          "uploadedBy": "usr-sup-01",
-          "uploaderName": "Mustafa Alokhandwala (Supervisor)",
-          "createdAt": "2026-10-31T07:38:32.773Z"
-        },
-        {
-          "id": "pht-1793432312773-1",
-          "entityType": "SITE_INSPECTION",
-          "entityId": "proj-1793432312773",
-          "fileName": "site_inspection_2.jpg",
-          "fileUrl": "/uploads/gallery_photo_2.jpg",
-          "fileSizeBytes": 2048000,
-          "mimeType": "image/jpeg",
-          "stageLabel": "BEFORE_INSTALLATION",
-          "uploadedBy": "usr-sup-01",
-          "uploaderName": "Mustafa Alokhandwala (Supervisor)",
-          "createdAt": "2026-10-31T07:38:32.773Z"
-        },
-        {
-          "id": "pht-1793432312773-2",
-          "entityType": "SITE_INSPECTION",
-          "entityId": "proj-1793432312773",
-          "fileName": "site_inspection_3.jpg",
-          "fileUrl": "/uploads/camera_capture_3.jpg",
-          "fileSizeBytes": 2048000,
-          "mimeType": "image/jpeg",
-          "stageLabel": "BEFORE_INSTALLATION",
-          "uploadedBy": "usr-sup-01",
-          "uploaderName": "Mustafa Alokhandwala (Supervisor)",
-          "createdAt": "2026-10-31T07:38:32.773Z"
-        }
-      ],
-      "materials": [],
-      "createdAt": "2026-10-31T07:38:32.773Z",
-      "updatedAt": "2026-10-31T07:38:32.773Z"
-    },
-    {
-      "id": "proj-1793432312771",
-      "projectCode": "AW-SCF-000001",
-      "customerId": "cust-1793432312771",
-      "customerName": "Godrej Properties Ltd",
-      "siteId": "site-1793432312771",
-      "siteName": "Godrej Vistas Tower C",
-      "siteAddress": "Vikhroli East, Mumbai",
-      "assignedSupervisorId": "usr-sup-01",
-      "supervisorName": "Mustafa Alokhandwala (Supervisor)",
+      "id": "test-proj-oct-1",
+      "projectCode": "AW-TEST-OCT1",
+      "customerId": "cust-1",
+      "customerName": "DLF Realty Ltd",
+      "siteId": "site-1",
+      "siteName": "Tower A",
+      "siteAddress": "Andheri East, Mumbai",
       "status": "ACTIVE_RENTAL",
       "pricingModel": "MONTHLY_RENTAL",
-      "monthlyRentalRate": 75000,
-      "agreedProjectPrice": 150000,
-      "depositAmount": 50000,
-      "transportCharges": 10000,
-      "installationLabourCharges": 25000,
+      "monthlyRentalRate": 25000,
+      "agreedProjectPrice": 30000,
+      "depositAmount": 5000,
+      "transportCharges": 2000,
+      "installationLabourCharges": 3000,
       "shiftingCharges": 0,
-      "dismantlingLabourCharges": 0,
+      "dismantlingLabourCharges": 2000,
       "gstPercentage": 18,
-      "measurements": {
-        "id": "meas-1793432312771",
-        "siteId": "site-1793432312771",
-        "projectId": "proj-1793432312771",
-        "length": 30,
-        "width": 10,
-        "height": 20,
-        "unit": "FEET",
-        "measurementType": "FAÇADE_SCAFFOLD",
-        "description": "Façade renovation scaffold",
-        "measuredBy": "Mustafa Alokhandwala (Supervisor)",
-        "measuredAt": "2026-10-31T07:38:32.771Z"
-      },
-      "photos": [
-        {
-          "id": "pht-1793432312771-0",
-          "entityType": "SITE_INSPECTION",
-          "entityId": "proj-1793432312771",
-          "fileName": "site_inspection_1.jpg",
-          "fileUrl": "/uploads/site_test_1.jpg",
-          "fileSizeBytes": 2048000,
-          "mimeType": "image/jpeg",
-          "stageLabel": "BEFORE_INSTALLATION",
-          "uploadedBy": "usr-sup-01",
-          "uploaderName": "Mustafa Alokhandwala (Supervisor)",
-          "createdAt": "2026-10-31T07:38:32.771Z"
-        },
-        {
-          "id": "pht-1793432312771-1",
-          "entityType": "SITE_INSPECTION",
-          "entityId": "proj-1793432312771",
-          "fileName": "site_inspection_2.jpg",
-          "fileUrl": "/uploads/site_test_2.jpg",
-          "fileSizeBytes": 2048000,
-          "mimeType": "image/jpeg",
-          "stageLabel": "BEFORE_INSTALLATION",
-          "uploadedBy": "usr-sup-01",
-          "uploaderName": "Mustafa Alokhandwala (Supervisor)",
-          "createdAt": "2026-10-31T07:38:32.771Z"
-        },
-        {
-          "id": "pht-inst-1793432312773-0",
-          "entityType": "INSTALLATION",
-          "entityId": "proj-1793432312771",
-          "fileName": "installation_completion_1.jpg",
-          "fileUrl": "/uploads/installation_erection_complete_1.jpg",
-          "fileSizeBytes": 2500000,
-          "mimeType": "image/jpeg",
-          "stageLabel": "AFTER_INSTALLATION",
-          "uploadedBy": "usr-sup-01",
-          "uploaderName": "Mustafa Alokhandwala",
-          "createdAt": "2026-10-31T07:38:32.773Z"
-        },
-        {
-          "id": "pht-inst-1793432312773-1",
-          "entityType": "INSTALLATION",
-          "entityId": "proj-1793432312771",
-          "fileName": "installation_completion_2.jpg",
-          "fileUrl": "/uploads/installation_scaffold_tag_2.jpg",
-          "fileSizeBytes": 2500000,
-          "mimeType": "image/jpeg",
-          "stageLabel": "AFTER_INSTALLATION",
-          "uploadedBy": "usr-sup-01",
-          "uploaderName": "Mustafa Alokhandwala",
-          "createdAt": "2026-10-31T07:38:32.773Z"
-        }
-      ],
-      "materials": [
-        {
-          "id": "pm-1793432312772-mat-01",
-          "projectId": "proj-1793432312771",
-          "materialId": "mat-01",
-          "materialName": "VERTICAL 10FT/3MTR",
-          "itemCode": "V-10FT-3M",
-          "unit": "NOS",
-          "requiredQuantity": 10,
-          "reservedQuantity": 0,
-          "issuedQuantity": 10,
-          "installedQuantity": 10,
-          "returnedUsableQuantity": 0,
-          "returnedDamagedQuantity": 0,
-          "missingQuantity": 0,
-          "monthlyRentalRate": 65
-        }
-      ],
-      "createdAt": "2026-10-31T07:38:32.771Z",
-      "updatedAt": "2026-10-31T07:38:32.773Z",
-      "quotationNumber": "QTN-AW-SCF-000001",
-      "quotationDate": "2026-10-31",
-      "plannedInstallationDate": "2026-11-15",
-      "durationMonths": 2,
-      "paymentTerms": "30 days advance",
-      "termsSnapshot": [
-        {
-          "id": 1,
-          "title": "Pricing",
-          "category": "PRICING",
-          "shortSummary": "Per-square-foot basis; actual area depends on site conditions & installed quantity.",
-          "fullText": "All prices are calculated on a per-square-foot (sq. ft.) basis. The actual area may vary depending on site conditions and the final quantity required during installation."
-        },
-        {
-          "id": 2,
-          "title": "Rental Period",
-          "category": "RENTAL",
-          "shortSummary": "Quoted price applicable for 28 days (1 month). Exceeding by 1 day incurs monthly charges.",
-          "fullText": "The quoted price is applicable for 28 days (1 month). If the rental period exceeds 28 days by even 1 day, the applicable monthly charges will be charged."
-        },
-        {
-          "id": 3,
-          "title": "Transportation",
-          "category": "LOGISTICS",
-          "shortSummary": "Extra 2-way charges applicable for both delivery and return transportation.",
-          "fullText": "Transportation charges are extra and will be charged for both delivery and return transportation (2-way charges)."
-        },
-        {
-          "id": 4,
-          "title": "Walkway Jali",
-          "category": "EQUIPMENT",
-          "shortSummary": "1 walkway Jali included per unit; additional Jali charged at ₹200 per piece.",
-          "fullText": "1 walkway Jali is included with each unit of scaffolding. Any additional walkway Jali will be charged at ₹200 per piece."
-        },
-        {
-          "id": 5,
-          "title": "Shifting Charges",
-          "category": "LOGISTICS",
-          "shortSummary": "Extra customer-borne charges: ₹6 per sq. ft. or 60% of the per-unit amount.",
-          "fullText": "Shifting charges are extra and shall be borne by the customer. Charges will be ₹6 per sq. ft. or 60% of the per-unit amount, as applicable."
-        },
-        {
-          "id": 6,
-          "title": "Order Cancellation",
-          "category": "OPERATIONS",
-          "shortSummary": "Strictly non-cancellable once confirmed.",
-          "fullText": "Once the order is confirmed, it cannot be cancelled."
-        },
-        {
-          "id": 7,
-          "title": "Payment Terms",
-          "category": "PAYMENT",
-          "shortSummary": "75% advance before installation; remaining 25% post-installation completion.",
-          "fullText": "75% advance payment is required before installation. The remaining 25% shall be paid after completion of installation."
-        },
-        {
-          "id": 8,
-          "title": "Monthly Payment",
-          "category": "PAYMENT",
-          "shortSummary": "Due on next day after completion of each 28-day rental period.",
-          "fullText": "For extended rental periods, the monthly rental payment must be made on the next day after completion of each 28-day/month rental period."
-        },
-        {
-          "id": 9,
-          "title": "Damage or Misplacement",
-          "category": "RESPONSIBILITY",
-          "shortSummary": "Customer liable for damage, loss, or misplacement at prevailing material values.",
-          "fullText": "The customer shall be responsible for any damage, loss, or misplacement of scaffolding material at the site. The value of damaged or missing material will be charged according to the prevailing material value on the date of assessment."
-        },
-        {
-          "id": 10,
-          "title": "Post-Installation Visit",
-          "category": "OPERATIONS",
-          "shortSummary": "Visits after installation completion are chargeable by location and scope.",
-          "fullText": "Any visit required after completion of installation will be chargeable, depending on the location and nature of the visit."
-        },
-        {
-          "id": 11,
-          "title": "Challan & Material Responsibility",
-          "category": "RESPONSIBILITY",
-          "shortSummary": "Customer must approve delivery challan; uninstallation reconciled against approved challan.",
-          "fullText": "At the time of installation, the customer must verify and approve the delivery challan containing details of all scaffolding materials supplied at the site. The customer shall be responsible for the safekeeping of all materials during the rental period. At the time of uninstallation, the materials will be verified against the approved delivery challan, and any shortage, loss, misplacement, or damage shall be charged to the customer as per the applicable material value."
-        }
-      ],
-      "extraJaliQuantity": 0,
-      "extraJaliCharges": 0,
-      "twoWayTransportCharges": 10000,
-      "advancePercentage": 75,
-      "advanceRequiredAmount": 112500,
-      "completionDueAmount": 37500,
-      "actualInstallationDate": "2026-11-16",
-      "rentalStartDate": "2026-11-16",
-      "rentalEndDate": "2026-12-16",
-      "originalRentalEndDate": "2026-12-16",
-      "actualMeasurements": {
-        "length": 30,
-        "width": 10,
-        "height": 20,
-        "unit": "FEET",
-        "isCorrect": true,
-        "variancePercentage": 0,
-        "remarks": "Exact physical match",
-        "verifiedBy": "Mustafa Alokhandwala",
-        "verifiedAt": "2026-10-31T07:38:32.773Z"
-      },
-      "clientRepresentativeName": "Mahesh Jadhav (Site Engineer)",
-      "clientSignOff": true,
+      "actualInstallationDate": "2026-10-15T10:00:00.000Z",
+      "assignedSupervisorId": "usr-sup-01",
+      "supervisorName": "Mustafa Alokhandwala (Supervisor)",
       "installationSupervisor": {
         "assignedSupervisorId": "usr-sup-01",
         "assignedSupervisorName": "Mustafa Alokhandwala (Supervisor)",
@@ -1091,51 +821,138 @@
       "installationWorkers": [
         {
           "id": "w-1",
-          "name": "Ramesh Yadav",
-          "role": "Lead Rigger"
+          "name": "Ramesh Kumar (Worker)",
+          "role": "Lead Scaffolder"
         },
         {
           "id": "w-2",
           "name": "Suresh Patil",
-          "role": "Scaffolder"
+          "role": "Rigger"
         }
       ]
+    },
+    {
+      "id": "test-proj-nov-1",
+      "projectCode": "AW-TEST-NOV1",
+      "customerId": "cust-2",
+      "customerName": "Godrej Properties Ltd",
+      "siteId": "site-2",
+      "siteName": "Wing B",
+      "siteAddress": "Bandra West, Mumbai",
+      "status": "ACTIVE_RENTAL",
+      "pricingModel": "MONTHLY_RENTAL",
+      "monthlyRentalRate": 40000,
+      "agreedProjectPrice": 45000,
+      "depositAmount": 10000,
+      "transportCharges": 3000,
+      "installationLabourCharges": 4000,
+      "shiftingCharges": 0,
+      "dismantlingLabourCharges": 3000,
+      "gstPercentage": 18,
+      "actualInstallationDate": "2026-11-05T14:30:00.000Z",
+      "assignedSupervisorId": "usr-sup-01",
+      "supervisorName": "Mustafa Alokhandwala",
+      "installationWorkers": [
+        {
+          "id": "w-1",
+          "name": "Ramesh Kumar",
+          "role": "Lead Scaffolder"
+        },
+        {
+          "id": "w-3",
+          "name": "Ganesh Shinde",
+          "role": "Technician"
+        }
+      ]
+    },
+    {
+      "id": "test-proj-nov-2",
+      "projectCode": "AW-TEST-NOV2",
+      "customerId": "cust-3",
+      "customerName": "Shapoorji Pallonji",
+      "siteId": "site-3",
+      "siteName": "Commercial Hub",
+      "siteAddress": "Worli, Mumbai",
+      "status": "INSTALLED",
+      "pricingModel": "MONTHLY_RENTAL",
+      "monthlyRentalRate": 60000,
+      "agreedProjectPrice": 70000,
+      "depositAmount": 15000,
+      "transportCharges": 5000,
+      "installationLabourCharges": 6000,
+      "shiftingCharges": 0,
+      "dismantlingLabourCharges": 4000,
+      "gstPercentage": 18,
+      "actualInstallationDate": "2026-11-20T09:00:00.000Z",
+      "assignedSupervisorId": "usr-admin-01",
+      "supervisorName": "Burhan Malu (Admin)",
+      "installationSupervisor": {
+        "assignedSupervisorId": "usr-admin-01",
+        "assignedSupervisorName": "Burhan Malu (Admin)",
+        "executingSupervisorId": "usr-admin-01",
+        "executingSupervisorName": "Burhan Malu",
+        "isSameSupervisor": true
+      },
+      "installationWorkers": [
+        {
+          "id": "w-2",
+          "name": "Suresh Patil",
+          "role": "Rigger"
+        },
+        {
+          "id": "w-3",
+          "name": "Ganesh Shinde",
+          "role": "Technician"
+        }
+      ]
+    },
+    {
+      "id": "test-proj-uninstalled",
+      "projectCode": "AW-TEST-UNINSTALLED",
+      "customerId": "cust-1",
+      "customerName": "DLF Realty Ltd",
+      "siteId": "site-4",
+      "siteName": "Tower C Future",
+      "siteAddress": "Powai, Mumbai",
+      "status": "NOT_INSTALLED",
+      "pricingModel": "MONTHLY_RENTAL",
+      "monthlyRentalRate": 35000,
+      "agreedProjectPrice": 35000,
+      "depositAmount": 0,
+      "transportCharges": 0,
+      "installationLabourCharges": 0,
+      "shiftingCharges": 0,
+      "dismantlingLabourCharges": 0,
+      "gstPercentage": 18,
+      "assignedSupervisorId": "usr-sup-01",
+      "supervisorName": "Mustafa Alokhandwala"
     }
   ],
   "invoices": [],
   "payments": [],
   "transactions": [
     {
-      "id": "txn-1793432312774",
+      "id": "txn-1793430455249",
       "transactionNumber": "TXN-2026-000002",
       "movementType": "MATERIAL_ISSUE_DISPATCH",
       "sourceLocation": "Taloja Central Scaffolding Yard",
       "destinationLocation": "Godrej Vistas Tower C",
-      "projectId": "proj-1793432312771",
+      "projectId": "proj-1793430455246",
       "projectCode": "AW-SCF-000001",
       "referenceDocument": "INSTALL-AW-SCF-000001",
       "actorId": "usr-sup-01",
       "actorName": "Mustafa Alokhandwala",
       "remarks": "Erection conforming to safety inspection",
-      "lines": [
-        {
-          "materialId": "mat-01",
-          "materialName": "VERTICAL 10FT/3MTR",
-          "itemCode": "V-10FT-3M",
-          "quantity": 10,
-          "condition": "GOOD",
-          "remarks": "Issued and installed at Godrej Vistas Tower C"
-        }
-      ],
-      "createdAt": "2026-10-31T07:38:32.774Z"
+      "lines": [],
+      "createdAt": "2026-10-31T07:07:35.249Z"
     },
     {
-      "id": "txn-1793432312772",
+      "id": "txn-1793430455247",
       "transactionNumber": "TXN-2026-000001",
       "movementType": "RESERVATION",
       "sourceLocation": "Taloja Central Scaffolding Yard",
       "destinationLocation": "Godrej Vistas Tower C",
-      "projectId": "proj-1793432312771",
+      "projectId": "proj-1793430455246",
       "projectCode": "AW-SCF-000001",
       "referenceDocument": "QTN-AW-SCF-000001",
       "actorId": "usr-admin-01",
@@ -1151,7 +968,7 @@
           "remarks": "Reserved for AW-SCF-000001"
         }
       ],
-      "createdAt": "2026-10-31T07:38:32.772Z"
+      "createdAt": "2026-10-31T07:07:35.247Z"
     }
   ],
   "bufferRequests": [],
@@ -1160,42 +977,42 @@
   "removalRequests": [],
   "notifications": [
     {
-      "id": "notif-1793432312773",
+      "id": "notif-1793430455248",
       "roleTarget": "ADMIN",
       "title": "New Project Inspection: AW-SCF-000002",
       "message": "Shapoorji Pallonji Real Estate - Imperial Heights Tower 2 has been inspected and awaits confirmation.",
       "type": "INFO",
       "entityType": "PROJECT",
-      "entityId": "proj-1793432312773",
+      "entityId": "proj-1793430455248",
       "isRead": false,
-      "createdAt": "2026-10-31T07:38:32.773Z"
+      "createdAt": "2026-10-31T07:07:35.248Z"
     },
     {
-      "id": "notif-1793432312771",
+      "id": "notif-1793430455247",
       "roleTarget": "ADMIN",
       "title": "New Project Inspection: AW-SCF-000001",
       "message": "Godrej Properties Ltd - Godrej Vistas Tower C has been inspected and awaits confirmation.",
       "type": "INFO",
       "entityType": "PROJECT",
-      "entityId": "proj-1793432312771",
+      "entityId": "proj-1793430455246",
       "isRead": false,
-      "createdAt": "2026-10-31T07:38:32.771Z"
+      "createdAt": "2026-10-31T07:07:35.247Z"
     }
   ],
   "auditLogs": [
     {
-      "id": "aud-1793432312773",
+      "id": "aud-1793430455248",
       "actorId": "usr-sup-01",
       "actorEmail": "Mustafa Alokhandwala",
       "action": "CREATE_PROJECT",
       "entityTable": "projects",
-      "entityId": "proj-1793432312773",
+      "entityId": "proj-1793430455248",
       "newState": {
-        "id": "proj-1793432312773",
+        "id": "proj-1793430455248",
         "projectCode": "AW-SCF-000002",
-        "customerId": "cust-1793432312773",
+        "customerId": "cust-1793430455248",
         "customerName": "Shapoorji Pallonji Real Estate",
-        "siteId": "site-1793432312773",
+        "siteId": "site-1793430455248",
         "siteName": "Imperial Heights Tower 2",
         "siteAddress": "Worli Naka, Mumbai",
         "assignedSupervisorId": "usr-sup-01",
@@ -1211,22 +1028,21 @@
         "dismantlingLabourCharges": 0,
         "gstPercentage": 18,
         "measurements": {
-          "id": "meas-1793432312773",
-          "siteId": "site-1793432312773",
-          "projectId": "proj-1793432312773",
+          "id": "meas-1793430455248",
+          "siteId": "site-1793430455248",
+          "projectId": "proj-1793430455248",
           "length": 50,
           "width": 15,
           "height": 35,
           "unit": "FEET",
-          "measurementType": "FAÇADE_SCAFFOLD",
           "measuredBy": "Mustafa Alokhandwala (Supervisor)",
-          "measuredAt": "2026-10-31T07:38:32.773Z"
+          "measuredAt": "2026-10-31T07:07:35.248Z"
         },
         "photos": [
           {
-            "id": "pht-1793432312773-0",
+            "id": "pht-1793430455248-0",
             "entityType": "SITE_INSPECTION",
-            "entityId": "proj-1793432312773",
+            "entityId": "proj-1793430455248",
             "fileName": "site_inspection_1.jpg",
             "fileUrl": "/uploads/gallery_photo_1.jpg",
             "fileSizeBytes": 2048000,
@@ -1234,12 +1050,12 @@
             "stageLabel": "BEFORE_INSTALLATION",
             "uploadedBy": "usr-sup-01",
             "uploaderName": "Mustafa Alokhandwala (Supervisor)",
-            "createdAt": "2026-10-31T07:38:32.773Z"
+            "createdAt": "2026-10-31T07:07:35.248Z"
           },
           {
-            "id": "pht-1793432312773-1",
+            "id": "pht-1793430455248-1",
             "entityType": "SITE_INSPECTION",
-            "entityId": "proj-1793432312773",
+            "entityId": "proj-1793430455248",
             "fileName": "site_inspection_2.jpg",
             "fileUrl": "/uploads/gallery_photo_2.jpg",
             "fileSizeBytes": 2048000,
@@ -1247,12 +1063,12 @@
             "stageLabel": "BEFORE_INSTALLATION",
             "uploadedBy": "usr-sup-01",
             "uploaderName": "Mustafa Alokhandwala (Supervisor)",
-            "createdAt": "2026-10-31T07:38:32.773Z"
+            "createdAt": "2026-10-31T07:07:35.248Z"
           },
           {
-            "id": "pht-1793432312773-2",
+            "id": "pht-1793430455248-2",
             "entityType": "SITE_INSPECTION",
-            "entityId": "proj-1793432312773",
+            "entityId": "proj-1793430455248",
             "fileName": "site_inspection_3.jpg",
             "fileUrl": "/uploads/camera_capture_3.jpg",
             "fileSizeBytes": 2048000,
@@ -1260,28 +1076,28 @@
             "stageLabel": "BEFORE_INSTALLATION",
             "uploadedBy": "usr-sup-01",
             "uploaderName": "Mustafa Alokhandwala (Supervisor)",
-            "createdAt": "2026-10-31T07:38:32.773Z"
+            "createdAt": "2026-10-31T07:07:35.248Z"
           }
         ],
         "materials": [],
-        "createdAt": "2026-10-31T07:38:32.773Z",
-        "updatedAt": "2026-10-31T07:38:32.773Z"
+        "createdAt": "2026-10-31T07:07:35.248Z",
+        "updatedAt": "2026-10-31T07:07:35.248Z"
       },
-      "createdAt": "2026-10-31T07:38:32.773Z"
+      "createdAt": "2026-10-31T07:07:35.248Z"
     },
     {
-      "id": "aud-1793432312771",
+      "id": "aud-1793430455247",
       "actorId": "usr-sup-01",
       "actorEmail": "Mustafa Alokhandwala",
       "action": "CREATE_PROJECT",
       "entityTable": "projects",
-      "entityId": "proj-1793432312771",
+      "entityId": "proj-1793430455246",
       "newState": {
-        "id": "proj-1793432312771",
+        "id": "proj-1793430455246",
         "projectCode": "AW-SCF-000001",
-        "customerId": "cust-1793432312771",
+        "customerId": "cust-1793430455246",
         "customerName": "Godrej Properties Ltd",
-        "siteId": "site-1793432312771",
+        "siteId": "site-1793430455246",
         "siteName": "Godrej Vistas Tower C",
         "siteAddress": "Vikhroli East, Mumbai",
         "assignedSupervisorId": "usr-sup-01",
@@ -1297,23 +1113,22 @@
         "dismantlingLabourCharges": 0,
         "gstPercentage": 18,
         "measurements": {
-          "id": "meas-1793432312771",
-          "siteId": "site-1793432312771",
-          "projectId": "proj-1793432312771",
+          "id": "meas-1793430455246",
+          "siteId": "site-1793430455246",
+          "projectId": "proj-1793430455246",
           "length": 30,
           "width": 10,
           "height": 20,
           "unit": "FEET",
-          "measurementType": "FAÇADE_SCAFFOLD",
           "description": "Façade renovation scaffold",
           "measuredBy": "Mustafa Alokhandwala (Supervisor)",
-          "measuredAt": "2026-10-31T07:38:32.771Z"
+          "measuredAt": "2026-10-31T07:07:35.246Z"
         },
         "photos": [
           {
-            "id": "pht-1793432312771-0",
+            "id": "pht-1793430455246-0",
             "entityType": "SITE_INSPECTION",
-            "entityId": "proj-1793432312771",
+            "entityId": "proj-1793430455246",
             "fileName": "site_inspection_1.jpg",
             "fileUrl": "/uploads/site_test_1.jpg",
             "fileSizeBytes": 2048000,
@@ -1321,12 +1136,12 @@
             "stageLabel": "BEFORE_INSTALLATION",
             "uploadedBy": "usr-sup-01",
             "uploaderName": "Mustafa Alokhandwala (Supervisor)",
-            "createdAt": "2026-10-31T07:38:32.771Z"
+            "createdAt": "2026-10-31T07:07:35.246Z"
           },
           {
-            "id": "pht-1793432312771-1",
+            "id": "pht-1793430455246-1",
             "entityType": "SITE_INSPECTION",
-            "entityId": "proj-1793432312771",
+            "entityId": "proj-1793430455246",
             "fileName": "site_inspection_2.jpg",
             "fileUrl": "/uploads/site_test_2.jpg",
             "fileSizeBytes": 2048000,
@@ -1334,12 +1149,12 @@
             "stageLabel": "BEFORE_INSTALLATION",
             "uploadedBy": "usr-sup-01",
             "uploaderName": "Mustafa Alokhandwala (Supervisor)",
-            "createdAt": "2026-10-31T07:38:32.771Z"
+            "createdAt": "2026-10-31T07:07:35.246Z"
           },
           {
-            "id": "pht-inst-1793432312773-0",
+            "id": "pht-inst-1793430455249-0",
             "entityType": "INSTALLATION",
-            "entityId": "proj-1793432312771",
+            "entityId": "proj-1793430455246",
             "fileName": "installation_completion_1.jpg",
             "fileUrl": "/uploads/installation_erection_complete_1.jpg",
             "fileSizeBytes": 2500000,
@@ -1347,12 +1162,12 @@
             "stageLabel": "AFTER_INSTALLATION",
             "uploadedBy": "usr-sup-01",
             "uploaderName": "Mustafa Alokhandwala",
-            "createdAt": "2026-10-31T07:38:32.773Z"
+            "createdAt": "2026-10-31T07:07:35.249Z"
           },
           {
-            "id": "pht-inst-1793432312773-1",
+            "id": "pht-inst-1793430455249-1",
             "entityType": "INSTALLATION",
-            "entityId": "proj-1793432312771",
+            "entityId": "proj-1793430455246",
             "fileName": "installation_completion_2.jpg",
             "fileUrl": "/uploads/installation_scaffold_tag_2.jpg",
             "fileSizeBytes": 2500000,
@@ -1360,29 +1175,29 @@
             "stageLabel": "AFTER_INSTALLATION",
             "uploadedBy": "usr-sup-01",
             "uploaderName": "Mustafa Alokhandwala",
-            "createdAt": "2026-10-31T07:38:32.773Z"
+            "createdAt": "2026-10-31T07:07:35.249Z"
           }
         ],
         "materials": [
           {
-            "id": "pm-1793432312772-mat-01",
-            "projectId": "proj-1793432312771",
+            "id": "pm-1793430455247-mat-01",
+            "projectId": "proj-1793430455246",
             "materialId": "mat-01",
             "materialName": "VERTICAL 10FT/3MTR",
             "itemCode": "V-10FT-3M",
             "unit": "NOS",
             "requiredQuantity": 10,
-            "reservedQuantity": 0,
-            "issuedQuantity": 10,
-            "installedQuantity": 10,
+            "reservedQuantity": 10,
+            "issuedQuantity": 0,
+            "installedQuantity": 0,
             "returnedUsableQuantity": 0,
             "returnedDamagedQuantity": 0,
             "missingQuantity": 0,
             "monthlyRentalRate": 65
           }
         ],
-        "createdAt": "2026-10-31T07:38:32.771Z",
-        "updatedAt": "2026-10-31T07:38:32.773Z",
+        "createdAt": "2026-10-31T07:07:35.246Z",
+        "updatedAt": "2026-10-31T07:07:35.249Z",
         "quotationNumber": "QTN-AW-SCF-000001",
         "quotationDate": "2026-10-31",
         "plannedInstallationDate": "2026-11-15",
@@ -1486,7 +1301,7 @@
           "variancePercentage": 0,
           "remarks": "Exact physical match",
           "verifiedBy": "Mustafa Alokhandwala",
-          "verifiedAt": "2026-10-31T07:38:32.773Z"
+          "verifiedAt": "2026-10-31T07:07:35.249Z"
         },
         "clientRepresentativeName": "Mahesh Jadhav (Site Engineer)",
         "clientSignOff": true,
@@ -1510,23 +1325,23 @@
           }
         ]
       },
-      "createdAt": "2026-10-31T07:38:32.771Z"
+      "createdAt": "2026-10-31T07:07:35.247Z"
     }
   ],
   "activityEvents": [
     {
-      "id": "act-1793432312774",
-      "projectId": "proj-1793432312771",
+      "id": "act-1793430455249",
+      "projectId": "proj-1793430455246",
       "eventType": "INSTALLATION_COMPLETED",
       "eventTitle": "Installation Completed & Rental Activated",
       "eventDescription": "Scaffolding installed on 2026-11-16. Size: 30m × 10m × 20m (Verified correct). Supervisor: Mustafa Alokhandwala (Supervisor) (Assigned). Crew: Ramesh Yadav [Lead Rigger], Suresh Patil [Scaffolder].",
       "actorId": "usr-sup-01",
       "actorName": "Mustafa Alokhandwala",
-      "createdAt": "2026-10-31T07:38:32.774Z"
+      "createdAt": "2026-10-31T07:07:35.249Z"
     },
     {
-      "id": "act-1793432312772",
-      "projectId": "proj-1793432312771",
+      "id": "act-1793430455247",
+      "projectId": "proj-1793430455246",
       "eventType": "PROJECT_CONFIRMED",
       "eventTitle": "Project Confirmed & Materials Reserved",
       "eventDescription": "Reserved 1 items (10 total pieces) under Quotation QTN-AW-SCF-000001.",
@@ -1536,27 +1351,27 @@
         "quotationNumber": "QTN-AW-SCF-000001",
         "materialsCount": 1
       },
-      "createdAt": "2026-10-31T07:38:32.772Z"
+      "createdAt": "2026-10-31T07:07:35.247Z"
     },
     {
-      "id": "act-1793432312771",
-      "projectId": "proj-1793432312771",
+      "id": "act-1793430455247",
+      "projectId": "proj-1793430455246",
       "eventType": "INSPECTION_SUBMITTED",
       "eventTitle": "Site Inspection Submitted",
       "eventDescription": "Inspection completed by Mustafa Alokhandwala (Supervisor) with dimensions 30m x 10m x 20m. Project set to NOT_INSTALLED.",
       "actorId": "usr-sup-01",
       "actorName": "Mustafa Alokhandwala",
-      "createdAt": "2026-10-31T07:38:32.771Z"
+      "createdAt": "2026-10-31T07:07:35.247Z"
     },
     {
-      "id": "act-1793432312773",
-      "projectId": "proj-1793432312773",
+      "id": "act-1793430455248",
+      "projectId": "proj-1793430455248",
       "eventType": "INSPECTION_SUBMITTED",
       "eventTitle": "Site Inspection Submitted",
       "eventDescription": "Inspection completed by Mustafa Alokhandwala (Supervisor) with dimensions 50m x 15m x 35m. Project set to NOT_INSTALLED.",
       "actorId": "usr-sup-01",
       "actorName": "Mustafa Alokhandwala",
-      "createdAt": "2026-10-31T07:38:32.773Z"
+      "createdAt": "2026-10-31T07:07:35.248Z"
     }
   ],
   "quotations": []
