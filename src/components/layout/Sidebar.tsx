@@ -20,20 +20,24 @@ import {
   LogOut,
   X,
   FileText,
-  Award
+  Award,
+  ArrowRightLeft,
+  PackagePlus,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 
 export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
   const pathname = usePathname();
   const { currentUser, logout } = useAuth();
+  const isExact = (path: string) => pathname === path;
 
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
     if (path === '/reports') return pathname === '/reports';
+    if (path === '/inventory') return pathname === '/inventory';
     return pathname.startsWith(path);
   };
-
   const navLinkClass = (path: string) => {
     const active = isActive(path);
     return `flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
@@ -47,6 +51,14 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
     return `w-4.5 h-4.5 shrink-0 transition-colors ${isActive(path) ? 'text-[#c79e7c]' : 'text-[#9c826e]'}`;
   };
 
+  const subNavLinkClass = (path: string) => {
+    const active = isExact(path);
+    return `flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+      active
+        ? 'bg-[#2a1a11] text-[#fdfbf7] font-semibold text-[#c79e7c]'
+        : 'text-[#bfa38e] hover:bg-[#20140d] hover:text-white'
+    }`;
+  };
   return (
     <div className="w-full h-full min-h-0 bg-[#19100a] text-[#debfa6] flex flex-col shrink-0 select-none border-r border-[#2a1a11] overflow-hidden">
       {/* Brand Header */}
@@ -178,13 +190,64 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                 </div>
               </Link>
 
-              <Link href="/inventory" onClick={onClose} className={navLinkClass('/inventory')}>
-                <div className="flex items-center gap-2.5">
-                  <Boxes className={iconClass('/inventory')} />
-                  <span>Inventory</span>
-                </div>
-              </Link>
+              {/* Inventory Group with Sub-Pages */}
+              <div className="space-y-1">
+                <Link href="/inventory" onClick={onClose} className={navLinkClass('/inventory')}>
+                  <div className="flex items-center gap-2.5">
+                    <Boxes className={iconClass('/inventory')} />
+                    <span>Inventory</span>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 text-[#9c826e] ${pathname.startsWith('/inventory') ? 'rotate-180 text-[#c79e7c]' : ''}`} />
+                </Link>
 
+                {/* Sub-Pages Section under Inventory */}
+                <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-[#382315] ml-4 mt-1">
+                  <Link 
+                    href="/inventory" 
+                    onClick={onClose} 
+                    className={subNavLinkClass('/inventory')}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${isExact('/inventory') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                    <span>Stock Overview</span>
+                  </Link>
+
+                  <Link 
+                    href="/inventory/catalogue" 
+                    onClick={onClose} 
+                    className={subNavLinkClass('/inventory/catalogue')}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${isExact('/inventory/catalogue') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                    <div className="flex items-center gap-1.5">
+                      <Layers className="w-3 h-3 shrink-0 text-[#9c826e]" />
+                      <span>Catalogue</span>
+                    </div>
+                  </Link>
+
+                  <Link 
+                    href="/inventory/movements" 
+                    onClick={onClose} 
+                    className={subNavLinkClass('/inventory/movements')}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${isExact('/inventory/movements') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                    <div className="flex items-center gap-1.5">
+                      <ArrowRightLeft className="w-3 h-3 shrink-0 text-[#9c826e]" />
+                      <span>Ledger</span>
+                    </div>
+                  </Link>
+
+                  <Link 
+                    href="/inventory/new" 
+                    onClick={onClose} 
+                    className={subNavLinkClass('/inventory/new')}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${isExact('/inventory/new') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                    <div className="flex items-center gap-1.5">
+                      <PackagePlus className="w-3 h-3 shrink-0 text-[#c79e7c]" />
+                      <span className="font-semibold text-[#debfa6]">Add Material</span>
+                    </div>
+                  </Link>
+                </div>
+              </div>
               <Link href="/billing" onClick={onClose} className={navLinkClass('/billing')}>
                 <div className="flex items-center gap-2.5">
                   <ReceiptIndianRupee className={iconClass('/billing')} />
