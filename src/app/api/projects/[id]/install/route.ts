@@ -26,6 +26,7 @@ export async function POST(
       workersList: validated.workersList,
       actualMeasurements: validated.actualMeasurements,
       clientRepresentativeName: validated.clientRepresentativeName,
+      clientSignOff: validated.clientSignOff,
       remarks: validated.remarks,
       afterPhotoUrls: validated.afterPhotoUrls,
       materialsUsed: validated.materialsUsed,
@@ -35,6 +36,9 @@ export async function POST(
 
     return NextResponse.json({ success: true, data: result }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    const message = error?.errors && Array.isArray(error.errors) && error.errors.length > 0
+      ? error.errors.map((e: any) => e.message).join(', ')
+      : (error.message || 'Failed to submit installation');
+    return NextResponse.json({ success: false, error: message }, { status: 400 });
   }
 }

@@ -18,7 +18,8 @@ import {
   Settings, 
   ShieldAlert, 
   LogOut,
-  X 
+  X,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 
@@ -116,6 +117,13 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                 </div>
               </Link>
 
+              <Link href="/quotation" onClick={onClose} className={navLinkClass('/quotation')}>
+                <div className="flex items-center gap-2.5">
+                  <FileText className={iconClass('/quotation')} />
+                  <span>Quotation Form</span>
+                </div>
+              </Link>
+
               <Link href="/installation" onClick={onClose} className={navLinkClass('/installation')}>
                 <div className="flex items-center gap-2.5">
                   <Truck className={iconClass('/installation')} />
@@ -194,6 +202,13 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                 <div className="flex items-center gap-2.5">
                   <Building2 className={iconClass('/sites/new')} />
                   <span>Site Form</span>
+                </div>
+              </Link>
+
+              <Link href="/quotation" onClick={onClose} className={navLinkClass('/quotation')}>
+                <div className="flex items-center gap-2.5">
+                  <FileText className={iconClass('/quotation')} />
+                  <span>Quotation Form</span>
                 </div>
               </Link>
 

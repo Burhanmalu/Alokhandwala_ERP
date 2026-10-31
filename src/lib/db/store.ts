@@ -22,7 +22,8 @@ import {
   Notification,
   AuditLog,
   ProjectActivityEvent,
-  ProjectStatus
+  ProjectStatus,
+  Quotation
 } from '../schema';
 import { 
   initialCompanySettings, 
@@ -57,6 +58,7 @@ interface DatabaseState {
   notifications: Notification[];
   auditLogs: AuditLog[];
   activityEvents: ProjectActivityEvent[];
+  quotations: Quotation[];
 }
 
 const DATA_DIR = path.join(process.cwd(), '.data');
@@ -120,6 +122,10 @@ class ERPDataStore {
           parsed.companySettings.termsAndConditions = JSON.parse(JSON.stringify(initialCompanySettings.termsAndConditions));
         }
 
+        if (!parsed.quotations) {
+          parsed.quotations = [];
+        }
+
         return parsed;
       }
     } catch (e) {
@@ -145,6 +151,7 @@ class ERPDataStore {
       notifications: [],
       auditLogs: [],
       activityEvents: [],
+      quotations: [],
     };
   }
 
@@ -220,6 +227,13 @@ class ERPDataStore {
   public getRemovalRequests() { return this.state.removalRequests; }
   public getNotifications() { return this.state.notifications; }
   public getAuditLogs() { return this.state.auditLogs; }
+  public getQuotations() { return this.state.quotations || []; }
+  public getQuotationById(id: string) { 
+    return (this.state.quotations || []).find(q => q.id === id); 
+  }
+  public getQuotationByProjectId(projectId: string) { 
+    return (this.state.quotations || []).find(q => q.projectId === projectId); 
+  }
   public getActivityEvents(projectId?: string) {
     if (projectId) {
       return this.state.activityEvents.filter(e => e.projectId === projectId);
@@ -248,6 +262,7 @@ class ERPDataStore {
       notifications: [],
       auditLogs: [],
       activityEvents: [],
+      quotations: [],
     };
     this.saveState();
   }

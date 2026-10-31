@@ -58,8 +58,8 @@ export class InventoryService {
       const project = state.projects.find(p => p.id === data.projectId);
       if (!project) throw new Error('Project not found');
 
-      if (project.status !== 'NOT_INSTALLED') {
-        throw new Error(`Cannot confirm project in status ${project.status}. Must be NOT_INSTALLED.`);
+      if (project.status !== 'NOT_INSTALLED' && project.status !== 'QUOTATION_ACCEPTED' && project.status !== 'SITE_CREATED') {
+        throw new Error(`Cannot confirm project in status ${project.status}. Must have an accepted quotation or be in NOT_INSTALLED status.`);
       }
 
       // Check stock availability for all requested items
@@ -401,6 +401,7 @@ export class InventoryService {
       remarks?: string;
     };
     clientRepresentativeName?: string;
+    clientSignOff?: boolean;
     remarks?: string;
     afterPhotoUrls?: string[];
     materialsUsed: { materialId: string; installedQuantity: number; unusedReturnedQty?: number }[];
@@ -486,6 +487,9 @@ export class InventoryService {
           verifiedAt: new Date().toISOString(),
         };
       }
+
+      project.clientRepresentativeName = data.clientRepresentativeName;
+      project.clientSignOff = data.clientSignOff ?? true;
 
       // Record supervisor verification & match status
       const isSame = data.isSameSupervisor ?? (data.supervisorId === project.assignedSupervisorId);

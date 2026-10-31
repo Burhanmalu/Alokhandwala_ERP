@@ -83,8 +83,104 @@ export interface FileAttachment {
   createdAt: string;
 }
 
+export type QuotationStatus = 
+  | 'DRAFT'
+  | 'SENT'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'CANCELLED';
+
+export interface QuotationMaterialItem {
+  id?: string;
+  materialId?: string;
+  itemCode: string;
+  materialName: string;
+  categoryName?: string;
+  unit: string;
+  quantity: number;
+  monthlyRentalRate?: number;
+  totalMonthlyRent?: number;
+  remarks?: string;
+}
+
+export interface Quotation {
+  id: string;
+  quotationNumber: string; // e.g. QTN-000001
+  projectId: string;
+  projectCode: string;
+  customerId: string;
+  customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  siteId: string;
+  siteName: string;
+  siteAddress: string;
+  quotationDate: string;
+  status: QuotationStatus;
+  
+  // Scaffolding Specifications
+  dimensions?: {
+    length: number;
+    width: number;
+    height: number;
+    unit: 'METERS' | 'FEET';
+    totalAreaSqFt: number;
+    structureType?: string;
+    description?: string;
+  };
+  
+  // Material Requirements
+  materials: QuotationMaterialItem[];
+  scaffoldingType?: string;
+  
+  // Pricing & Commercial Breakdown
+  ratePerSqFt: number;
+  totalAreaSqFt: number;
+  rentalDurationDays: number; // default 28 days
+  durationMonths: number; // default 1
+  monthlyRentalAmount: number;
+  walkwayJaliIncludedQuantity: number;
+  extraJaliQuantity: number;
+  extraJaliRate: number; // 200
+  extraJaliCharges: number;
+  transportCharges: number; // delivery and return
+  shiftingCharges: number;
+  otherCharges: number;
+  subtotal: number;
+  gstPercentage: number;
+  gstAmount: number;
+  grandTotal: number;
+  advancePercentage: number; // 75
+  advanceAmount: number; // 75%
+  remainingAmount: number; // 25%
+  
+  // Terms & Conditions
+  termsAndConditions?: string[];
+  notes?: string;
+  
+  // Site Images
+  siteImages?: string[];
+  
+  // Tracking & Audit
+  createdBy: string;
+  createdByName: string;
+  updatedBy?: string;
+  updatedByName?: string;
+  createdAt: string;
+  updatedAt: string;
+  sentAt?: string;
+  acceptedAt?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
+}
+
 export type ProjectStatus = 
+  | 'SITE_CREATED'
   | 'NOT_INSTALLED'
+  | 'QUOTATION_DRAFT'
+  | 'QUOTATION_SENT'
+  | 'QUOTATION_ACCEPTED'
+  | 'QUOTATION_REJECTED'
   | 'CONFIRMED_PROJECT'
   | 'SCHEDULED'
   | 'INSTALLED'
@@ -147,8 +243,11 @@ export interface Project {
   actualDismantlingDate?: string;
   closureDate?: string;
   cancellationReason?: string;
+  quotationId?: string;
   quotationNumber?: string;
   quotationDate?: string;
+  quotationAmount?: number;
+  quotationStatus?: QuotationStatus;
   paymentTerms?: string;
   siteRemarks?: string;
   termsSnapshot?: any;
@@ -189,6 +288,8 @@ export interface Project {
     role: string;
   }[];
   assignedWorkerIds?: string[];
+  clientRepresentativeName?: string;
+  clientSignOff?: boolean;
   scaffoldingPlan?: ScaffoldingMaterialPlanOption;
   siteDimensions?: {
     length: number;

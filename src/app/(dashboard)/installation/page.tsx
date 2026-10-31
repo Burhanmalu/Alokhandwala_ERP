@@ -66,9 +66,10 @@ function InstallationFormContent() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Form Fields
-  const [actualInstallationDate, setActualInstallationDate] = useState('');
+  // Form Fields - Pre-fill with standard datetime string (YYYY-MM-DDTHH:mm)
+  const [actualInstallationDate, setActualInstallationDate] = useState(() => new Date().toISOString().slice(0, 16));
 
   // Supervisor in Charge state
   const [selectedSupervisorId, setSelectedSupervisorId] = useState('');
@@ -94,9 +95,9 @@ function InstallationFormContent() {
   const [sizeVarianceReason, setSizeVarianceReason] = useState('');
   const [sizeVarianceConfirmed, setSizeVarianceConfirmed] = useState(false);
 
-  // Client Sign-off & Remarks
+  // Client Sign-off & Remarks - Default client verification to verified
   const [clientRepresentativeName, setClientRepresentativeName] = useState('');
-  const [clientSignOff, setClientSignOff] = useState(false);
+  const [clientSignOff, setClientSignOff] = useState(true);
   const [remarks, setRemarks] = useState('');
 
   // Material actual installation table & verification
@@ -140,10 +141,33 @@ function InstallationFormContent() {
     setSelectedProjectId(p.id);
     setSelectedProject(p);
 
+    // Initialize installation date (format: YYYY-MM-DDTHH:mm)
+    try {
+      if (p.actualInstallationDate) {
+        setActualInstallationDate(new Date(p.actualInstallationDate).toISOString().slice(0, 16));
+      } else if (p.plannedInstallationDate) {
+        setActualInstallationDate(new Date(p.plannedInstallationDate).toISOString().slice(0, 16));
+      } else {
+        setActualInstallationDate(new Date().toISOString().slice(0, 16));
+      }
+    } catch {
+      setActualInstallationDate(new Date().toISOString().slice(0, 16));
+    }
+
     // Initialize supervisor
     const initialSupId = p.assignedSupervisorId || currentUser.id;
     setSelectedSupervisorId(initialSupId);
     setSelectedSupervisorName(p.supervisorName || currentUser.fullName);
+
+    // Pre-populate workers if project already has logged erection workers
+    if (p.installationWorkers && p.installationWorkers.length > 0) {
+      setWorkersList(p.installationWorkers.map(w => ({ id: w.id, name: w.name, role: w.role })));
+    } else if (p.assignedWorkerIds && p.assignedWorkerIds.length > 0) {
+      const assigned = availableUsers.filter(u => p.assignedWorkerIds?.includes(u.id));
+      if (assigned.length > 0) {
+        setWorkersList(assigned.map(u => ({ id: u.id, name: u.fullName, role: 'Scaffolder' })));
+      }
+    }
 
     // Initialize dimensions from project measurements if available
     const meas = p.measurements;
@@ -194,7 +218,8 @@ function InstallationFormContent() {
   // Supervisor matching check
   const assignedSupName = selectedProject?.supervisorName?.trim().toLowerCase() || '';
   const executingSupName = selectedSupervisorName.trim().toLowerCase();
-  const isSupervisorSame =
+  const hasAssignedSupervisor = Boolean(selectedProject?.assignedSupervisorId || assignedSupName);
+  const isSupervisorSame = !hasAssignedSupervisor ||
     Boolean(selectedProject?.assignedSupervisorId && selectedSupervisorId && selectedProject.assignedSupervisorId === selectedSupervisorId) ||
     Boolean(assignedSupName && executingSupName && assignedSupName === executingSupName);
 
@@ -263,9 +288,23 @@ function InstallationFormContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
 
     if (!selectedProjectId) {
-      setError('Please select a project to install.');
+      setError('Please select a project to commission from the list.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (!actualInstallationDate) {
+      setError('Please provide the actual installation date and time.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (materialUsage.length === 0) {
+      setError('This project has no reserved scaffolding materials in the system. Please verify the project confirmation record.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -274,6 +313,7 @@ function InstallationFormContent() {
       setError(
         `Supervisor in charge differs from assigned site supervisor (${selectedProject?.supervisorName || 'Assigned'}). Please confirm delegation authorization before proceeding.`
       );
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -282,6 +322,7 @@ function InstallationFormContent() {
       setError(
         `Actual installed size differs from the planned site inspection dimensions (${variancePercentage > 0 ? '+' : ''}${variancePercentage.toFixed(1)}% variance). Please provide the justification reason and confirm the variance checkbox.`
       );
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -293,11 +334,13 @@ function InstallationFormContent() {
       setError(
         'Material quantity discrepancy detected (some items are less or more than reserved). Please provide an explanation in the variance note and check the confirmation box.'
       );
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
     if (workersList.length === 0) {
       setError('Please add at least one worker or rigger who worked on erecting this project.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -351,9 +394,15 @@ function InstallationFormContent() {
         throw new Error(json.error || 'Failed to submit installation');
       }
 
-      router.push(`/projects/${selectedProjectId}`);
+      setSuccessMessage(`Scaffolding installation commissioned successfully! Project ${selectedProject?.projectCode || ''} status is now Active Rental.`);
+      
+      // Delay navigation slightly so user sees positive confirmation
+      setTimeout(() => {
+        router.push(`/projects/${selectedProjectId}`);
+      }, 1500);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'An error occurred while submitting installation.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setSubmitting(false);
     }
@@ -421,11 +470,21 @@ function InstallationFormContent() {
       </div>
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-start gap-2.5 text-xs">
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-start gap-2.5 text-xs animate-in fade-in duration-200">
           <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
           <div>
             <div className="font-bold">Installation Submission Requirements Incomplete</div>
             <p className="mt-0.5">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-start gap-2.5 text-xs animate-in fade-in duration-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+          <div>
+            <div className="font-bold">Installation Commissioned Successfully</div>
+            <p className="mt-0.5">{successMessage}</p>
           </div>
         </div>
       )}
@@ -1290,27 +1349,49 @@ function InstallationFormContent() {
           </div>
 
           {/* Bottom Action Bar */}
-          <div className="bg-white p-4 rounded-xl border border-[#ebdcc9] shadow-2xs flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="text-xs text-[#7d6553] flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#8f6541]"></span>
-              <span>Submitting commissions the physical scaffolding and activates the 28-day rental billing clock.</span>
-            </div>
+          <div className="space-y-3">
+            {error && (
+              <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-start gap-2.5 text-xs animate-in fade-in duration-200">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <div className="font-bold">Installation Requirements Incomplete</div>
+                  <p className="mt-0.5">{error}</p>
+                </div>
+              </div>
+            )}
 
-            <div className="flex items-center gap-3 justify-end">
-              <Link
-                href="/projects"
-                className="px-5 py-2.5 rounded-lg border border-[#d6c7b2] text-[#24160c] hover:bg-[#fbf9f5] text-xs font-semibold transition text-center min-h-[40px] flex items-center justify-center cursor-pointer"
-              >
-                Cancel
-              </Link>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#24160c] hover:bg-[#382315] disabled:bg-[#d6c7b2] text-[#fbf9f5] text-xs font-bold rounded-lg shadow-sm transition cursor-pointer min-h-[40px]"
-              >
-                <CheckCircle2 className="w-4 h-4 text-[#c79e7c]" />
-                <span>{submitting ? 'Commissioning Installation...' : 'Commission Installation & Activate Rental'}</span>
-              </button>
+            {successMessage && (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-start gap-2.5 text-xs animate-in fade-in duration-200">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div>
+                  <div className="font-bold">Commissioning Confirmed</div>
+                  <p className="mt-0.5">{successMessage}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-white p-4 rounded-xl border border-[#ebdcc9] shadow-2xs flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="text-xs text-[#7d6553] flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#8f6541]"></span>
+                <span>Submitting commissions the physical scaffolding and activates the 28-day rental billing clock.</span>
+              </div>
+
+              <div className="flex items-center gap-3 justify-end">
+                <Link
+                  href="/projects"
+                  className="px-5 py-2.5 rounded-lg border border-[#d6c7b2] text-[#24160c] hover:bg-[#fbf9f5] text-xs font-semibold transition text-center min-h-[40px] flex items-center justify-center cursor-pointer"
+                >
+                  Cancel
+                </Link>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#24160c] hover:bg-[#382315] disabled:bg-[#d6c7b2] text-[#fbf9f5] text-xs font-bold rounded-lg shadow-sm transition cursor-pointer min-h-[40px]"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-[#c79e7c]" />
+                  <span>{submitting ? 'Commissioning Installation...' : 'Commission Installation & Activate Rental'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </form>

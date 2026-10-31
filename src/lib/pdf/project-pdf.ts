@@ -3,7 +3,7 @@
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Project, Customer, Site } from '@/lib/schema';
+import { Project, Customer, Site, Quotation } from '@/lib/schema';
 import { formatDate } from '@/lib/formatters';
 import { OFFICIAL_TERMS_AND_CONDITIONS, BusinessTerm } from '@/lib/constants/terms-and-conditions';
 
@@ -1370,4 +1370,375 @@ function renderSinglePhotoCard(
   doc.setTextColor(...COLORS.textDark);
   const truncatedLabel = doc.splitTextToSize(`${numberLabel}: ${photo.label}`, w - 6)[0] || `${numberLabel}`;
   doc.text(truncatedLabel, x + 3, y + imgH + 4.2);
+}
+
+/**
+ * -----------------------------------------------------------------------------
+ * 3. GENERATE PROJECT QUOTATION PDF
+ * -----------------------------------------------------------------------------
+ */
+export async function buildQuotationPdfDoc(
+  project: ProjectWithRelations,
+  quotation?: Quotation | null
+): Promise<jsPDF> {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const logoBase64 = await loadImageAsBase64('/logo.png');
+
+  const qtnNumber = quotation?.quotationNumber || project.quotationNumber || `QTN-${project.projectCode}`;
+  const qtnDate = formatDate(quotation?.quotationDate || project.quotationDate || project.createdAt);
+
+  let currentY = await drawCorporateHeader(
+    doc,
+    logoBase64,
+    'OFFICIAL COMMERCIAL SCAFFOLDING QUOTATION',
+    'Commercial Quotation',
+    qtnNumber,
+    qtnDate
+  );
+
+  // Party Details Card
+  currentY = drawPartyDetailsCard(doc, currentY, project);
+
+  // Specifications Banner (Aligned 2-Column Grid)
+  const specBannerHeight = 18;
+  doc.setFillColor(...COLORS.cardBg);
+  doc.setDrawColor(...COLORS.cardBorder);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(14, currentY, pageWidth - 28, specBannerHeight, 1.5, 1.5, 'FD');
+
+  // Banner Header Strip
+  doc.setFillColor(...COLORS.cardHeaderBg);
+  doc.roundedRect(14, currentY, pageWidth - 28, 5.5, 1.5, 1.5, 'F');
+  doc.setDrawColor(...COLORS.cardBorder);
+  doc.line(14, currentY + 5.5, pageWidth - 14, currentY + 5.5);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...COLORS.secondary);
+  doc.text('PROJECT SCOPE & SCAFFOLDING SPECIFICATIONS', 18, currentY + 4);
+
+  const dims = quotation?.dimensions || project.siteDimensions || project.measurements || { length: 0, width: 0, height: 0, unit: 'FEET' };
+  const dimText = `${dims.length || 0} (L) × ${dims.width || 0} (W) × ${dims.height || 0} (H) ${dims.unit || 'FT'}`;
+  const areaText = `${quotation?.totalAreaSqFt || project.totalAreaSqFt || 0} Sq. Ft.`;
+  const scafType = quotation?.scaffoldingType || (project.measurements?.measurementType ? project.measurements.measurementType.replace(/_/g, ' ') : 'Cup-Lock Façade Scaffold');
+
+  // Left Column Specifications
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...COLORS.textMuted);
+  doc.text('Project Code:', 18, currentY + 10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...COLORS.textDark);
+  doc.text(`${project.projectCode}`, 46, currentY + 10);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...COLORS.textMuted);
+  doc.text('Scaffolding System:', 18, currentY + 14.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...COLORS.textDark);
+  doc.text(scafType, 46, currentY + 14.5);
+
+  // Right Column Specifications
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...COLORS.textMuted);
+  doc.text('Dimensions:', 108, currentY + 10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...COLORS.textDark);
+  doc.text(dimText, 136, currentY + 10);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...COLORS.textMuted);
+  doc.text('Applicable Area:', 108, currentY + 14.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...COLORS.textDark);
+  doc.text(areaText, 136, currentY + 14.5);
+
+  currentY += specBannerHeight + 4.5;
+
+  // Material Requirements Table
+  const materials = (quotation?.materials && quotation.materials.length > 0)
+    ? quotation.materials
+    : (project.materials || []);
+
+  const tableRows = materials.map((m: any, index: number) => {
+    const qty = m.quantity || m.requiredQuantity || m.reservedQuantity || 0;
+    const rate = m.monthlyRentalRate || 0;
+    const total = qty * rate;
+    return [
+      (index + 1).toString(),
+      m.itemCode || '-',
+      m.materialName || 'Scaffolding Component',
+      m.unit || 'Nos',
+      qty.toLocaleString('en-IN'),
+      formatINR(rate),
+      formatINR(total),
+    ];
+  });
+
+  autoTable(doc, {
+    startY: currentY,
+    head: [['#', 'Item SKU', 'Material Description & Specification', 'Unit', 'Required Qty', 'Rate / Month', 'Total Month Rent']],
+    body: tableRows,
+    theme: 'grid',
+    headStyles: {
+      fillColor: COLORS.primary,
+      textColor: [255, 255, 255],
+      fontSize: 7.2,
+      fontStyle: 'bold',
+      halign: 'left',
+    },
+    columnStyles: {
+      0: { cellWidth: 8, halign: 'center' },
+      1: { cellWidth: 26, font: 'courier', fontStyle: 'bold' },
+      2: { cellWidth: 'auto' },
+      3: { cellWidth: 14, halign: 'center' },
+      4: { cellWidth: 22, halign: 'right', fontStyle: 'bold' },
+      5: { cellWidth: 24, halign: 'right' },
+      6: { cellWidth: 26, halign: 'right', fontStyle: 'bold' },
+    },
+    styles: {
+      fontSize: 7,
+      cellPadding: 1.8,
+      textColor: COLORS.textDark,
+      lineColor: COLORS.cardBorder,
+      lineWidth: 0.2,
+    },
+    alternateRowStyles: {
+      fillColor: COLORS.tableAlt,
+    },
+    margin: { left: 14, right: 14 },
+    showHead: 'everyPage',
+  });
+
+  currentY = (doc as any).lastAutoTable.finalY + 4;
+
+  // --- Financial & Commercial Terms Block ---
+  const blockWidth = (pageWidth - 28 - 4) / 2;
+  const cardHeight = 44;
+
+  if (currentY + cardHeight + 10 > 270) {
+    doc.addPage();
+    currentY = 20;
+  }
+
+  // Left Card: Commercial Financial Summary
+  doc.setFillColor(...COLORS.cardBg);
+  doc.setDrawColor(...COLORS.cardBorder);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(14, currentY, blockWidth, cardHeight, 1.5, 1.5, 'FD');
+
+  doc.setFillColor(...COLORS.cardHeaderBg);
+  doc.roundedRect(14, currentY, blockWidth, 5.5, 1.5, 1.5, 'F');
+  doc.setDrawColor(...COLORS.cardBorder);
+  doc.line(14, currentY + 5.5, 14 + blockWidth, currentY + 5.5);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...COLORS.secondary);
+  doc.text('COMMERCIAL PRICING BREAKDOWN', 18, currentY + 4);
+
+  const rentMonthly = quotation?.monthlyRentalAmount ?? (project.monthlyRentalRate || 0);
+  const extraJali = quotation?.extraJaliCharges ?? (project.extraJaliCharges || 0);
+  const transport = quotation?.transportCharges ?? (project.transportCharges || 0);
+  const shifting = quotation?.shiftingCharges ?? (project.shiftingCharges || 0);
+  const otherCharges = quotation?.otherCharges || 0;
+  const subtotal = quotation?.subtotal ?? (rentMonthly + extraJali + transport + shifting + otherCharges);
+  const gst = quotation?.gstAmount ?? Math.round(subtotal * 0.18 * 100) / 100;
+  const grandTotal = quotation?.grandTotal ?? (subtotal + gst);
+  const advanceAmount = quotation?.advanceAmount ?? Math.round(grandTotal * 0.75 * 100) / 100;
+  const balanceAmount = quotation?.remainingAmount ?? (grandTotal - advanceAmount);
+
+  const leftItems = [
+    { label: 'Scaffolding Rental / Mo:', val: formatINR(rentMonthly) },
+    { label: 'Extra Jali Charges (Rs.200/pc):', val: formatINR(extraJali) },
+    { label: 'Two-Way Transport Charges:', val: formatINR(transport) },
+    { label: 'Subtotal (Excl. Taxes):', val: formatINR(subtotal) },
+    { label: 'Applicable GST (18%):', val: formatINR(gst) },
+    { label: 'Grand Total Amount:', val: formatINR(grandTotal), bold: true },
+  ];
+
+  let lY = currentY + 9.5;
+  for (const item of leftItems) {
+    doc.setFont('helvetica', item.bold ? 'bold' : 'normal');
+    doc.setFontSize(item.bold ? 7.5 : 6.8);
+    doc.setTextColor(...(item.bold ? COLORS.primary : COLORS.textDark));
+    doc.text(item.label, 18, lY);
+    doc.text(item.val, 14 + blockWidth - 4, lY, { align: 'right' });
+    lY += 5.2;
+  }
+
+  // Right Card: Payment Schedule & Billing Policy
+  const rightX = 14 + blockWidth + 4;
+  doc.setFillColor(...COLORS.cardBg);
+  doc.setDrawColor(...COLORS.cardBorder);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(rightX, currentY, blockWidth, cardHeight, 1.5, 1.5, 'FD');
+
+  doc.setFillColor(...COLORS.cardHeaderBg);
+  doc.roundedRect(rightX, currentY, blockWidth, 5.5, 1.5, 1.5, 'F');
+  doc.setDrawColor(...COLORS.cardBorder);
+  doc.line(rightX, currentY + 5.5, rightX + blockWidth, currentY + 5.5);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...COLORS.secondary);
+  doc.text('PAYMENT SCHEDULE & RENTAL TERMS', rightX + 4, currentY + 4);
+
+  const rightItems = [
+    { label: 'Advance Payment (75%):', desc: `${formatINR(advanceAmount)} (Required prior to dispatch)` },
+    { label: 'Completion Balance (25%):', desc: `${formatINR(balanceAmount)} (Due upon site handover)` },
+    { label: 'Billing Schedule:', desc: 'Strict 28 Calendar Days cycle per rental month' },
+    { label: 'Security / Deposit:', desc: 'Zero deposit scheme under active corporate account' },
+    { label: 'Walkway Jali Policy:', desc: '1 included per scaffolding unit; extra @ Rs. 200/pc' },
+    { label: 'Two-Way Transport:', desc: 'Includes delivery to site and return to Taloja yard' },
+  ];
+
+  let rY = currentY + 9.5;
+  for (const item of rightItems) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.8);
+    doc.setTextColor(...COLORS.primary);
+    doc.text(item.label, rightX + 4, rY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...COLORS.textDark);
+    doc.text(item.desc, rightX + 34, rY);
+    rY += 5.2;
+  }
+
+  currentY += cardHeight + 5;
+
+  // --- Site Inspection Photographs (Site Photos Only) ---
+  const quotationPhotos = await loadAndPreparePhotos(project.photos || [], 'CONFIRMATION');
+  currentY = drawPhotoSection(
+    doc,
+    currentY,
+    pageWidth,
+    'SITE INSPECTION & PHYSICAL SCOPE PHOTOGRAPHS',
+    'No site inspection photographs attached to this quotation record.',
+    quotationPhotos,
+    'Site Photo'
+  );
+
+  // --- Official Business Terms & Conditions ---
+  if (currentY + 110 > 270) {
+    doc.addPage();
+    currentY = 20;
+  }
+
+  doc.setFillColor(...COLORS.cardHeaderBg);
+  doc.roundedRect(14, currentY, pageWidth - 28, 6.5, 1.2, 1.2, 'F');
+  doc.setDrawColor(...COLORS.accent);
+  doc.setLineWidth(0.4);
+  doc.line(14, currentY + 6.5, pageWidth - 14, currentY + 6.5);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...COLORS.primary);
+  doc.text('OFFICIAL BUSINESS TERMS & COMMERCIAL CLAUSES', 18, currentY + 4.5);
+
+  currentY += 8.5;
+
+  for (const t of OFFICIAL_TERMS_AND_CONDITIONS) {
+    if (currentY + 12 > 275) {
+      doc.addPage();
+      currentY = 20;
+    }
+
+    doc.setFillColor(...COLORS.accent);
+    doc.circle(16.5, currentY + 2.2, 0.9, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.8);
+    doc.setTextColor(...COLORS.primary);
+    doc.text(`${t.title}: `, 21, currentY + 3);
+
+    const titleWidth = doc.getTextWidth(`${t.title}: `);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.8);
+    doc.setTextColor(...COLORS.textDark);
+
+    const remainingText = doc.splitTextToSize(t.fullText, pageWidth - 28 - 7 - titleWidth);
+    doc.text(remainingText[0] || '', 21 + titleWidth, currentY + 3);
+
+    if (remainingText.length > 1) {
+      const restLines = doc.splitTextToSize(
+        t.fullText.substring((remainingText[0] || '').length).trim(),
+        pageWidth - 28 - 7
+      );
+      doc.text(restLines, 21, currentY + 6.5);
+      currentY += (restLines.length * 3.4);
+    }
+
+    currentY += 5.5;
+  }
+
+  currentY += 3;
+
+  // Authorization & Signatures
+  if (currentY + 34 > 270) {
+    doc.addPage();
+    currentY = 20;
+  }
+
+  const sigHeight = 30;
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(...COLORS.cardBorder);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(14, currentY, blockWidth, sigHeight, 1.5, 1.5, 'FD');
+  doc.roundedRect(rightX, currentY, blockWidth, sigHeight, 1.5, 1.5, 'FD');
+
+  // Client Acceptance Signature Box
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.2);
+  doc.setTextColor(...COLORS.secondary);
+  doc.text('CLIENT QUOTATION ACCEPTANCE & WORK ORDER', 18, currentY + 5);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.5);
+  doc.setTextColor(...COLORS.textMuted);
+  doc.text(`We confirm acceptance of Quotation ${qtnNumber} and its terms:`, 18, currentY + 9);
+
+  doc.setDrawColor(...COLORS.cardBorder);
+  doc.line(18, currentY + 22, 14 + blockWidth - 8, currentY + 22);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.8);
+  doc.text('Authorized Client Signatory & Company Stamp', 18, currentY + 26);
+
+  // ALOKHANDWALA Authorized Signatory
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.2);
+  doc.setTextColor(...COLORS.secondary);
+  doc.text('FOR ALOKHANDWALA (AUTHORIZED SIGNATORY)', rightX + 4, currentY + 5);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.5);
+  doc.setTextColor(...COLORS.textMuted);
+  doc.text('Commercial Scaffolding & Engineering Division:', rightX + 4, currentY + 9);
+
+  doc.setDrawColor(...COLORS.cardBorder);
+  doc.line(rightX + 4, currentY + 22, rightX + blockWidth - 8, currentY + 22);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.8);
+  doc.text('Authorized Commercial Officer Signature', rightX + 4, currentY + 26);
+
+  // Apply Running Footers
+  applyFooters(doc, qtnNumber, 'Commercial Quotation');
+
+  return doc;
+}
+
+export async function generateQuotationPdf(
+  project: ProjectWithRelations,
+  quotation?: Quotation | null
+): Promise<void> {
+  const doc = await buildQuotationPdfDoc(project, quotation);
+  const qtnNumber = quotation?.quotationNumber || project.quotationNumber || project.projectCode;
+  doc.save(`${qtnNumber}-Quotation.pdf`);
 }

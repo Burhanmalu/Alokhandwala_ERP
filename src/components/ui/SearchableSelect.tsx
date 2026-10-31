@@ -174,13 +174,16 @@ export function SearchableSelect<T>({
         onKeyDown={handleKeyDown}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`w-full text-left px-3 py-2 rounded-md border flex items-center justify-between gap-2 transition cursor-pointer select-none min-h-[38px] text-xs ${
+        className={`w-full text-left px-3 py-2 rounded-md border flex items-center justify-between gap-2.5 transition cursor-pointer select-none min-h-[40px] text-xs ${
           isOpen
-            ? 'border-[#6e482f] bg-white ring-1 ring-[#c79e7c]/40 shadow-xs'
-            : 'border-[#d8c8b4] bg-white hover:border-[#8c5e39]'
+            ? 'border-[#6e482f] bg-white ring-2 ring-[#8c5e39]/20 shadow-xs'
+            : 'border-[#d8c8b4] bg-[#fbf9f5]/60 hover:bg-white hover:border-[#8c5e39]'
         } ${disabled ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''}`}
       >
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          {!selectedItem && (
+            <Search className="w-3.5 h-3.5 text-[#9c826e] shrink-0" />
+          )}
           {selectedItem ? (
             renderSelected ? (
               renderSelected(selectedItem)
