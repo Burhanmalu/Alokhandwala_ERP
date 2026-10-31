@@ -14,7 +14,6 @@ import {
   Layers,
   Check,
   Building2,
-  MapPinned,
   ShieldCheck,
   Edit3,
   HelpCircle
@@ -858,17 +857,6 @@ export function SiteLocationMap({
               </span>
             )}
           </div>
-        </div>
-      )}
-
-      {/* When no mode is selected yet */}
-      {!locationType && (
-        <div className="p-6 border-2 border-dashed border-[#ebdcc9] rounded-xl text-center bg-[#fbf9f5] space-y-1.5 text-xs text-[#7d6553]">
-          <MapPinned className="w-8 h-8 text-[#8c5e39] mx-auto opacity-70 mb-1" />
-          <p className="font-bold text-[#24160c]">Choose Location Capture Method to Open Map</p>
-          <p className="text-[11px] text-[#8c7360]">
-            Select <strong className="text-[#24160c]">On-Site</strong> if you are standing at the project site with mobile GPS, or <strong className="text-[#24160c]">Not On-Site</strong> to search landmarks and addresses remotely.
-          </p>
         </div>
       )}
     </div>

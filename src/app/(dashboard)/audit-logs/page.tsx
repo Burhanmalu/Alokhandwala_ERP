@@ -110,6 +110,13 @@ export default function AuditLogsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-mono">
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-xs text-slate-400 font-sans">
+                    No audit records logged yet.
+                  </td>
+                </tr>
+              ) : null}
               {filtered.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-50 transition">
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatDateTime(log.createdAt)}</td>

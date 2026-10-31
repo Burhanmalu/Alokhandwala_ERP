@@ -253,7 +253,7 @@ export function ImageUploaderWithLightbox({
         </div>
 
         {/* Upload Action Buttons */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
           {/* 1. Camera Capture Button */}
           <button
             type="button"
@@ -359,115 +359,164 @@ export function ImageUploaderWithLightbox({
       )}
 
       {/* Upload Drop Zone & Thumbnails Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        {/* Uploaded Image Cards */}
-        {images.map((url, idx) => (
-          <div
-            key={`${url}-${idx}`}
-            onClick={() => {
-              setActiveLightboxIndex(idx);
-              setZoomLevel(1);
-            }}
-            className="group relative aspect-video rounded-md overflow-hidden border border-[#d8c8b4] bg-[#19100a] shadow-2xs hover:border-[#8c5e39] transition cursor-pointer select-none"
-            title="Click to open interactive preview and zoom"
-          >
-            {/* Thumbnail Image */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={url}
-              alt={`Photo ${idx + 1}`}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 opacity-90 group-hover:opacity-100"
-            />
-
-            {/* Click to Enlarge Overlay Indicator */}
-            <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none">
-              <span className="p-1.5 bg-black/75 rounded text-white shadow flex items-center gap-1.5 text-xs font-medium">
-                <Maximize2 className="w-3.5 h-3.5 text-[#c79e7c]" />
-                <span>Enlarge</span>
-              </span>
-            </div>
-
-            {/* Badge: Photo Number */}
-            <div className="absolute bottom-1.5 left-1.5 bg-black/75 px-1.5 py-0.5 rounded text-[10px] text-white font-mono flex items-center gap-1">
-              <ImageIcon className="w-3 h-3 text-[#c79e7c]" />
-              <span>#{idx + 1}</span>
-            </div>
-
-            {/* Top Action Buttons (Replace & Remove) */}
-            <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition z-10">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleTriggerReplace(idx);
-                }}
-                className="p-1 bg-black/75 hover:bg-black text-white rounded transition shadow-sm hover:text-[#c79e7c]"
-                title="Replace with new photo"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemovePhoto(idx);
-                }}
-                className="p-1 bg-rose-700 hover:bg-rose-800 text-white rounded shadow-sm transition"
-                title="Remove photo"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
+      {images.length === 0 ? (
+        /* Empty State: Unified Clean Drag & Drop Upload Zone */
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => galleryInputRef.current?.click()}
+          className={`border-2 border-dashed rounded-xl p-8 sm:p-10 flex flex-col items-center justify-center text-center transition cursor-pointer select-none ${
+            isDragging
+              ? 'border-[#8c5e39] bg-[#faf6ee]'
+              : 'border-[#ebdcc9] bg-[#fbf9f5] hover:border-[#8c5e39] hover:bg-[#faf6ee]/70'
+          }`}
+        >
+          <div className="w-12 h-12 rounded-full bg-[#f2eadf] border border-[#d8c8b4] flex items-center justify-center text-[#8c5e39] mb-3 transition">
+            <UploadCloud className="w-6 h-6" />
           </div>
-        ))}
-
-        {/* Upload / Drag-and-Drop Card */}
-        {images.length < maxFiles && (
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`aspect-video rounded-md border-2 border-dashed p-3 flex flex-col items-center justify-center text-center transition select-none ${
-              isDragging
-                ? 'border-[#8c5e39] bg-[#faf6ee]'
-                : 'border-[#d8c8b4] hover:border-[#8c5e39] bg-[#faf6ee]/50'
-            }`}
-          >
-            <UploadCloud
-              className={`w-5 h-5 mb-1 transition ${
-                isDragging ? 'text-[#8c5e39] scale-110' : 'text-[#9c826e]'
-              }`}
-            />
-            <div className="text-[11px] font-semibold text-[#4d301c]">Add Site Photos</div>
-            <div className="flex items-center gap-2 mt-1.5">
-              <button
-                type="button"
-                disabled={disabled || isUploading}
-                onClick={() => galleryInputRef.current?.click()}
-                className="px-2 py-0.5 bg-white border border-[#d8c8b4] text-[#4d301c] rounded text-[10px] font-medium hover:border-[#8c5e39] transition shadow-2xs"
-              >
-                Gallery
-              </button>
-              <span className="text-[9px] text-[#9c826e]">•</span>
-              <button
-                type="button"
-                disabled={disabled || isUploading}
-                onClick={() => cameraInputRef.current?.click()}
-                className="px-2 py-0.5 bg-white border border-[#d8c8b4] text-[#4d301c] rounded text-[10px] font-medium hover:border-[#8c5e39] transition shadow-2xs"
-              >
-                Camera
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {images.length === 0 && !isUploading && (
-        <div className="p-4 bg-[#fbf9f5] border border-[#ebdcc9] rounded-md text-center text-xs text-[#7d6553] space-y-1">
-          <p className="font-semibold text-[#24160c]">No photographs attached</p>
-          <p className="text-[11px] text-[#9c826e]">
-            Capture directly from camera or choose multiple images from your device gallery.
+          <h4 className="text-sm font-bold text-[#24160c] mb-1">
+            Drag & drop site photos here, or browse files
+          </h4>
+          <p className="text-xs text-[#7d6553] max-w-md mb-4">
+            Capture live site photos or select multiple images directly from your device gallery.
           </p>
+          <div className="flex items-center gap-2.5 flex-wrap justify-center" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              disabled={disabled || isUploading}
+              onClick={() => cameraInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#24150c] hover:bg-[#382315] text-[#fdfbf7] rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
+            >
+              <Camera className="w-4 h-4 text-[#c79e7c]" />
+              <span>Take Photo</span>
+            </button>
+            <button
+              type="button"
+              disabled={disabled || isUploading}
+              onClick={() => galleryInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#6e482f] hover:bg-[#59371d] text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
+            >
+              <ImageIcon className="w-4 h-4 text-[#debfa6]" />
+              <span>Choose from Gallery</span>
+            </button>
+            <button
+              type="button"
+              disabled={disabled || isUploading}
+              onClick={() => setShowUrlInput(!showUrlInput)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-[#fbf9f5] text-[#4d301c] rounded-lg text-xs font-semibold border border-[#d8c8b4] transition cursor-pointer"
+            >
+              <LinkIcon className="w-3.5 h-3.5 text-[#9c826e]" />
+              <span>Paste URL</span>
+            </button>
+          </div>
+          <span className="text-[10px] text-[#9c826e] mt-3 font-mono">
+            Supports multiple JPEG, PNG, WEBP • Up to {maxFiles} photos
+          </span>
+        </div>
+      ) : (
+        /* Populated State: Responsive Grid with Thumbnails + Add More Card */
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {images.map((url, idx) => (
+            <div
+              key={`${url}-${idx}`}
+              onClick={() => {
+                setActiveLightboxIndex(idx);
+                setZoomLevel(1);
+              }}
+              className="group relative aspect-video rounded-lg overflow-hidden border border-[#d8c8b4] bg-[#19100a] shadow-2xs hover:border-[#8c5e39] transition cursor-pointer select-none"
+              title="Click to open interactive preview and zoom"
+            >
+              {/* Thumbnail Image */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={url}
+                alt={`Photo ${idx + 1}`}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 opacity-90 group-hover:opacity-100"
+              />
+
+              {/* Click to Enlarge Overlay Indicator */}
+              <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none">
+                <span className="p-1.5 bg-black/75 rounded text-white shadow flex items-center gap-1.5 text-xs font-medium">
+                  <Maximize2 className="w-3.5 h-3.5 text-[#c79e7c]" />
+                  <span>Enlarge</span>
+                </span>
+              </div>
+
+              {/* Badge: Photo Number */}
+              <div className="absolute bottom-1.5 left-1.5 bg-black/75 px-1.5 py-0.5 rounded text-[10px] text-white font-mono flex items-center gap-1">
+                <ImageIcon className="w-3.5 h-3.5 text-[#c79e7c]" />
+                <span>#${idx + 1}</span>
+              </div>
+
+              {/* Top Action Buttons (Replace & Remove) */}
+              <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition z-10">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTriggerReplace(idx);
+                  }}
+                  className="p-1 bg-black/75 hover:bg-black text-white rounded transition shadow-sm hover:text-[#c79e7c] cursor-pointer"
+                  title="Replace with new photo"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemovePhoto(idx);
+                  }}
+                  className="p-1 bg-rose-700 hover:bg-rose-800 text-white rounded shadow-sm transition cursor-pointer"
+                  title="Remove photo"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {/* Add More Photos Card in Grid */}
+          {images.length < maxFiles && (
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => galleryInputRef.current?.click()}
+              className={`aspect-video rounded-lg border-2 border-dashed p-3 flex flex-col items-center justify-center text-center transition cursor-pointer select-none ${
+                isDragging
+                  ? 'border-[#8c5e39] bg-[#faf6ee]'
+                  : 'border-[#d8c8b4] hover:border-[#8c5e39] bg-[#faf6ee]/50 hover:bg-[#faf6ee]'
+              }`}
+            >
+              <UploadCloud
+                className={`w-5 h-5 mb-1 transition ${
+                  isDragging ? 'text-[#8c5e39] scale-110' : 'text-[#9c826e]'
+                }`}
+              />
+              <div className="text-[11px] font-bold text-[#4d301c]">+ Add More Photos</div>
+              <div className="flex items-center gap-1.5 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  disabled={disabled || isUploading}
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="px-2 py-0.5 bg-white border border-[#d8c8b4] text-[#4d301c] rounded text-[10px] font-semibold hover:border-[#8c5e39] transition shadow-2xs cursor-pointer"
+                >
+                  Gallery
+                </button>
+                <span className="text-[9px] text-[#9c826e]">•</span>
+                <button
+                  type="button"
+                  disabled={disabled || isUploading}
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="px-2 py-0.5 bg-white border border-[#d8c8b4] text-[#4d301c] rounded text-[10px] font-semibold hover:border-[#8c5e39] transition shadow-2xs cursor-pointer"
+                >
+                  Camera
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

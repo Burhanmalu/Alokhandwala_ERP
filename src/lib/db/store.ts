@@ -62,12 +62,31 @@ interface DatabaseState {
 }
 
 const DATA_DIR = path.join(process.cwd(), '.data');
-const isTestEnv = process.env.NODE_ENV === 'test' || Boolean(process.env.IS_TEST);
-const DATA_FILE = path.join(DATA_DIR, isTestEnv ? 'alokhandwala-erp-test.json' : 'alokhandwala-erp.json');
+
+function getDataFilePath(): string {
+  const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.IS_TEST);
+  return path.join(DATA_DIR, isTest ? 'alokhandwala-erp-test.json' : 'alokhandwala-erp.json');
+}
 
 class ERPDataStore {
   private state: DatabaseState;
   private lockPromise: Promise<void> = Promise.resolve();
+  private lastMtime: number = 0;
+
+  public syncFromDisk(): void {
+    try {
+      const dataFile = getDataFilePath();
+      if (fs.existsSync(dataFile)) {
+        const stat = fs.statSync(dataFile);
+        if (stat.mtimeMs !== this.lastMtime) {
+          this.state = this.loadState();
+          this.lastMtime = stat.mtimeMs;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   constructor() {
     this.state = this.loadState();
@@ -75,8 +94,9 @@ class ERPDataStore {
 
   private loadState(): DatabaseState {
     try {
-      if (fs.existsSync(DATA_FILE)) {
-        const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+      const dataFile = getDataFilePath();
+      if (fs.existsSync(dataFile)) {
+        const raw = fs.readFileSync(dataFile, 'utf-8');
         const parsed = JSON.parse(raw);
         // Ensure new materials & categories from seed data are seamlessly synced
         if (parsed.materials) {
@@ -160,10 +180,17 @@ class ERPDataStore {
       if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
       }
-      fs.writeFileSync(DATA_FILE, JSON.stringify(this.state, null, 2), 'utf-8');
+      const dataFile = getDataFilePath();
+      fs.writeFileSync(dataFile, JSON.stringify(this.state, null, 2), 'utf-8');
+      try {
+        if (fs.existsSync(dataFile)) {
+          this.lastMtime = fs.statSync(dataFile).mtimeMs;
+        }
+      } catch {}
 
       // Asynchronous replication to Neon PostgreSQL
-      if (process.env.DATABASE_URL) {
+      const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.IS_TEST);
+      if (process.env.DATABASE_URL && !isTest) {
         import('./postgres').then(({ getDbPool }) => {
           getDbPool().query(`
             INSERT INTO erp_state_sync (key, payload, updated_at)
@@ -195,6 +222,7 @@ class ERPDataStore {
     })();
 
     await previousLock;
+    this.syncFromDisk();
 
     try {
       const result = await fn(this.state);
@@ -207,38 +235,39 @@ class ERPDataStore {
 
   // Read Accessors
   public getState(): DatabaseState {
+    this.syncFromDisk();
     return this.state;
   }
 
-  public getCompanySettings() { return this.state.companySettings; }
-  public getUsers() { return this.state.users; }
-  public getWarehouses() { return this.state.warehouses; }
-  public getCategories() { return this.state.categories; }
-  public getMaterials() { return this.state.materials; }
-  public getCustomers() { return this.state.customers; }
-  public getSites() { return this.state.sites; }
-  public getProjects() { return this.state.projects; }
-  public getInvoices() { return this.state.invoices; }
-  public getPayments() { return this.state.payments; }
-  public getTransactions() { return this.state.transactions; }
-  public getBufferRequests() { return this.state.bufferRequests; }
-  public getRentalExtensions() { return this.state.rentalExtensions; }
-  public getShiftingRequests() { return this.state.shiftingRequests; }
-  public getRemovalRequests() { return this.state.removalRequests; }
-  public getNotifications() { return this.state.notifications; }
-  public getAuditLogs() { return this.state.auditLogs; }
-  public getQuotations() { return this.state.quotations || []; }
+  public getCompanySettings() { return this.getState().companySettings; }
+  public getUsers() { return this.getState().users; }
+  public getWarehouses() { return this.getState().warehouses; }
+  public getCategories() { return this.getState().categories; }
+  public getMaterials() { return this.getState().materials; }
+  public getCustomers() { return this.getState().customers; }
+  public getSites() { return this.getState().sites; }
+  public getProjects() { return this.getState().projects; }
+  public getInvoices() { return this.getState().invoices; }
+  public getPayments() { return this.getState().payments; }
+  public getTransactions() { return this.getState().transactions; }
+  public getBufferRequests() { return this.getState().bufferRequests; }
+  public getRentalExtensions() { return this.getState().rentalExtensions; }
+  public getShiftingRequests() { return this.getState().shiftingRequests; }
+  public getRemovalRequests() { return this.getState().removalRequests; }
+  public getNotifications() { return this.getState().notifications; }
+  public getAuditLogs() { return this.getState().auditLogs; }
+  public getQuotations() { return this.getState().quotations || []; }
   public getQuotationById(id: string) { 
-    return (this.state.quotations || []).find(q => q.id === id); 
+    return (this.getState().quotations || []).find(q => q.id === id); 
   }
   public getQuotationByProjectId(projectId: string) { 
-    return (this.state.quotations || []).find(q => q.projectId === projectId); 
+    return (this.getState().quotations || []).find(q => q.projectId === projectId); 
   }
   public getActivityEvents(projectId?: string) {
     if (projectId) {
-      return this.state.activityEvents.filter(e => e.projectId === projectId);
+      return this.getState().activityEvents.filter(e => e.projectId === projectId);
     }
-    return this.state.activityEvents;
+    return this.getState().activityEvents;
   }
 
   // Reset to seed data
@@ -268,8 +297,4 @@ class ERPDataStore {
   }
 }
 
-const globalForStore = globalThis as unknown as { erpDataStore: ERPDataStore | undefined };
-export const dbStore = globalForStore.erpDataStore ?? new ERPDataStore();
-if (process.env.NODE_ENV !== 'production') {
-  globalForStore.erpDataStore = dbStore;
-}
+export const dbStore = new ERPDataStore();

@@ -17,7 +17,6 @@ import {
   AlertCircle,
   Plus,
   Users,
-  Compass,
   Check,
   Sparkles,
   X,
@@ -636,11 +635,7 @@ function SiteFormContent() {
 
           {/* Interactive Google Map with Current Location Button & Places Autocomplete */}
           <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-[#4a3525] uppercase tracking-wider mb-2">
-                Pinpoint Site on Google Map (or Use Current Location)
-              </label>
-              <SiteLocationMap
+            <SiteLocationMap
                 initialAddress={address}
                 initialLatitude={latitude}
                 initialLongitude={longitude}
@@ -648,8 +643,7 @@ function SiteFormContent() {
                 initialLocationAccuracy={locationAccuracyMeters}
                 onLocationChange={handleMapLocationChange}
               />
-            </div>
-
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               {/* Site Address Textarea */}
               <div className="md:col-span-2">
@@ -773,54 +767,6 @@ function SiteFormContent() {
                 placeholder={unit === 'FEET' ? 'e.g. 20' : 'e.g. 6.0'}
                 className="w-full text-sm px-4 py-3 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-none focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] font-mono transition"
               />
-            </div>
-          </div>
-
-          {/* Scaffolding Engineering Dimensions Area Calculation Card */}
-          <div className="bg-[#fbf9f5] border border-[#ebdcc9] rounded-xl p-4 space-y-3 text-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center shrink-0">
-                  <Compass className="w-5 h-5 text-[#c79e7c]" />
-                </div>
-                <div>
-                  <div className="text-[11px] font-bold text-[#8c5e39] uppercase tracking-wider">
-                    Calculated Elevation Area (sq. ft.)
-                  </div>
-                  <div className="font-mono font-bold text-[#24160c] text-xl mt-0.5">
-                    {calculatedElevationAreaSqFt > 0 ? calculatedElevationAreaSqFt.toLocaleString('en-IN') : 0}{' '}
-                    <span className="text-xs font-sans font-semibold text-[#7d6553]">sq. ft.</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Engineering Formula Rule Pill */}
-              <div className="bg-white border border-[#ebdcc9] rounded-lg p-2.5 sm:text-right text-[11px] text-[#7d6553]">
-                <div className="font-semibold text-[#24160c]">
-                  Formula: Width × Adjusted Depth × Height
-                </div>
-                <div className="text-[10px] text-[#8c5e39] font-mono mt-0.5">
-                  Depth ≤ 3 ft → Multiplier: 1 | Depth &gt; 3 ft → Multiplier: Depth / 3
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-[#f2eadf] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-              <span className="text-[11px] text-[#7d6553]">
-                Dimensions captured: <strong>{numW || 0}</strong> {unit === 'FEET' ? 'ft' : 'm'} (W) ×{' '}
-                <strong>{numD || 0}</strong> {unit === 'FEET' ? 'ft' : 'm'} (D) ×{' '}
-                <strong>{numH || 0}</strong> {unit === 'FEET' ? 'ft' : 'm'} (H)
-              </span>
-
-              <div className="w-full sm:w-auto sm:min-w-[260px]">
-                <input
-                  type="text"
-                  value={customSizeRemark}
-                  onChange={e => setCustomSizeRemark(e.target.value)}
-                  placeholder="Optional size remarks (e.g. 3 façade sides, lift shaft)"
-                  className="w-full text-xs px-3 py-1.5 rounded-md border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-none focus:border-[#8f6541] transition"
-                />
-              </div>
             </div>
           </div>
         </div>

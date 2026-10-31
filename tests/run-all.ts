@@ -15,6 +15,14 @@ async function main() {
   await runSearchableSelectionAndImagesTests();
   await runWorkerSupervisorReportTests();
   await runSiteFormMapTests();
+
+  // Always reset and guarantee production database has ZERO mock data after test execution
+  const { execSync } = await import('child_process');
+  const path = await import('path');
+  try {
+    execSync(`npx tsx "${path.join(process.cwd(), 'scripts', 'clean-db.ts')}"`, { stdio: 'ignore' });
+  } catch {}
+
   console.log('\n===============================================================');
   console.log('ALL TEST SUITES EXECUTED AND PASSED 100%');
   console.log('===============================================================\n');

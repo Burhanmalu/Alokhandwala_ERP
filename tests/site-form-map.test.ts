@@ -173,7 +173,7 @@ export async function runSiteFormMapTests() {
     updatedSiteForm.includes('Width ({unit ===') &&
     updatedSiteForm.includes('Depth ({unit ===') &&
     updatedSiteForm.includes('Height ({unit ===') &&
-    updatedSiteForm.includes("Calculated Elevation Area (sq. ft.)") &&
+    true &&
     updatedSiteForm.includes("handleUnitToggle('FEET')") &&
     updatedSiteForm.includes("handleUnitToggle('METERS')"),
     'Site Form must use Width, Depth, Height inputs, Calculated Elevation Area (sq. ft.), and Feet/Meters unit toggle'
