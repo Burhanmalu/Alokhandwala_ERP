@@ -19,7 +19,8 @@ import {
   ShieldAlert, 
   LogOut,
   X,
-  FileText
+  FileText,
+  Award
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 
@@ -29,6 +30,7 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
 
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
+    if (path === '/reports') return pathname === '/reports';
     return pathname.startsWith(path);
   };
 
@@ -237,6 +239,13 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                 <div className="flex items-center gap-2.5">
                   <BarChart3 className={iconClass('/reports')} />
                   <span>Reports & Analytics</span>
+                </div>
+              </Link>
+
+              <Link href="/reports/worker-supervisor" onClick={onClose} className={navLinkClass('/reports/worker-supervisor')}>
+                <div className="flex items-center gap-2.5">
+                  <Award className={iconClass('/reports/worker-supervisor')} />
+                  <span>Worker & Supervisor Reports</span>
                 </div>
               </Link>
 

@@ -1,7 +1,7 @@
 // ALOKHANDWALA - Quotation Lifecycle & Commercial Pricing Engine
 
 import { dbStore } from '../db/store';
-import { Quotation, QuotationStatus, QuotationMaterialItem, Project } from '../schema';
+import { Quotation, QuotationStatus, QuotationMaterialItem, Project, ProjectStatus } from '../schema';
 
 export interface QuotationCalculationInput {
   ratePerSqFt: number;
@@ -271,6 +271,7 @@ export class QuotationService {
       let quotation = data.id 
         ? state.quotations.find(q => q.id === data.id) 
         : state.quotations.find(q => q.projectId === project.id);
+      const isNew = !quotation;
 
       const quotationNumber = quotation?.quotationNumber || this.generateNextQuotationNumber(state.quotations);
       const quotationDate = data.quotationDate || quotation?.quotationDate || new Date().toISOString().slice(0, 10);
@@ -365,7 +366,7 @@ export class QuotationService {
       project.updatedAt = now;
 
       // Update Project Workflow Status based on quotation action
-      let targetProjectStatus: typeof project.status = project.status;
+      let targetProjectStatus: ProjectStatus = project.status;
       if (data.status === 'DRAFT') {
         targetProjectStatus = 'QUOTATION_DRAFT';
       } else if (data.status === 'SENT') {
