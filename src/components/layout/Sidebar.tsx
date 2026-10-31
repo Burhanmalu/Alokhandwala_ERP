@@ -201,13 +201,13 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                 </Link>
 
                 {/* Sub-Pages Section under Inventory */}
-                <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-[#382315] ml-4 mt-1">
+                <div className="pl-3 pr-1 py-0.5 space-y-0.5 border-l-2 border-[#382315] ml-4 mt-1">
                   <Link 
                     href="/inventory" 
                     onClick={onClose} 
                     className={subNavLinkClass('/inventory')}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full ${isExact('/inventory') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/inventory') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
                     <span>Stock Overview</span>
                   </Link>
 
@@ -216,11 +216,8 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                     onClick={onClose} 
                     className={subNavLinkClass('/inventory/catalogue')}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full ${isExact('/inventory/catalogue') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                    <div className="flex items-center gap-1.5">
-                      <Layers className="w-3 h-3 shrink-0 text-[#9c826e]" />
-                      <span>Catalogue</span>
-                    </div>
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/inventory/catalogue') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                    <span>Catalogue</span>
                   </Link>
 
                   <Link 
@@ -228,23 +225,8 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                     onClick={onClose} 
                     className={subNavLinkClass('/inventory/movements')}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full ${isExact('/inventory/movements') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                    <div className="flex items-center gap-1.5">
-                      <ArrowRightLeft className="w-3 h-3 shrink-0 text-[#9c826e]" />
-                      <span>Ledger</span>
-                    </div>
-                  </Link>
-
-                  <Link 
-                    href="/inventory/new" 
-                    onClick={onClose} 
-                    className={subNavLinkClass('/inventory/new')}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${isExact('/inventory/new') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                    <div className="flex items-center gap-1.5">
-                      <PackagePlus className="w-3 h-3 shrink-0 text-[#c79e7c]" />
-                      <span className="font-semibold text-[#debfa6]">Add Material</span>
-                    </div>
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/inventory/movements') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                    <span>Ledger</span>
                   </Link>
                 </div>
               </div>
