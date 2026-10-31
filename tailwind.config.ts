@@ -63,8 +63,19 @@ const config: Config = {
         }
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "monospace"],
+        sans: ["'Amazon Ember'", "-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "Roboto", "sans-serif"],
+        serif: ["'Amazon Ember'", "system-ui", "sans-serif"],
+        mono: ["'Amazon Ember Mono'", "monospace"],
+      },
+      fontSize: {
+        '2xs': ['0.75rem', { lineHeight: '1rem' }],      // 12px (previously 10px-11px)
+        'xs': ['0.84375rem', { lineHeight: '1.25rem' }],  // 13.5px (previously 12px)
+        'sm': ['0.9375rem', { lineHeight: '1.375rem' }],  // 15px (previously 14px)
+        'base': ['1.03125rem', { lineHeight: '1.5rem' }], // 16.5px (previously 16px)
+        'lg': ['1.15625rem', { lineHeight: '1.75rem' }],  // 18.5px
+        'xl': ['1.3125rem', { lineHeight: '1.75rem' }],   // 21px
+        '2xl': ['1.5625rem', { lineHeight: '2rem' }],     // 25px
+        '3xl': ['1.9375rem', { lineHeight: '2.25rem' }],  // 31px
       },
     },
   },

@@ -6,7 +6,7 @@
 // 4. Image saving & attachment linking against customer & project
 // 5. Lightbox & Gallery multiple images data integrity
 
-process.env.NODE_ENV = 'test';
+// Set test environment
 process.env.IS_TEST = 'true';
 
 import assert from 'assert';
@@ -14,6 +14,7 @@ import { dbStore } from '../src/lib/db/store';
 import { ProjectService } from '../src/lib/services/project-service';
 import { InventoryService } from '../src/lib/services/inventory-service';
 import { generateConfirmationPdf, generateInstallationPdf } from '../src/lib/pdf/project-pdf';
+import { Site } from '../src/lib/schema';
 
 export async function runSearchableSelectionAndImagesTests() {
   console.log('\n===============================================================');
@@ -115,6 +116,7 @@ export async function runSearchableSelectionAndImagesTests() {
         width: 10,
         height: 20,
         unit: 'FEET',
+        measurementType: 'FAÇADE_SCAFFOLD',
         description: 'Façade renovation scaffold',
       },
       photoUrls: ['/uploads/site_test_1.jpg', '/uploads/site_test_2.jpg'],
@@ -176,7 +178,7 @@ export async function runSearchableSelectionAndImagesTests() {
       installationLabourCharges: 25000,
       paymentTerms: '30 days advance',
       materials: [
-        { materialId: materials[0].id, requiredQuantity: 10, proposedReserveQty: 10 },
+        { materialId: materials[0].id, requiredQuantity: 10 },
       ],
       actorId: 'usr-admin-01',
       actorName: 'Burhan Malu',
@@ -231,6 +233,7 @@ export async function runSearchableSelectionAndImagesTests() {
         width: 15,
         height: 35,
         unit: 'FEET',
+        measurementType: 'FAÇADE_SCAFFOLD',
       },
       photoUrls: uploadedPhotos,
       actorId: 'usr-sup-01',
@@ -279,7 +282,7 @@ export async function runSearchableSelectionAndImagesTests() {
       afterPhotoUrls: afterPhotos,
       materialsUsed: [
         {
-          materialId: (readyProject.materialsReserved || [])[0]?.materialId || 'mat-001',
+          materialId: (readyProject.materials || [])[0]?.materialId || 'mat-001',
           installedQuantity: 10,
           unusedReturnedQty: 0,
         },
@@ -323,18 +326,16 @@ export async function runSearchableSelectionAndImagesTests() {
       updatedAt: new Date().toISOString(),
     };
 
-    const site = {
+    const site: Site = {
       id: 'site-1',
+      siteCode: 'SITE-0001',
       customerId: customer.id,
       siteName: installedProject.siteName,
-      address: installedProject.siteAddress || 'Site Address',
+      siteAddress: installedProject.siteAddress || 'Site Address',
       city: 'Mumbai',
       state: 'Maharashtra',
       status: 'ACTIVE' as const,
-      projectsCount: 1,
-      activeRentalsCount: 1,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
 
     await generateConfirmationPdf({

@@ -45,15 +45,12 @@ export default function AuditLogsPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
         <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
           <ShieldAlert className="w-5 h-5 text-emerald-600" />
-          <span>System Security & Audit Trail</span>
+          <span>Audit Logs</span>
         </h1>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Immutable records of critical project transitions, inventory movements, commercial confirmations, and user actions.
-        </p>
       </div>
 
       <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">

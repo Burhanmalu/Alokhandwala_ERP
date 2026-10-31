@@ -23,8 +23,8 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   };
 
   return (
-    <header className="h-14 bg-white border-b border-[#e5dac8] px-3 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-30 shadow-2xs gap-3 shrink-0">
-      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 max-w-xl">
+    <header className="h-16 bg-white border-b border-[#e5dac8] px-4 sm:px-6 md:px-8 flex items-center justify-between sticky top-0 z-30 shadow-2xs gap-4 shrink-0">
+      <div className="flex items-center gap-3 flex-1 min-w-0 max-w-2xl">
         {onMenuClick && (
           <button 
             onClick={onMenuClick}
@@ -45,13 +45,13 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
         {/* Global Search Bar */}
         <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-0">
-          <Search className="w-3.5 h-3.5 text-[#9c826e] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-4 h-4 text-[#9c826e] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             placeholder="Search projects, customers, sites..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-7 py-1.5 text-xs bg-[#faf6ee]/70 border border-[#d8c8b4] rounded-md focus:outline-none focus:ring-1 focus:ring-[#8c5e39] focus:border-[#8c5e39] focus:bg-white text-[#24160c] placeholder:text-[#9c826e] transition truncate"
+            className="w-full pl-10 pr-8 py-2 text-sm bg-[#faf6ee]/70 border border-[#d8c8b4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8c5e39]/20 focus:border-[#8c5e39] focus:bg-white text-[#24160c] placeholder:text-[#9c826e] transition truncate"
           />
           {searchQuery && (
             <button
@@ -65,23 +65,23 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
         </form>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         {/* Branch / Facility Badge */}
-        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#fbf9f5] border border-[#e8decb] text-[11px] text-[#574830] font-medium">
-          <Building2 className="w-3 h-3 text-[#ab7c57]" />
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#fbf9f5] border border-[#e8decb] text-xs text-[#574830] font-medium">
+          <Building2 className="w-3.5 h-3.5 text-[#ab7c57]" />
           <span>Taloja Central Yard</span>
         </div>
 
         {/* User Pill */}
-        <div className="flex items-center gap-2 pl-2 border-l border-[#ebdcc9]">
-          <div className="w-7 h-7 rounded-md bg-[#24150c] text-[#fdf8f4] flex items-center justify-center font-bold text-xs shrink-0 border border-[#4d301c]">
+        <div className="flex items-center gap-2.5 pl-3 border-l border-[#ebdcc9]">
+          <div className="w-8 h-8 rounded-lg bg-[#24150c] text-[#fdf8f4] flex items-center justify-center font-bold text-sm shrink-0 border border-[#4d301c]">
             {currentUser.fullName ? currentUser.fullName[0] : 'U'}
           </div>
           <div className="hidden sm:block text-left min-w-0">
-            <div className="text-xs font-semibold text-[#24160c] truncate leading-tight">
+            <div className="text-sm font-semibold text-[#24160c] truncate leading-tight">
               {currentUser.fullName}
             </div>
-            <div className="text-[10px] text-[#7d6553] font-mono uppercase tracking-tight leading-tight">
+            <div className="text-2xs text-[#7d6553] font-mono uppercase tracking-tight leading-tight mt-0.5">
               {currentUser.role.replace('_', ' ')}
             </div>
           </div>

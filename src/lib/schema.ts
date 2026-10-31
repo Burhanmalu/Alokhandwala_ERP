@@ -77,7 +77,7 @@ export interface FileAttachment {
   fileUrl: string;
   fileSizeBytes: number;
   mimeType: string;
-  stageLabel?: 'BEFORE_INSTALLATION' | 'AFTER_INSTALLATION' | 'BEFORE_SHIFTING' | 'AFTER_SHIFTING' | 'DISMANTLED' | 'DAMAGED';
+  stageLabel?: 'BEFORE_INSTALLATION' | 'AFTER_INSTALLATION' | 'BEFORE_SHIFTING' | 'AFTER_SHIFTING' | 'DISMANTLED' | 'DAMAGED' | 'SITE_INSPECTION';
   uploadedBy: string;
   uploaderName?: string;
   createdAt: string;

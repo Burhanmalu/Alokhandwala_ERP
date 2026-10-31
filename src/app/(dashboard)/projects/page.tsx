@@ -204,25 +204,18 @@ function ProjectsListContent() {
       <div className="bg-[#24160c] border border-[#19100a] rounded-lg p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11px] font-mono tracking-widest text-[#c79e7c] uppercase">Contract Operations</span>
-            <span className="text-stone-500">|</span>
-            <span className="text-xs text-stone-300">Scaffolding Lifecycle</span>
+            <span className="text-[11px] font-mono tracking-widest text-[#c79e7c] uppercase">Operations</span>
           </div>
-          <h1 className="text-xl font-serif font-bold tracking-tight text-white flex items-center gap-2">
+          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
             <FolderKanban className="w-5 h-5 text-[#c79e7c]" />
             <span>
               {currentUser.role === 'WORKER'
-                ? 'Assigned Sites & Workforce Deployments'
+                ? 'Assigned Sites'
                 : currentUser.role === 'SUPERVISOR'
-                  ? 'Field Sites & Assigned Projects'
-                  : 'Projects Lifecycle Directory'}
+                  ? 'Assigned Projects'
+                  : 'Projects Directory'}
             </span>
           </h1>
-          <p className="text-xs text-stone-300 mt-1">
-            {currentUser.role === 'WORKER'
-              ? 'Showing project records and scaffolding installations registered to your crew profile.'
-              : 'Complete commercial custody tracking from site registration to commissioning, billing, and dismantling.'}
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">

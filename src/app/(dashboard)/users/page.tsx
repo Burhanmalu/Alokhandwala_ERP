@@ -162,16 +162,13 @@ export default function UserManagementPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-emerald-600" />
-            <span>User Management & Role Permissions</span>
+            <span>User Management</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Manage system administrators, project managers, field site supervisors, yard managers, and accountants.
-          </p>
         </div>
 
         <button

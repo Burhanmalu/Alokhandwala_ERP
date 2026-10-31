@@ -84,31 +84,32 @@ export default function InventoryOverviewPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#e5dac8]">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#9c826e]">
-            <span>Asset Management</span>
-            <span>•</span>
-            <span className="font-mono text-[#6e482f]">Taloja Central Yard</span>
+            <span>Inventory</span>
           </div>
-          <h1 className="text-xl font-bold text-[#24160c] mt-0.5 flex items-center gap-2">
-            <Boxes className="w-5 h-5 text-[#8c5e39]" />
-            <span>Scaffolding Yard & Inventory Overview</span>
+          <h1 className="text-xl sm:text-2xl font-bold text-[#24160c] mt-0.5 flex items-center gap-2.5">
+            <Boxes className="w-6 h-6 text-[#8c5e39]" />
+            <span>Inventory</span>
           </h1>
-          <p className="text-xs text-[#7d6553] mt-0.5">
-            Physical stock tracking across central warehouses and active client sites.
-          </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <Link
             href="/inventory/catalogue"
-            className="px-3 py-1.5 text-xs font-semibold text-[#4d301c] bg-white border border-[#d8c8b4] rounded-md hover:bg-[#faf6ee] transition shadow-2xs"
+            className="px-3.5 py-2 text-xs font-semibold text-[#4d301c] bg-white border border-[#d8c8b4] rounded-lg hover:bg-[#faf6ee] transition shadow-2xs"
           >
-            Material Catalogue
+            Inventory Catalogue
           </Link>
           <Link
             href="/inventory/movements"
-            className="px-3 py-1.5 text-xs font-semibold text-white bg-[#24150c] hover:bg-[#382315] border border-[#4d301c] rounded-md shadow-2xs transition"
+            className="px-3.5 py-2 text-xs font-semibold text-[#4d301c] bg-white border border-[#d8c8b4] rounded-lg hover:bg-[#faf6ee] transition shadow-2xs"
           >
-            Movement Ledger
+            Inventory Ledger
+          </Link>
+          <Link
+            href="/inventory/new"
+            className="px-3.5 py-2 text-xs font-bold text-white bg-[#24150c] hover:bg-[#382315] border border-[#4d301c] rounded-lg shadow-2xs transition flex items-center gap-1.5"
+          >
+            <span>+ Add Material</span>
           </Link>
         </div>
       </div>

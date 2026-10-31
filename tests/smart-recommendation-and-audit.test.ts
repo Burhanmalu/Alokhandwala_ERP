@@ -1,6 +1,5 @@
 // Alokhandwala Scaffolding ERP - Smart Material Recommendation & Comprehensive Audit Test Suite
 
-process.env.NODE_ENV = 'test';
 process.env.IS_TEST = 'true';
 
 import assert from 'assert';
@@ -147,6 +146,7 @@ export async function runAuditTests() {
         referenceName: 'Audit Infra',
         contactPerson: 'Adnan',
         phone: '9820000000',
+        email: 'adnan@auditinfra.com',
         billingAddress: 'Indore',
         city: 'Indore',
         state: 'Madhya Pradesh',

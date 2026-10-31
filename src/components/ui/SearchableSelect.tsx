@@ -174,26 +174,26 @@ export function SearchableSelect<T>({
         onKeyDown={handleKeyDown}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`w-full text-left px-3 py-2 rounded-md border flex items-center justify-between gap-2.5 transition cursor-pointer select-none min-h-[40px] text-xs ${
+        className={`w-full text-left px-4 py-2.5 rounded-lg border flex items-center justify-between gap-3 transition cursor-pointer select-none min-h-[46px] text-sm ${
           isOpen
             ? 'border-[#6e482f] bg-white ring-2 ring-[#8c5e39]/20 shadow-xs'
             : 'border-[#d8c8b4] bg-[#fbf9f5]/60 hover:bg-white hover:border-[#8c5e39]'
         } ${disabled ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''}`}
       >
-        <div className="flex-1 min-w-0 flex items-center gap-2">
+        <div className="flex-1 min-w-0 flex items-center gap-2.5">
           {!selectedItem && (
-            <Search className="w-3.5 h-3.5 text-[#9c826e] shrink-0" />
+            <Search className="w-4 h-4 text-[#9c826e] shrink-0" />
           )}
           {selectedItem ? (
             renderSelected ? (
               renderSelected(selectedItem)
             ) : (
-              <span className="text-xs font-semibold text-[#24160c] truncate block">
+              <span className="text-sm font-semibold text-[#24160c] truncate block">
                 {getOptionLabel(selectedItem)}
               </span>
             )
           ) : (
-            <span className="text-xs text-[#9c826e] truncate block">{placeholder}</span>
+            <span className="text-sm text-[#9c826e] truncate block">{placeholder}</span>
           )}
         </div>
 
@@ -240,7 +240,7 @@ export function SearchableSelect<T>({
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder={searchPlaceholder}
-                className="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-[#d8c8b4] rounded focus:outline-none focus:ring-1 focus:ring-[#8c5e39] focus:border-[#8c5e39] text-[#24160c] placeholder:text-[#9c826e]"
+                className="w-full pl-9 pr-8 py-2 text-sm bg-white border border-[#d8c8b4] rounded-md focus:outline-none focus:ring-1 focus:ring-[#8c5e39] focus:border-[#8c5e39] text-[#24160c] placeholder:text-[#9c826e]"
               />
               {searchQuery && (
                 <button
@@ -255,7 +255,7 @@ export function SearchableSelect<T>({
                 </button>
               )}
             </div>
-            <div className="flex items-center justify-between px-1 pt-1.5 text-[10px] text-[#7d6553]">
+            <div className="flex items-center justify-between px-1.5 pt-1.5 text-xs text-[#7d6553]">
               <span>
                 {filteredOptions.length} of {options.length} records matching
               </span>

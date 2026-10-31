@@ -1,7 +1,6 @@
 // Alokhandwala Scaffolding ERP - Critical Business Rules Automated Verification Suite
 // Tests all scenarios from Section 27 of the specifications
 
-process.env.NODE_ENV = 'test';
 process.env.IS_TEST = 'true';
 
 import assert from 'assert';

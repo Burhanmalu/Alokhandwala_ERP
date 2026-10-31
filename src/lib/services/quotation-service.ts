@@ -272,7 +272,6 @@ export class QuotationService {
         ? state.quotations.find(q => q.id === data.id) 
         : state.quotations.find(q => q.projectId === project.id);
       const isNew = !quotation;
-
       const quotationNumber = quotation?.quotationNumber || this.generateNextQuotationNumber(state.quotations);
       const quotationDate = data.quotationDate || quotation?.quotationDate || new Date().toISOString().slice(0, 10);
       const now = new Date().toISOString();
@@ -376,9 +375,8 @@ export class QuotationService {
       } else if (data.status === 'REJECTED') {
         targetProjectStatus = 'QUOTATION_REJECTED';
       } else if (data.status === 'CANCELLED') {
-        targetProjectStatus = 'CANCELLED';
+        targetProjectStatus = 'CANCELLED' as Project['status'];
       }
-
       // Only transition if not already confirmed or installed
       if (project.status === 'NOT_INSTALLED' || 
           project.status === 'SITE_CREATED' || 

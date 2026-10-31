@@ -181,16 +181,11 @@ export default function BillingPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[11px] font-mono tracking-widest text-[#c79e7c] uppercase">Commercial Accounts</span>
-            <span className="text-stone-500">|</span>
-            <span className="text-xs text-stone-300">GST SAC 997312</span>
           </div>
-          <h1 className="text-xl font-serif font-bold tracking-tight text-white flex items-center gap-2">
+          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
             <ReceiptIndianRupee className="w-5 h-5 text-[#c79e7c]" />
-            <span>Billing, Invoices & Payment Ledger</span>
+            <span>Billing & Invoices</span>
           </h1>
-          <p className="text-xs text-stone-300 mt-1">
-            GST-compliant invoicing, rental cycle collections, advances, and commercial client receivables.
-          </p>
         </div>
 
         {can('BILLING_CREATE_INVOICE') && (

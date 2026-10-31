@@ -96,80 +96,76 @@ export default function DashboardOverviewPage() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Executive Command Banner */}
-      <div className="bg-[#1e130c] rounded-lg border border-[#3b2416] p-4 sm:p-5 text-[#fdfbf7] flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-xs">
-        <div className="flex items-center gap-3.5 min-w-0">
-          <div className="w-10 h-10 rounded-md bg-[#2d1b11] border border-[#52331f] flex items-center justify-center p-1.5 shrink-0">
+      <div className="bg-[#1e130c] rounded-xl border border-[#3b2416] p-5 sm:p-6 lg:p-7 text-[#fdfbf7] flex flex-col lg:flex-row lg:items-center justify-between gap-5 shadow-xs">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="w-12 h-12 rounded-lg bg-[#2d1b11] border border-[#52331f] flex items-center justify-center p-2 shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-icon-accent.png" alt="Alokhandwala" className="w-full h-full object-contain" />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#c79e7c]">
-              <span>Alokhandwala Enterprise Hub</span>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#c79e7c]">
+              <span>Alokhandwala Enterprise</span>
               <span>•</span>
               <span className="font-mono text-[#e8decb]">{currentUser.role.replace('_', ' ')}</span>
             </div>
-            <h1 className="text-base sm:text-lg font-bold text-[#fdfbf7] tracking-tight truncate">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#fdfbf7] tracking-tight truncate mt-1">
               Operations & Asset Control Dashboard
             </h1>
-            <p className="text-xs text-[#d6beaa] truncate hidden sm:block">
-              Real-time monitoring of scaffolding rentals, warehouse inventory, and field dispatches.
-            </p>
           </div>
         </div>
-
         {/* Action Shortcuts */}
         <div className="flex items-center gap-2 flex-wrap shrink-0">
           <Link
             href="/sites/new"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#24160c] bg-[#fdfcf9] hover:bg-white rounded-md transition shadow-2xs cursor-pointer border border-[#c79e7c]"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#24160c] bg-[#fdfcf9] hover:bg-white rounded-lg transition shadow-2xs cursor-pointer border border-[#c79e7c]"
           >
-            <MapPin className="w-3.5 h-3.5 text-[#6e482f]" />
+            <MapPin className="w-4 h-4 text-[#6e482f]" />
             <span>Site Form</span>
           </Link>
 
           <Link
             href="/confirmation"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#fdfbf7] bg-[#2a1a11] hover:bg-[#382315] border border-[#4d301c] rounded-md transition cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#fdfbf7] bg-[#2a1a11] hover:bg-[#382315] border border-[#4d301c] rounded-lg transition cursor-pointer"
           >
-            <Boxes className="w-3.5 h-3.5 text-[#c79e7c]" />
+            <Boxes className="w-4 h-4 text-[#c79e7c]" />
             <span>Confirmation</span>
           </Link>
 
           <Link
             href="/installation"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#fdfbf7] bg-[#2a1a11] hover:bg-[#382315] border border-[#4d301c] rounded-md transition cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#fdfbf7] bg-[#2a1a11] hover:bg-[#382315] border border-[#4d301c] rounded-lg transition cursor-pointer"
           >
-            <Truck className="w-3.5 h-3.5 text-[#c79e7c]" />
+            <Truck className="w-4 h-4 text-[#c79e7c]" />
             <span>Installation</span>
           </Link>
 
           <Link
             href="/projects"
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#d6beaa] hover:text-white bg-white/5 hover:bg-white/10 rounded-md border border-white/10 transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[#d6beaa] hover:text-white bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition cursor-pointer"
           >
             <span>Projects</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </div>
 
       {/* Primary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {/* Active Rentals */}
         <Link 
           href="/projects?status=ACTIVE_RENTAL" 
-          className="bg-white p-4 rounded-lg border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between"
+          className="bg-white p-5 sm:p-6 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between text-[#7d6553] text-xs font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[#7d6553] text-xs sm:text-sm font-semibold uppercase tracking-wider">
             <span>Active Rentals</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
           </div>
-          <div className="text-2xl font-bold text-[#24160c] my-1 font-mono">
+          <div className="text-3xl sm:text-4xl font-bold text-[#24160c] my-2 font-mono">
             {cards.activeRentalCount || 0}
           </div>
-          <div className="text-[11px] text-[#574830] font-medium flex items-center gap-1">
+          <div className="text-xs text-[#574830] font-medium flex items-center gap-1.5">
             <span className="font-semibold text-emerald-700">₹{formatINR(cards.monthlyRentalRunRate, false)}</span>
             <span className="text-[#9c826e]">/mo revenue</span>
           </div>
@@ -178,16 +174,16 @@ export default function DashboardOverviewPage() {
         {/* Awaiting Confirmation */}
         <Link 
           href="/projects?status=NOT_INSTALLED" 
-          className="bg-white p-4 rounded-lg border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between"
+          className="bg-white p-5 sm:p-6 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between text-[#7d6553] text-xs font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[#7d6553] text-xs sm:text-sm font-semibold uppercase tracking-wider">
             <span>Awaiting Confirmation</span>
-            <FolderKanban className="w-4 h-4 text-blue-600" />
+            <FolderKanban className="w-5 h-5 text-blue-600" />
           </div>
-          <div className="text-2xl font-bold text-[#24160c] my-1 font-mono">
+          <div className="text-3xl sm:text-4xl font-bold text-[#24160c] my-2 font-mono">
             {cards.notInstalledCount || 0}
           </div>
-          <div className="text-[11px] text-[#7d6553]">
+          <div className="text-xs text-[#7d6553]">
             Site records awaiting commercial terms
           </div>
         </Link>
@@ -195,16 +191,16 @@ export default function DashboardOverviewPage() {
         {/* Buffer Period */}
         <Link 
           href="/projects?status=BUFFER_PERIOD" 
-          className="bg-white p-4 rounded-lg border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between"
+          className="bg-white p-5 sm:p-6 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between text-[#7d6553] text-xs font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[#7d6553] text-xs sm:text-sm font-semibold uppercase tracking-wider">
             <span>Buffer Period Active</span>
-            <Clock className="w-4 h-4 text-amber-600" />
+            <Clock className="w-5 h-5 text-amber-600" />
           </div>
-          <div className="text-2xl font-bold text-amber-700 my-1 font-mono">
+          <div className="text-3xl sm:text-4xl font-bold text-amber-700 my-2 font-mono">
             {cards.bufferCount || 0}
           </div>
-          <div className="text-[11px] text-amber-800">
+          <div className="text-xs text-amber-800">
             Within 2-3 day dismantling grace window
           </div>
         </Link>
@@ -212,16 +208,16 @@ export default function DashboardOverviewPage() {
         {/* Removal Pending */}
         <Link 
           href="/projects?status=REMOVAL_PENDING" 
-          className="bg-white p-4 rounded-lg border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between"
+          className="bg-white p-5 sm:p-6 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between text-[#7d6553] text-xs font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-[#7d6553] text-xs sm:text-sm font-semibold uppercase tracking-wider">
             <span>Pending Removal</span>
-            <AlertCircle className="w-4 h-4 text-rose-600" />
+            <AlertCircle className="w-5 h-5 text-rose-600" />
           </div>
-          <div className="text-2xl font-bold text-rose-700 my-1 font-mono">
+          <div className="text-3xl sm:text-4xl font-bold text-rose-700 my-2 font-mono">
             {cards.removalCount || 0}
           </div>
-          <div className="text-[11px] text-rose-800 font-medium">
+          <div className="text-xs text-rose-800 font-medium">
             {cards.overdueRemovalsCount > 0 ? `${cards.overdueRemovalsCount} overdue removals` : 'All removals scheduled'}
           </div>
         </Link>
@@ -276,7 +272,6 @@ export default function DashboardOverviewPage() {
               <h2 className="text-xs font-bold text-[#24160c] uppercase tracking-wider">
                 Material Allocation by Category
               </h2>
-              <p className="text-[11px] text-[#7d6553]">Stock in yard vs. active client installations</p>
             </div>
             <Link 
               href="/inventory" 
@@ -324,7 +319,6 @@ export default function DashboardOverviewPage() {
               <h2 className="text-xs font-bold text-[#24160c] uppercase tracking-wider">
                 Projects by Operational Status
               </h2>
-              <p className="text-[11px] text-[#7d6553]">Current state across active construction contracts</p>
             </div>
             <Link 
               href="/projects" 
@@ -378,7 +372,6 @@ export default function DashboardOverviewPage() {
             <h2 className="text-xs font-bold text-[#24160c] uppercase tracking-wider">
               Critical Deadlines & Buffer Removals
             </h2>
-            <p className="text-[11px] text-[#7d6553]">Imminent contract renewals and dismantling commitments</p>
           </div>
           <Link 
             href="/projects" 

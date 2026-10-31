@@ -59,16 +59,13 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-[1500px] w-full mx-auto space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
             <Bell className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span>Operations Notification Center</span>
+            <span>Notifications</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Automated alerts for upcoming rental expiries, buffer deadlines, project confirmations, and low stock warnings.
-          </p>
         </div>
 
         <button
