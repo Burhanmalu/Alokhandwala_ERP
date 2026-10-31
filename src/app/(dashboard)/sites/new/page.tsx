@@ -238,26 +238,26 @@ export default function SiteFormPage() {
       </div>
 
       {/* Structured Progress Indicator Bar */}
-      <div className="bg-white p-3 rounded-xl border border-[#ebdcc9] shadow-2xs">
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs font-medium text-[#7d6553]">
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">1</span>
+      <div className="bg-white p-4 rounded-xl border border-[#ebdcc9] shadow-2xs">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm font-medium text-[#7d6553]">
+          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-6 h-6 rounded-full bg-[#24160c] text-white text-xs flex items-center justify-center font-bold">1</span>
             <span className="truncate">Client & Contact</span>
           </div>
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">2</span>
+          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-6 h-6 rounded-full bg-[#24160c] text-white text-xs flex items-center justify-center font-bold">2</span>
             <span className="truncate">Site Location</span>
           </div>
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">3</span>
+          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-6 h-6 rounded-full bg-[#24160c] text-white text-xs flex items-center justify-center font-bold">3</span>
             <span className="truncate">Dimensions</span>
           </div>
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">4</span>
+          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-6 h-6 rounded-full bg-[#24160c] text-white text-xs flex items-center justify-center font-bold">4</span>
             <span className="truncate">Site Photos</span>
           </div>
-          <div className="col-span-2 sm:col-span-1 flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">5</span>
+          <div className="col-span-2 sm:col-span-1 flex items-center gap-2.5 p-3 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
+            <span className="w-6 h-6 rounded-full bg-[#24160c] text-white text-xs flex items-center justify-center font-bold">5</span>
             <span className="truncate">Site Remarks</span>
           </div>
         </div>
@@ -281,17 +281,17 @@ export default function SiteFormPage() {
         {/* ========================================================= */}
         {/* SECTION 1: CUSTOMER & REFERRAL                            */}
         {/* ========================================================= */}
-        <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+        <div className="bg-white p-6 sm:p-7 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-5">
+          <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-sm">
                 01
               </div>
-              <h2 className="text-sm font-bold text-[#24160c] uppercase tracking-wider">
+              <h2 className="text-base font-bold text-[#24160c] uppercase tracking-wider">
                 Customer & Referral Identification
               </h2>
             </div>
-            <span className="text-[11px] font-mono text-[#7d6553] bg-[#fbf9f5] px-2.5 py-1 rounded border border-[#ebdcc9]">
+            <span className="text-xs font-mono text-[#7d6553] bg-[#fbf9f5] px-3 py-1 rounded-md border border-[#ebdcc9]">
               Client Profile
             </span>
           </div>
@@ -299,7 +299,7 @@ export default function SiteFormPage() {
           <div className="space-y-4">
             {/* Quick Select Existing Customer (Optional) */}
             <div>
-              <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-[#4a3525] uppercase tracking-wider mb-2">
                 Select Existing Customer (or type new below)
               </label>
               <SearchableSelect
@@ -350,7 +350,7 @@ export default function SiteFormPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* 1. Customer Name */}
               <div>
-                <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-[#4a3525] uppercase tracking-wider mb-2">
                   Customer Name <span className="text-rose-600">*</span>
                 </label>
                 <input
@@ -362,13 +362,13 @@ export default function SiteFormPage() {
                     setSelectedCustomerId('');
                   }}
                   placeholder="e.g. Shapoorji Pallonji / Oberoi Realty"
-                  className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
+                  className="w-full text-sm px-4 py-3 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
                 />
               </div>
 
               {/* 2. Referral Name */}
               <div>
-                <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-[#4a3525] uppercase tracking-wider mb-2">
                   Referral Name
                 </label>
                 <input
@@ -376,22 +376,22 @@ export default function SiteFormPage() {
                   value={referralName}
                   onChange={e => setReferralName(e.target.value)}
                   placeholder="e.g. Architect Mehta / Contractor Rao / Direct"
-                  className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
+                  className="w-full text-sm px-4 py-3 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
                 />
-                <span className="text-[10px] text-[#8c7360] mt-1 block">
+                <span className="text-2xs text-[#8c7360] mt-1.5 block">
                   Broker, architect, contractor, or business source
                 </span>
               </div>
 
               {/* 3. Supervisor Name */}
               <div>
-                <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-[#4a3525] uppercase tracking-wider mb-2">
                   Supervisor in Charge <span className="text-rose-600">*</span>
                 </label>
                 <select
                   value={assignedSupervisorId}
                   onChange={handleSelectSupervisor}
-                  className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
+                  className="w-full text-sm px-4 py-3 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
                 >
                   <option value="">-- Choose Assigned Supervisor --</option>
                   {supervisors.map(s => (
@@ -404,11 +404,11 @@ export default function SiteFormPage() {
 
               {/* 4. Phone Number */}
               <div>
-                <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-[#4a3525] uppercase tracking-wider mb-2">
                   Phone Number <span className="text-rose-600">*</span>
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#7d6553] text-xs font-semibold">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#7d6553] text-sm font-semibold">
                     +91
                   </div>
                   <input
@@ -418,7 +418,7 @@ export default function SiteFormPage() {
                     onChange={e => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
                     placeholder="9820012345"
                     maxLength={10}
-                    className="w-full text-xs pl-12 pr-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] font-mono transition"
+                    className="w-full text-sm pl-13 pr-4 py-3 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] font-mono transition"
                   />
                 </div>
               </div>
@@ -429,25 +429,24 @@ export default function SiteFormPage() {
         {/* ========================================================= */}
         {/* SECTION 2: ADDRESS & SITE LOCATION                        */}
         {/* ========================================================= */}
-        <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+        <div className="bg-white p-6 sm:p-7 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-5">
+          <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-sm">
                 02
               </div>
-              <h2 className="text-sm font-bold text-[#24160c] uppercase tracking-wider">
+              <h2 className="text-base font-bold text-[#24160c] uppercase tracking-wider">
                 Site Location & Delivery Point
               </h2>
             </div>
-            <span className="text-[11px] font-mono text-[#7d6553] bg-[#fbf9f5] px-2.5 py-1 rounded border border-[#ebdcc9]">
+            <span className="text-xs font-mono text-[#7d6553] bg-[#fbf9f5] px-3 py-1 rounded-md border border-[#ebdcc9]">
               Physical Location
             </span>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* 5. Address */}
             <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-[#4a3525] uppercase tracking-wider mb-2">
                 Site Address <span className="text-rose-600">*</span>
               </label>
               <textarea
@@ -456,12 +455,12 @@ export default function SiteFormPage() {
                 value={address}
                 onChange={e => setAddress(e.target.value)}
                 placeholder="Plot No. 42, Sector 15, Near Metro Pillar 124, Andheri East, Mumbai"
-                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
+                className="w-full text-sm px-4 py-3 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-[#4a3525] uppercase tracking-wider mb-2">
                 Landmark & Unloading Access Notes
               </label>
               <input
@@ -469,7 +468,7 @@ export default function SiteFormPage() {
                 value={landmark}
                 onChange={e => setLandmark(e.target.value)}
                 placeholder="e.g. Opposite D-Mart, gate no. 2; 14-wheeler truck entry permitted after 9 PM"
-                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
+                className="w-full text-sm px-4 py-3 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
               />
             </div>
           </div>
@@ -478,17 +477,16 @@ export default function SiteFormPage() {
         {/* ========================================================= */}
         {/* SECTION 3: SIZE / MEASUREMENTS                            */}
         {/* ========================================================= */}
-        <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#ebdcc9] pb-3 gap-2">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-xs">
+        <div className="bg-white p-6 sm:p-7 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#ebdcc9] pb-4 gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#24160c] text-[#dfcbab] flex items-center justify-center font-bold text-sm">
                 03
               </div>
-              <h2 className="text-sm font-bold text-[#24160c] uppercase tracking-wider">
+              <h2 className="text-base font-bold text-[#24160c] uppercase tracking-wider">
                 Scaffolding Engineering Dimensions
               </h2>
             </div>
-            
             {/* Unit Toggle Tabs */}
             <div className="flex items-center gap-1 bg-[#fbf9f5] border border-[#ebdcc9] p-1 rounded-lg text-xs font-semibold self-start sm:self-auto">
               <button
@@ -518,7 +516,7 @@ export default function SiteFormPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-[#4a3525] uppercase tracking-wider mb-2">
                 Length ({unit === 'FEET' ? 'ft' : 'm'}) <span className="text-rose-600">*</span>
               </label>
               <input
@@ -529,12 +527,12 @@ export default function SiteFormPage() {
                 value={length}
                 onChange={e => setLength(e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="e.g. 25"
-                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] font-mono transition"
+                className="w-full text-sm px-4 py-3 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] font-mono transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-[#4a3525] uppercase tracking-wider mb-2">
                 Width / Depth ({unit === 'FEET' ? 'ft' : 'm'})
               </label>
               <input
@@ -544,12 +542,12 @@ export default function SiteFormPage() {
                 value={width}
                 onChange={e => setWidth(e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="e.g. 5"
-                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] font-mono transition"
+                className="w-full text-sm px-4 py-3 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] font-mono transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-[#4a3525] uppercase tracking-wider mb-2">
                 Height ({unit === 'FEET' ? 'ft' : 'm'}) <span className="text-rose-600">*</span>
               </label>
               <input
@@ -560,7 +558,7 @@ export default function SiteFormPage() {
                 value={height}
                 onChange={e => setHeight(e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="e.g. 40"
-                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] font-mono transition"
+                className="w-full text-sm px-4 py-3 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] font-mono transition"
               />
             </div>
           </div>
@@ -650,32 +648,32 @@ export default function SiteFormPage() {
               value={remark}
               onChange={e => setRemark(e.target.value)}
               placeholder="e.g. Ground soil is firm, no overhead electrical lines, nighttime vehicle entry only between 11 PM and 5 AM. Client requests galvanized pipes."
-              className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
+              className="w-full text-sm px-4 py-3 rounded-lg border border-[#d6c7b2] bg-white text-[#24160c] focus:outline-hidden focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] transition"
             />
-            <span className="text-[10px] text-[#8c7360] mt-1 block">
+            <span className="text-2xs text-[#8c7360] mt-1.5 block">
               Include ground conditions, overhead hazard clearances, crane positioning, and vehicle restrictions.
             </span>
           </div>
         </div>
 
         {/* Bottom Action Bar */}
-        <div className="bg-white p-4 rounded-xl border border-[#ebdcc9] shadow-2xs flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div className="text-xs text-[#7d6553] flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#8f6541]"></span>
+        <div className="bg-white p-5 sm:p-6 rounded-xl border border-[#ebdcc9] shadow-2xs flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="text-sm text-[#7d6553] flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#8f6541]"></span>
             <span>All required fields (*) will create an inspected site ready for quotation confirmation.</span>
           </div>
 
           <div className="flex items-center gap-3 justify-end">
             <Link
               href="/projects"
-              className="px-5 py-2.5 rounded-lg border border-[#d6c7b2] text-[#24160c] hover:bg-[#fbf9f5] text-xs font-semibold transition text-center min-h-[40px] flex items-center justify-center cursor-pointer"
+              className="px-6 py-3 rounded-lg border border-[#d6c7b2] text-[#24160c] hover:bg-[#fbf9f5] text-sm font-semibold transition text-center min-h-[44px] flex items-center justify-center cursor-pointer"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={loading || success}
-              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#24160c] hover:bg-[#382315] disabled:bg-[#d6c7b2] text-[#fbf9f5] text-xs font-bold rounded-lg shadow-sm transition cursor-pointer min-h-[40px]"
+              className="flex items-center justify-center gap-2 px-7 py-3 bg-[#24160c] hover:bg-[#382315] disabled:bg-[#d6c7b2] text-[#fbf9f5] text-sm font-bold rounded-lg shadow-sm transition cursor-pointer min-h-[44px]"
             >
               {loading ? (
                 <span>Saving Site Record...</span>

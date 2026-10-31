@@ -46,7 +46,7 @@ export default function DashboardLayout({
   return (
     <div className="flex h-full h-[100dvh] w-full overflow-hidden bg-[#f7f4ed] text-[#24160c]">
       {/* Desktop Sidebar Container */}
-      <aside className="hidden md:flex md:w-60 md:shrink-0 h-full min-h-0 flex-col z-20">
+      <aside className="hidden md:flex md:w-64 lg:w-72 md:shrink-0 h-full min-h-0 flex-col z-20">
         <Sidebar />
       </aside>
 
@@ -67,8 +67,8 @@ export default function DashboardLayout({
       {/* Main Content Area Container */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden">
         <Header onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
-        <main className="flex-1 min-h-0 min-w-0 overflow-y-auto overscroll-y-contain p-3.5 sm:p-5 md:p-6 main-scrollbar">
-          <div className="max-w-[1500px] w-full mx-auto min-w-0">
+        <main className="flex-1 min-h-0 min-w-0 overflow-y-auto overscroll-y-contain p-4 sm:p-6 lg:p-8 main-scrollbar">
+          <div className="max-w-[1560px] w-full mx-auto min-w-0">
             {children}
           </div>
         </main>

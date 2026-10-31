@@ -8,9 +8,9 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const PADDING_MAP = {
   none: '',
-  sm: 'p-3 sm:p-4',
-  md: 'p-4 sm:p-5',
-  lg: 'p-5 sm:p-6',
+  sm: 'p-4 sm:p-5',
+  md: 'p-5 sm:p-7',
+  lg: 'p-6 sm:p-8',
 };
 
 export function Card({
@@ -46,16 +46,16 @@ export function CardHeader({
 }: CardHeaderProps) {
   return (
     <div
-      className={`flex items-center justify-between border-b border-[#f0e8db] pb-3 mb-4 gap-2 ${className}`}
+      className={`flex items-center justify-between border-b border-[#f0e8db] pb-4 mb-5 gap-3 ${className}`}
     >
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-2.5 min-w-0">
         {icon && <span className="text-[#8f6541] shrink-0">{icon}</span>}
         <div className="min-w-0">
-          <h2 className="text-xs sm:text-sm font-bold text-[#24160c] uppercase tracking-wider truncate">
+          <h2 className="text-sm sm:text-base font-bold text-[#24160c] uppercase tracking-wider truncate">
             {title}
           </h2>
           {subtitle && (
-            <p className="text-[11px] text-[#7d6553] truncate mt-0.5">
+            <p className="text-xs text-[#7d6553] truncate mt-1">
               {subtitle}
             </p>
           )}

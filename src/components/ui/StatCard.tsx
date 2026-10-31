@@ -58,23 +58,23 @@ export function StatCard({
   const styles = VARIANT_MAP[variant];
   return (
     <div
-      className={`${styles.bg} ${styles.border} border rounded-lg p-3.5 sm:p-4 shadow-2xs flex items-center justify-between gap-3 ${className}`}
+      className={`${styles.bg} ${styles.border} border rounded-xl p-4 sm:p-5 lg:p-6 shadow-2xs flex items-center justify-between gap-4 ${className}`}
     >
       <div className="min-w-0 flex-1">
-        <div className={`text-[11px] font-semibold uppercase tracking-wider ${styles.hint} truncate`}>
+        <div className={`text-xs sm:text-sm font-semibold uppercase tracking-wider ${styles.hint} truncate`}>
           {label}
         </div>
-        <div className={`text-lg sm:text-xl font-bold font-mono tracking-tight mt-1 truncate ${styles.text}`}>
+        <div className={`text-2xl sm:text-3xl font-bold font-mono tracking-tight mt-1.5 truncate ${styles.text}`}>
           {value}
         </div>
         {hint && (
-          <div className={`text-[11px] mt-0.5 truncate ${styles.hint}`}>
+          <div className={`text-xs mt-1 truncate ${styles.hint}`}>
             {hint}
           </div>
         )}
       </div>
       {icon && (
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${styles.iconBg}`}>
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${styles.iconBg}`}>
           {icon}
         </div>
       )}

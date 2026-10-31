@@ -24,12 +24,12 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div
-      className={`bg-[#24160c] text-white rounded-lg p-4 sm:p-5 border border-[#3d2616] shadow-2xs mb-5 ${className}`}
+      className={`bg-[#24160c] text-white rounded-xl p-5 sm:p-6 lg:p-7 border border-[#3d2616] shadow-xs mb-6 ${className}`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="min-w-0 flex-1">
           {breadcrumbs && breadcrumbs.length > 0 && (
-            <nav className="flex items-center gap-1.5 text-xs text-[#d6beaa] mb-1.5 overflow-x-auto whitespace-nowrap">
+            <nav className="flex items-center gap-2 text-xs sm:text-sm text-[#d6beaa] mb-2 overflow-x-auto whitespace-nowrap">
               {breadcrumbs.map((crumb, idx) => {
                 const isLast = idx === breadcrumbs.length - 1;
                 return (
@@ -55,8 +55,8 @@ export function PageHeader({
             </nav>
           )}
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[#fdfbf7] truncate">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#fdfbf7] truncate">
               {title}
             </h1>
             {badge && <div className="shrink-0">{badge}</div>}
