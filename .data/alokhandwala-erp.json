@@ -695,9 +695,106 @@
       "availableToAllocate": 2500
     }
   ],
-  "customers": [],
-  "sites": [],
-  "projects": [],
+  "customers": [
+    {
+      "id": "cust-1793475181444",
+      "customerCode": "CUST-0001",
+      "companyName": "Shabbir Malu",
+      "referenceName": "Yusuf Malu",
+      "contactPerson": "Shabbir Malu",
+      "phone": "9202528863",
+      "email": "shabbirmalu@scaffold-client.com",
+      "billingAddress": "9, Shyam Nagar, Manik Bagh Nagar, Indore, Madhya Pradesh, India.",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "status": "ACTIVE",
+      "creditLimit": 500000,
+      "outstandingBalance": 0,
+      "sitesCount": 1,
+      "projectsCount": 1,
+      "activeRentalsCount": 0,
+      "createdAt": "2026-10-31T19:33:01.444Z",
+      "updatedAt": "2026-10-31T19:33:01.445Z"
+    }
+  ],
+  "sites": [
+    {
+      "id": "site-1793475181445",
+      "siteCode": "SITE-0001",
+      "customerId": "cust-1793475181444",
+      "customerName": "Shabbir Malu",
+      "siteName": "Shabbir Malu Site",
+      "siteAddress": "9, Shyam Nagar, Manik Bagh Nagar, Indore, Madhya Pradesh, India.",
+      "locationType": "NOT_ON_SITE",
+      "referralName": "Yusuf Malu",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "contactPerson": "Shabbir Malu",
+      "contactPhone": "9202528863",
+      "assignedSupervisorId": "usr-admin-01",
+      "supervisorName": "Burhan Malu (Admin)",
+      "status": "ACTIVE",
+      "createdAt": "2026-10-31T19:33:01.445Z"
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-1793475181445",
+      "projectCode": "AW-SCF-000001",
+      "customerId": "cust-1793475181444",
+      "customerName": "Shabbir Malu",
+      "siteId": "site-1793475181445",
+      "siteName": "Shabbir Malu Site",
+      "siteAddress": "9, Shyam Nagar, Manik Bagh Nagar, Indore, Madhya Pradesh, India.",
+      "locationType": "NOT_ON_SITE",
+      "referralName": "Yusuf Malu",
+      "assignedSupervisorId": "usr-admin-01",
+      "supervisorName": "Burhan Malu (Admin)",
+      "status": "NOT_INSTALLED",
+      "pricingModel": "MONTHLY_RENTAL",
+      "monthlyRentalRate": 0,
+      "agreedProjectPrice": 0,
+      "depositAmount": 0,
+      "transportCharges": 0,
+      "installationLabourCharges": 0,
+      "shiftingCharges": 0,
+      "dismantlingLabourCharges": 0,
+      "gstPercentage": 18,
+      "measurements": {
+        "id": "meas-1793475181445",
+        "siteId": "site-1793475181445",
+        "projectId": "proj-1793475181445",
+        "width": 10,
+        "depth": 15,
+        "height": 20,
+        "length": 10,
+        "unit": "FEET",
+        "elevationAreaSqFt": 1000,
+        "measurementType": "FAÇADE_SCAFFOLD",
+        "description": "10 x 15 x 20 FEET",
+        "measuredBy": "Burhan Malu (Admin)",
+        "measuredAt": "2026-10-31T19:33:01.445Z"
+      },
+      "photos": [
+        {
+          "id": "pht-1793475181445-0",
+          "entityType": "SITE_INSPECTION",
+          "entityId": "proj-1793475181445",
+          "fileName": "site_inspection_1.jpg",
+          "fileUrl": "/uploads/site_1793474938761_po1hq_1700.png",
+          "fileSizeBytes": 2048000,
+          "mimeType": "image/jpeg",
+          "stageLabel": "BEFORE_INSTALLATION",
+          "uploadedBy": "usr-admin-01",
+          "uploaderName": "Burhan Malu (Admin)",
+          "createdAt": "2026-10-31T19:33:01.445Z"
+        }
+      ],
+      "materials": [],
+      "createdAt": "2026-10-31T19:33:01.446Z",
+      "updatedAt": "2026-10-31T19:33:01.446Z"
+    }
+  ],
   "invoices": [],
   "payments": [],
   "transactions": [],
@@ -705,8 +802,97 @@
   "rentalExtensions": [],
   "shiftingRequests": [],
   "removalRequests": [],
-  "notifications": [],
-  "auditLogs": [],
-  "activityEvents": [],
+  "notifications": [
+    {
+      "id": "notif-1793475181446",
+      "roleTarget": "ADMIN",
+      "title": "New Project Inspection: AW-SCF-000001",
+      "message": "Shabbir Malu - Shabbir Malu Site has been inspected and awaits confirmation.",
+      "type": "INFO",
+      "entityType": "PROJECT",
+      "entityId": "proj-1793475181445",
+      "isRead": false,
+      "createdAt": "2026-10-31T19:33:01.446Z"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "aud-1793475181446",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "CREATE_PROJECT",
+      "entityTable": "projects",
+      "entityId": "proj-1793475181445",
+      "newState": {
+        "id": "proj-1793475181445",
+        "projectCode": "AW-SCF-000001",
+        "customerId": "cust-1793475181444",
+        "customerName": "Shabbir Malu",
+        "siteId": "site-1793475181445",
+        "siteName": "Shabbir Malu Site",
+        "siteAddress": "9, Shyam Nagar, Manik Bagh Nagar, Indore, Madhya Pradesh, India.",
+        "locationType": "NOT_ON_SITE",
+        "referralName": "Yusuf Malu",
+        "assignedSupervisorId": "usr-admin-01",
+        "supervisorName": "Burhan Malu (Admin)",
+        "status": "NOT_INSTALLED",
+        "pricingModel": "MONTHLY_RENTAL",
+        "monthlyRentalRate": 0,
+        "agreedProjectPrice": 0,
+        "depositAmount": 0,
+        "transportCharges": 0,
+        "installationLabourCharges": 0,
+        "shiftingCharges": 0,
+        "dismantlingLabourCharges": 0,
+        "gstPercentage": 18,
+        "measurements": {
+          "id": "meas-1793475181445",
+          "siteId": "site-1793475181445",
+          "projectId": "proj-1793475181445",
+          "width": 10,
+          "depth": 15,
+          "height": 20,
+          "length": 10,
+          "unit": "FEET",
+          "elevationAreaSqFt": 1000,
+          "measurementType": "FAÇADE_SCAFFOLD",
+          "description": "10 x 15 x 20 FEET",
+          "measuredBy": "Burhan Malu (Admin)",
+          "measuredAt": "2026-10-31T19:33:01.445Z"
+        },
+        "photos": [
+          {
+            "id": "pht-1793475181445-0",
+            "entityType": "SITE_INSPECTION",
+            "entityId": "proj-1793475181445",
+            "fileName": "site_inspection_1.jpg",
+            "fileUrl": "/uploads/site_1793474938761_po1hq_1700.png",
+            "fileSizeBytes": 2048000,
+            "mimeType": "image/jpeg",
+            "stageLabel": "BEFORE_INSTALLATION",
+            "uploadedBy": "usr-admin-01",
+            "uploaderName": "Burhan Malu (Admin)",
+            "createdAt": "2026-10-31T19:33:01.445Z"
+          }
+        ],
+        "materials": [],
+        "createdAt": "2026-10-31T19:33:01.446Z",
+        "updatedAt": "2026-10-31T19:33:01.446Z"
+      },
+      "createdAt": "2026-10-31T19:33:01.446Z"
+    }
+  ],
+  "activityEvents": [
+    {
+      "id": "act-1793475181446",
+      "projectId": "proj-1793475181445",
+      "eventType": "INSPECTION_SUBMITTED",
+      "eventTitle": "Site Inspection Submitted",
+      "eventDescription": "Inspection completed by Burhan Malu (Admin) with dimensions 10m x 10m x 20m. Project set to NOT_INSTALLED.",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu (Admin)",
+      "createdAt": "2026-10-31T19:33:01.446Z"
+    }
+  ],
   "quotations": []
 }

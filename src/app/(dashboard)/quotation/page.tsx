@@ -14,8 +14,7 @@ import {
   XCircle, 
   Check, 
   RotateCcw, 
-  Layers, 
-  Boxes, 
+  Layers,  
   Calculator, 
   ReceiptIndianRupee, 
   ArrowRight, 
@@ -562,51 +561,6 @@ function QuotationContent() {
         </div>
       </div>
 
-      {/* Workflow Sequence Stepper Indicator */}
-      <div className="bg-[#fbf9f5] border border-[#ebdcc9] rounded-lg p-3">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-          <div className="flex items-center gap-2 text-[#7d6553]">
-            <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-[10px] shrink-0 border border-emerald-300">
-              ✓
-            </div>
-            <div>
-              <div className="font-bold text-[#24160c] text-[11px]">1. Site Form</div>
-              <div className="text-[10px] text-[#9c826e]">Inspection & Photos</div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-[#24160c] bg-white p-1.5 rounded-md border border-[#c79e7c] shadow-2xs">
-            <div className="w-5 h-5 rounded-full bg-[#24160c] text-white font-bold flex items-center justify-center text-[10px] shrink-0">
-              2
-            </div>
-            <div>
-              <div className="font-bold text-[#24160c] text-[11px]">2. Quotation Form</div>
-              <div className="text-[10px] text-[#8c5e39] font-medium">Pricing & Approval</div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-[#7d6553]">
-            <div className="w-5 h-5 rounded-full bg-[#faf6ee] text-[#7d6553] font-bold flex items-center justify-center text-[10px] shrink-0 border border-[#ebdcc9]">
-              3
-            </div>
-            <div>
-              <div className="font-bold text-[#7d6553] text-[11px]">3. Project Confirmation</div>
-              <div className="text-[10px] text-[#9c826e]">Stock Reservation</div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-[#7d6553]">
-            <div className="w-5 h-5 rounded-full bg-[#faf6ee] text-[#7d6553] font-bold flex items-center justify-center text-[10px] shrink-0 border border-[#ebdcc9]">
-              4
-            </div>
-            <div>
-              <div className="font-bold text-[#7d6553] text-[11px]">4. Field Installation</div>
-              <div className="text-[10px] text-[#9c826e]">Handover & Commission</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Notifications / Alerts */}
       {successMessage && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-900 flex items-center gap-2">
@@ -825,28 +779,45 @@ function QuotationContent() {
             </div>
           )}
 
-          {/* Quotation Meta Fields Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            <div>
-              <label className="block text-[#4d301c] font-semibold mb-1">Quotation Number</label>
-              <input
-                type="text"
-                value={quotationNumber}
-                onChange={(e) => setQuotationNumber(e.target.value)}
-                className="w-full p-2.5 bg-[#faf6ee]/50 border border-[#d8c8b4] rounded-md font-mono text-xs font-bold text-[#24160c] focus:outline-none"
-              />
+          {/* Unselected Initial State Guidance */}
+          {!selectedProject && (
+            <div className="p-8 border-2 border-dashed border-[#ebdcc9] rounded-xl text-center bg-[#fbf9f5] space-y-2 mt-2">
+              <div className="w-10 h-10 rounded-full bg-[#f2eadf] border border-[#d8c8b4] flex items-center justify-center text-[#8c5e39] mx-auto">
+                <Calculator className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-sm text-[#24160c]">
+                Select an Inspected Site Project to Configure Quotation
+              </h3>
+              <p className="text-xs text-[#7d6553] max-w-md mx-auto leading-relaxed">
+                Choose an inspected site project from the dropdown above (optionally filter by existing customer) to load client details, calculate elevation area, and open commercial pricing.
+              </p>
             </div>
+          )}
 
-            <div>
-              <label className="block text-[#4d301c] font-semibold mb-1">Quotation Date</label>
-              <input
-                type="date"
-                value={quotationDate}
-                onChange={(e) => setQuotationDate(e.target.value)}
-                className="w-full p-2.5 bg-white border border-[#d8c8b4] rounded-md text-xs font-medium text-[#24160c] focus:outline-none"
-              />
+          {/* Quotation Meta Fields Row */}
+          {selectedProject && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div>
+                <label className="block text-[#4d301c] font-semibold mb-1">Quotation Number</label>
+                <input
+                  type="text"
+                  value={quotationNumber}
+                  onChange={(e) => setQuotationNumber(e.target.value)}
+                  className="w-full p-2.5 bg-[#faf6ee]/50 border border-[#d8c8b4] rounded-md font-mono text-xs font-bold text-[#24160c] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[#4d301c] font-semibold mb-1">Quotation Date</label>
+                <input
+                  type="date"
+                  value={quotationDate}
+                  onChange={(e) => setQuotationDate(e.target.value)}
+                  className="w-full p-2.5 bg-white border border-[#d8c8b4] rounded-md text-xs font-medium text-[#24160c] focus:outline-none"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Site Inspection Photos Preview */}
           {selectedProject?.photos && selectedProject.photos.length > 0 && (
@@ -870,137 +841,9 @@ function QuotationContent() {
         </div>
       </div>
 
-      {/* SECTION B: SCAFFOLDING MATERIAL REQUIREMENTS */}
-      <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs relative z-10 overflow-hidden">
-        <div className="bg-[#fbf9f5] px-4 py-2.5 border-b border-[#ebdcc9] flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h2 className="text-xs font-bold text-[#24160c] flex items-center gap-2 uppercase tracking-wider">
-              <Boxes className="w-3.5 h-3.5 text-[#8c5e39]" />
-              <span>Section B: Scaffolding Material Requirements</span>
-            </h2>
-            <p className="text-[10px] text-[#7d6553]">
-              Required components suggested automatically based on site dimensions. Authorized users can edit quantities.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {selectedProject && (
-              <button
-                type="button"
-                onClick={() => suggestMaterials(selectedProject)}
-                className="px-2.5 py-1 text-[11px] font-semibold text-[#8c5e39] bg-[#faf6ee] hover:bg-[#ebdcc9] border border-[#d8c8b4] rounded transition flex items-center gap-1 cursor-pointer"
-              >
-                <Sparkles className="w-3 h-3 text-[#c79e7c]" />
-                <span>Auto-Calculate from Site</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={handleAddMaterialRow}
-              className="px-2.5 py-1 text-[11px] font-semibold text-white bg-[#24160c] hover:bg-[#382315] rounded transition flex items-center gap-1 cursor-pointer"
-            >
-              <Plus className="w-3 h-3 text-[#c79e7c]" />
-              <span>Add Component Row</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Material Items Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-[#fbf9f5] text-[#7d6553] uppercase tracking-wider text-[10px] font-semibold border-b border-[#ebdcc9]">
-              <tr>
-                <th className="px-3 py-2 w-8 text-center">#</th>
-                <th className="px-3 py-2">Item Code</th>
-                <th className="px-3 py-2">Component Description</th>
-                <th className="px-3 py-2 text-center">Unit</th>
-                <th className="px-3 py-2 text-center w-28">Required Qty</th>
-                <th className="px-3 py-2 text-right w-28">Monthly Rate (₹)</th>
-                <th className="px-3 py-2 text-right w-28">Total Monthly (₹)</th>
-                <th className="px-3 py-2 w-10 text-center"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#f2eadf]">
-              {materialItems.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="p-6 text-center text-[#9c826e] text-xs">
-                    No material requirements specified. Click &ldquo;Auto-Calculate from Site&rdquo; or &ldquo;Add Component Row&rdquo;.
-                  </td>
-                </tr>
-              ) : (
-                materialItems.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-[#faf6ee]/50 transition-colors">
-                    <td className="px-3 py-2 text-center text-stone-400 font-mono text-[10px]">
-                      {idx + 1}
-                    </td>
-                    <td className="px-3 py-2 font-mono font-bold text-[#59371d]">
-                      <input
-                        type="text"
-                        value={item.itemCode}
-                        onChange={(e) => {
-                          const updated = [...materialItems];
-                          updated[idx].itemCode = e.target.value;
-                          setMaterialItems(updated);
-                        }}
-                        className="bg-transparent border-b border-transparent hover:border-[#ebdcc9] focus:border-[#8c5e39] focus:outline-none w-full font-mono text-xs"
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="text"
-                        value={item.materialName}
-                        onChange={(e) => {
-                          const updated = [...materialItems];
-                          updated[idx].materialName = e.target.value;
-                          setMaterialItems(updated);
-                        }}
-                        className="bg-transparent border-b border-transparent hover:border-[#ebdcc9] focus:border-[#8c5e39] focus:outline-none w-full text-xs font-semibold text-[#24160c]"
-                      />
-                    </td>
-                    <td className="px-3 py-2 text-center text-stone-600 font-mono text-[11px]">
-                      {item.unit || 'NOS'}
-                    </td>
-                    <td className="px-3 py-2 text-center">
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.quantity}
-                        onChange={(e) => handleQuantityChange(idx, Number(e.target.value))}
-                        className="w-20 p-1 text-center font-mono font-bold bg-[#faf6ee] border border-[#d8c8b4] rounded text-xs focus:bg-white focus:outline-none"
-                      />
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.monthlyRentalRate || 0}
-                        onChange={(e) => handleRateChange(idx, Number(e.target.value))}
-                        className="w-20 p-1 text-right font-mono bg-white border border-[#d8c8b4] rounded text-xs focus:outline-none"
-                      />
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono font-bold text-[#24160c]">
-                      {formatINR(item.totalMonthlyRent || 0)}
-                    </td>
-                    <td className="px-3 py-2 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveMaterialRow(idx)}
-                        className="text-stone-400 hover:text-rose-600 p-1"
-                        title="Delete component"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* SECTION C: PRICING & COST CALCULATION */}
+      {selectedProject && (
+        <>
+          {/* SECTION C: PRICING & COST CALCULATION */}
       <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs relative z-10 overflow-hidden">
         <div className="bg-[#fbf9f5] px-4 py-2.5 border-b border-[#ebdcc9] flex items-center justify-between">
           <h2 className="text-xs font-bold text-[#24160c] flex items-center gap-2 uppercase tracking-wider">
@@ -1328,6 +1171,8 @@ function QuotationContent() {
           </Link>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

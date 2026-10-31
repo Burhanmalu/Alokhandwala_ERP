@@ -727,7 +727,7 @@ function SiteFormContent() {
                 type="number"
                 required
                 min={0.1}
-                step="0.5"
+                step="any"
                 value={width}
                 onChange={e => setWidth(e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder={unit === 'FEET' ? 'e.g. 10' : 'e.g. 3.0'}
@@ -744,7 +744,7 @@ function SiteFormContent() {
                 type="number"
                 required
                 min={0.1}
-                step="0.5"
+                step="any"
                 value={depth}
                 onChange={e => setDepth(e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder={unit === 'FEET' ? 'e.g. 3' : 'e.g. 1.0'}
@@ -761,7 +761,7 @@ function SiteFormContent() {
                 type="number"
                 required
                 min={0.1}
-                step="0.5"
+                step="any"
                 value={height}
                 onChange={e => setHeight(e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder={unit === 'FEET' ? 'e.g. 20' : 'e.g. 6.0'}
