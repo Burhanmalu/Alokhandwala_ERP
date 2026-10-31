@@ -421,20 +421,15 @@ function InstallationFormContent() {
       </div>
 
       {/* Enterprise Header Banner */}
-      <div className="bg-[#1c120c] p-6 rounded-2xl border border-[#382315] text-[#fbf9f5] shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-[#1c120c] p-5 rounded-lg border border-[#382315] text-[#fbf9f5] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#c79e7c]">
-            <span>ALOKHANDWALA Site Commissioning</span>
-            <span>•</span>
-            <span className="font-mono">Step 3: Physical Erection & Handover</span>
+            <span>Field Commissioning</span>
           </div>
-          <h1 className="text-2xl font-bold mt-1 text-[#fdfcf9] flex items-center gap-2.5">
-            <Boxes className="w-6 h-6 text-[#c79e7c]" />
-            <span>Field Installation & Material Commissioning</span>
+          <h1 className="text-xl font-bold mt-1 text-[#fdfcf9] flex items-center gap-2.5">
+            <Boxes className="w-5 h-5 text-[#c79e7c]" />
+            <span>Field Installation & Handover</span>
           </h1>
-          <p className="text-xs text-[#dfcbab] mt-1 max-w-2xl leading-relaxed">
-            Verify executing supervisor, log site rigger roster, reconcile physically erected dimensions against plan, verify stock dispatch, and formally activate the 28-day rental billing cycle.
-          </p>
         </div>
         <div className="shrink-0 flex items-center">
           <span className="text-[11px] bg-[#382315] border border-[#c79e7c]/50 text-[#fdfcf9] px-3.5 py-1.5 rounded-full font-mono font-semibold shadow-2xs">

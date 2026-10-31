@@ -218,32 +218,17 @@ export default function SiteFormPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12">
-      {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-2 text-xs text-[#7d6553]">
-        <Link href="/projects" className="hover:text-[#24160c] flex items-center gap-1 transition">
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Projects Directory</span>
-        </Link>
-        <span>/</span>
-        <span className="font-semibold text-[#24160c]">Site Inspection & Onboarding</span>
-      </div>
-
-      {/* Enterprise Header Banner */}
-      <div className="bg-[#1c120c] p-6 rounded-2xl border border-[#382315] text-[#fbf9f5] shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="max-w-[1500px] w-full mx-auto space-y-5">
+      {/* Header Banner */}
+      <div className="bg-[#1c120c] p-5 rounded-lg border border-[#382315] text-[#fbf9f5] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#c79e7c]">
-            <span>ALOKHANDWALA Field Operations</span>
-            <span>•</span>
-            <span className="font-mono">Step 1: Site Inspection & Measurements</span>
+            <span>Field Operations</span>
           </div>
-          <h1 className="text-2xl font-bold mt-1 text-[#fdfcf9] flex items-center gap-2.5">
-            <Building2 className="w-6 h-6 text-[#c79e7c]" />
+          <h1 className="text-xl font-bold mt-1 text-[#fdfcf9] flex items-center gap-2.5">
+            <Building2 className="w-5 h-5 text-[#c79e7c]" />
             <span>Site Form</span>
           </h1>
-          <p className="text-xs text-[#dfcbab] mt-1 max-w-2xl leading-relaxed">
-            Record customer site details, specify physical elevation dimensions, capture site condition photos, and assign supervisors for quotation confirmation.
-          </p>
         </div>
         <div className="shrink-0 flex items-center">
           <span className="text-[11px] bg-[#382315] border border-[#c79e7c]/50 text-[#fdfcf9] px-3.5 py-1.5 rounded-full font-mono font-semibold shadow-2xs">

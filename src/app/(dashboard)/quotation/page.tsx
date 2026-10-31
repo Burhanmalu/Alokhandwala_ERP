@@ -535,16 +535,11 @@ function QuotationContent() {
         <div>
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#9c826e]">
             <span>Commercial Workflow</span>
-            <span>•</span>
-            <span className="font-mono text-[#6e482f]">Step 2 of 4: Quotation Form</span>
           </div>
           <h1 className="text-xl font-bold text-[#24160c] mt-0.5 tracking-tight flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#8c5e39]" />
-            <span>Commercial Scaffolding Quotation</span>
+            <span>Commercial Quotation</span>
           </h1>
-          <p className="text-xs text-[#7d6553] mt-0.5">
-            Prepare, calculate, and generate official customer scaffolding quotations from site inspection records.
-          </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">

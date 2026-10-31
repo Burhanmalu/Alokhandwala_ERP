@@ -268,6 +268,7 @@ export class QuotationService {
         .map(p => p.fileUrl);
 
       // Find existing quotation or generate new
+      const isNew = !data.id && !state.quotations.some(q => q.projectId === project.id);
       let quotation = data.id 
         ? state.quotations.find(q => q.id === data.id) 
         : state.quotations.find(q => q.projectId === project.id);
@@ -365,7 +366,7 @@ export class QuotationService {
       project.updatedAt = now;
 
       // Update Project Workflow Status based on quotation action
-      let targetProjectStatus: typeof project.status = project.status;
+      let targetProjectStatus: Project['status'] = project.status;
       if (data.status === 'DRAFT') {
         targetProjectStatus = 'QUOTATION_DRAFT';
       } else if (data.status === 'SENT') {
@@ -375,9 +376,8 @@ export class QuotationService {
       } else if (data.status === 'REJECTED') {
         targetProjectStatus = 'QUOTATION_REJECTED';
       } else if (data.status === 'CANCELLED') {
-        targetProjectStatus = 'CANCELLED';
+        targetProjectStatus = 'CANCELLED' as Project['status'];
       }
-
       // Only transition if not already confirmed or installed
       if (project.status === 'NOT_INSTALLED' || 
           project.status === 'SITE_CREATED' || 

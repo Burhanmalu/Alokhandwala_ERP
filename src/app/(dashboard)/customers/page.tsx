@@ -278,21 +278,15 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-5">
-      {/* 1. CLEAN ENTERPRISE PAGE HEADER */}
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[#e5dac8]">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#9c826e]">
-            <Building2 className="w-3.5 h-3.5 text-[#8c5e39]" />
             <span>Commercial Directory</span>
-            <span>•</span>
-            <span className="font-mono text-[#6e482f]">Master Accounts Ledger</span>
           </div>
           <h1 className="text-xl font-bold text-[#24160c] mt-0.5 tracking-tight">
-            Customers & Corporate Accounts
+            Customers
           </h1>
-          <p className="text-xs text-[#7d6553] mt-0.5">
-            Enterprise client master records, GST compliance, credit lines, and commercial site registries.
-          </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">

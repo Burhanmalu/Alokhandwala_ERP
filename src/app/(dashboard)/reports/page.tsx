@@ -118,22 +118,17 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header Banner */}
       <div className="bg-[#24160c] border border-[#19100a] rounded-lg p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11px] font-mono tracking-widest text-[#c79e7c] uppercase">Business Intelligence</span>
-            <span className="text-stone-500">|</span>
-            <span className="text-xs text-stone-300">Audits & Analytics</span>
+            <span className="text-[11px] font-mono tracking-widest text-[#c79e7c] uppercase">Analytics</span>
           </div>
-          <h1 className="text-xl font-serif font-bold tracking-tight text-white flex items-center gap-2">
+          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-[#c79e7c]" />
-            <span>Operational & Financial Reports Hub</span>
+            <span>Reports</span>
           </h1>
-          <p className="text-xs text-stone-300 mt-1">
-            Audit-grade reporting across physical assets, active rentals, inventory valuation, and client receivables.
-          </p>
         </div>
 
         <button

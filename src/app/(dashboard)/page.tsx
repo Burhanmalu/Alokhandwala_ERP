@@ -106,19 +106,15 @@ export default function DashboardOverviewPage() {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#c79e7c]">
-              <span>Alokhandwala Enterprise Hub</span>
+              <span>Alokhandwala Enterprise</span>
               <span>•</span>
               <span className="font-mono text-[#e8decb]">{currentUser.role.replace('_', ' ')}</span>
             </div>
             <h1 className="text-base sm:text-lg font-bold text-[#fdfbf7] tracking-tight truncate">
               Operations & Asset Control Dashboard
             </h1>
-            <p className="text-xs text-[#d6beaa] truncate hidden sm:block">
-              Real-time monitoring of scaffolding rentals, warehouse inventory, and field dispatches.
-            </p>
           </div>
         </div>
-
         {/* Action Shortcuts */}
         <div className="flex items-center gap-2 flex-wrap shrink-0">
           <Link
@@ -276,7 +272,6 @@ export default function DashboardOverviewPage() {
               <h2 className="text-xs font-bold text-[#24160c] uppercase tracking-wider">
                 Material Allocation by Category
               </h2>
-              <p className="text-[11px] text-[#7d6553]">Stock in yard vs. active client installations</p>
             </div>
             <Link 
               href="/inventory" 
@@ -324,7 +319,6 @@ export default function DashboardOverviewPage() {
               <h2 className="text-xs font-bold text-[#24160c] uppercase tracking-wider">
                 Projects by Operational Status
               </h2>
-              <p className="text-[11px] text-[#7d6553]">Current state across active construction contracts</p>
             </div>
             <Link 
               href="/projects" 
@@ -378,7 +372,6 @@ export default function DashboardOverviewPage() {
             <h2 className="text-xs font-bold text-[#24160c] uppercase tracking-wider">
               Critical Deadlines & Buffer Removals
             </h2>
-            <p className="text-[11px] text-[#7d6553]">Imminent contract renewals and dismantling commitments</p>
           </div>
           <Link 
             href="/projects" 

@@ -84,17 +84,12 @@ export default function InventoryOverviewPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#e5dac8]">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#9c826e]">
-            <span>Asset Management</span>
-            <span>•</span>
-            <span className="font-mono text-[#6e482f]">Taloja Central Yard</span>
+            <span>Inventory</span>
           </div>
           <h1 className="text-xl font-bold text-[#24160c] mt-0.5 flex items-center gap-2">
             <Boxes className="w-5 h-5 text-[#8c5e39]" />
-            <span>Scaffolding Yard & Inventory Overview</span>
+            <span>Scaffolding Yard & Inventory</span>
           </h1>
-          <p className="text-xs text-[#7d6553] mt-0.5">
-            Physical stock tracking across central warehouses and active client sites.
-          </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">

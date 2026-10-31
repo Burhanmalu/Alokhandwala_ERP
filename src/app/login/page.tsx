@@ -111,12 +111,8 @@ function LoginForm() {
             {/* Tagline */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-slate-100 leading-tight">
-                Enterprise Operations & Asset Lifecycle
+                Operations & Asset Lifecycle
               </h2>
-              <p className="text-xs text-[#b89a80] mt-2.5 leading-relaxed">
-                Integrated lifecycle platform managing site inspections, cuplock component reservations, 
-                staging dispatches, buffer tracking, and reconciliation billing.
-              </p>
             </div>
 
             {/* Key Value Highlights */}
@@ -170,11 +166,8 @@ function LoginForm() {
                 <img src="/logo.png" alt="Alokhandwala" className="h-7 w-auto object-contain lg:hidden" />
               </div>
               <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-                Sign In to Your Workspace
+                Sign In
               </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Enter your registered corporate credentials or select a role persona to test immediately.
-              </p>
             </div>
 
             {/* Error Message */}

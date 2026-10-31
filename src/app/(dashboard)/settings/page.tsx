@@ -72,16 +72,13 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-[1500px] w-full mx-auto space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-[#24160c] flex items-center gap-2">
             <Settings className="w-5 h-5 text-[#8c5e39]" />
-            <span>Company Settings & Scaffolding Policies</span>
+            <span>Settings</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Configure legal entity metadata, GST taxation, default buffer duration, and rental thresholds.
-          </p>
         </div>
       </div>
 

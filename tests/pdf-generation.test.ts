@@ -1,12 +1,11 @@
 // ALOKHANDWALA - PDF Generation Test Suite
 // Verifies that Confirmation PDF and Installation PDF generate error-free
 
-process.env.NODE_ENV = 'test';
 process.env.IS_TEST = 'true';
 
 import assert from 'assert';
 import { dbStore } from '../src/lib/db/store';
-import { generateConfirmationPdf, generateInstallationPdf } from '../src/lib/pdf/project-pdf';
+import { generateConfirmationPdf, generateInstallationPdf, ProjectWithRelations } from '../src/lib/pdf/project-pdf';
 import { Project, Customer, Site } from '../src/lib/schema';
 
 async function runPdfTests() {
