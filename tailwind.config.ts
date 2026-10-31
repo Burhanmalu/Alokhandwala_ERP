@@ -63,8 +63,9 @@ const config: Config = {
         }
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "monospace"],
+        sans: ["'Amazon Ember'", "-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "Roboto", "sans-serif"],
+        serif: ["'Amazon Ember'", "system-ui", "sans-serif"],
+        mono: ["'Amazon Ember Mono'", "monospace"],
       },
     },
   },
