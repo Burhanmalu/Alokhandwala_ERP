@@ -181,7 +181,7 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
               <Link href="/inventory" onClick={onClose} className={navLinkClass('/inventory')}>
                 <div className="flex items-center gap-2.5">
                   <Boxes className={iconClass('/inventory')} />
-                  <span>Inventory & Yard</span>
+                  <span>Inventory</span>
                 </div>
               </Link>
 

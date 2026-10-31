@@ -86,24 +86,30 @@ export default function InventoryOverviewPage() {
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#9c826e]">
             <span>Inventory</span>
           </div>
-          <h1 className="text-xl font-bold text-[#24160c] mt-0.5 flex items-center gap-2">
-            <Boxes className="w-5 h-5 text-[#8c5e39]" />
-            <span>Scaffolding Yard & Inventory</span>
+          <h1 className="text-xl sm:text-2xl font-bold text-[#24160c] mt-0.5 flex items-center gap-2.5">
+            <Boxes className="w-6 h-6 text-[#8c5e39]" />
+            <span>Inventory</span>
           </h1>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <Link
             href="/inventory/catalogue"
-            className="px-3 py-1.5 text-xs font-semibold text-[#4d301c] bg-white border border-[#d8c8b4] rounded-md hover:bg-[#faf6ee] transition shadow-2xs"
+            className="px-3.5 py-2 text-xs font-semibold text-[#4d301c] bg-white border border-[#d8c8b4] rounded-lg hover:bg-[#faf6ee] transition shadow-2xs"
           >
-            Material Catalogue
+            Inventory Catalogue
           </Link>
           <Link
             href="/inventory/movements"
-            className="px-3 py-1.5 text-xs font-semibold text-white bg-[#24150c] hover:bg-[#382315] border border-[#4d301c] rounded-md shadow-2xs transition"
+            className="px-3.5 py-2 text-xs font-semibold text-[#4d301c] bg-white border border-[#d8c8b4] rounded-lg hover:bg-[#faf6ee] transition shadow-2xs"
           >
-            Movement Ledger
+            Inventory Ledger
+          </Link>
+          <Link
+            href="/inventory/new"
+            className="px-3.5 py-2 text-xs font-bold text-white bg-[#24150c] hover:bg-[#382315] border border-[#4d301c] rounded-lg shadow-2xs transition flex items-center gap-1.5"
+          >
+            <span>+ Add Material</span>
           </Link>
         </div>
       </div>
