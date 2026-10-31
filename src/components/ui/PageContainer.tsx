@@ -21,7 +21,7 @@ export function PageContainer({
   maxWidth = '2xl',
 }: PageContainerProps) {
   return (
-    <div className={`w-full mx-auto space-y-5 ${MAX_WIDTH_MAP[maxWidth]} ${className}`}>
+    <div className={`w-full mx-auto min-w-0 space-y-5 ${MAX_WIDTH_MAP[maxWidth]} ${className}`}>
       {children}
     </div>
   );

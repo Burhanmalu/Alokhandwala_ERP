@@ -92,7 +92,7 @@ function LoginForm() {
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-[#59371d]/25 rounded-full blur-3xl pointer-events-none" />
 
       {/* Main Container Card */}
-      <div className="relative w-full max-w-5xl bg-[#1c120c] border border-[#2f1f15] rounded-2xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
+      <div className="relative w-full max-w-5xl bg-[#1c120c] border border-[#2f1f15] rounded-2xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-0 sm:min-h-[560px]">
         
         {/* Left Hero & Enterprise Showcase (Desktop Only) */}
         <div className="hidden lg:flex lg:col-span-5 bg-gradient-to-b from-[#140c07] via-[#1a0f09] to-[#120a05] p-8 lg:p-10 flex-col justify-between border-r border-[#2f1f15] relative">

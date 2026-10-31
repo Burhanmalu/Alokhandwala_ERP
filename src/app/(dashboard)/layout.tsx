@@ -45,14 +45,14 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-full h-[100dvh] w-full overflow-hidden bg-[#f7f4ed] text-[#24160c]">
-      {/* Desktop Sidebar Container */}
-      <aside className="hidden md:flex md:w-64 lg:w-72 md:shrink-0 h-full min-h-0 flex-col z-20">
+      {/* Desktop Sidebar Container (Responsive width across desktop resolutions) */}
+      <aside className="hidden lg:flex lg:w-60 xl:w-68 2xl:w-72 lg:shrink-0 h-full min-h-0 flex-col z-20">
         <Sidebar />
       </aside>
 
-      {/* Mobile Drawer */}
+      {/* Mobile & Tablet Navigation Drawer (< 1024px) */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex">
+        <div className="fixed inset-0 z-50 lg:hidden flex">
           <div 
             className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
             onClick={() => setMobileMenuOpen(false)}
@@ -64,10 +64,10 @@ export default function DashboardLayout({
         </div>
       )}
 
-      {/* Main Content Area Container */}
+      {/* Main Content Area Container - Independently Scrollable */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden">
         <Header onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
-        <main className="flex-1 min-h-0 min-w-0 overflow-y-auto overscroll-y-contain p-4 sm:p-6 lg:p-8 main-scrollbar">
+        <main className="flex-1 min-h-0 min-w-0 overflow-y-auto overscroll-y-contain p-3.5 sm:p-5 lg:p-6 xl:p-8 main-scrollbar">
           <div className="max-w-[1560px] w-full mx-auto min-w-0">
             {children}
           </div>

@@ -37,7 +37,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { ImageUploaderWithLightbox } from '@/components/ui/ImageUploaderWithLightbox';
 import { useAuth } from '@/lib/auth/auth-context';
 import { Project, Customer, Material, Quotation, QuotationMaterialItem, QuotationStatus } from '@/lib/schema';
-import { formatINR, formatDate } from '@/lib/formatters';
+import { formatINR, formatDate, calculateScaffoldingArea } from '@/lib/formatters';
 import { OFFICIAL_TERMS_AND_CONDITIONS } from '@/lib/constants/terms-and-conditions';
 import { generateQuotationPdf } from '@/lib/pdf/project-pdf';
 
@@ -184,16 +184,13 @@ function QuotationContent() {
           setQuotationDate(new Date().toISOString().slice(0, 10));
           setQuotationStatus('DRAFT');
 
-          // Compute area
+          // Compute elevation area using Scaffolding Engineering Dimensions Formula
           let area = 500;
-          if (proj.measurements?.length && proj.measurements?.height) {
-            let l = proj.measurements.length;
-            let h = proj.measurements.height;
-            if (proj.measurements.unit === 'METERS') {
-              l = Math.round(l * 3.28084);
-              h = Math.round(h * 3.28084);
-            }
-            area = l * h;
+          if (proj.measurements) {
+            const w = proj.measurements.width || proj.measurements.length || 0;
+            const d = proj.measurements.depth !== undefined ? proj.measurements.depth : 3;
+            const h = proj.measurements.height || 0;
+            area = calculateScaffoldingArea(w, d, h, proj.measurements.unit);
           }
           setTotalAreaSqFt(area);
 
@@ -660,7 +657,7 @@ function QuotationContent() {
       )}
 
       {/* SECTION A: CUSTOMER & PROJECT DETAILS */}
-      <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs relative">
+      <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs relative z-20">
         <div className="bg-[#fbf9f5] px-4 py-2.5 border-b border-[#ebdcc9] flex items-center justify-between">
           <h2 className="text-xs font-bold text-[#24160c] flex items-center gap-2 uppercase tracking-wider">
             <Building2 className="w-3.5 h-3.5 text-[#8c5e39]" />
@@ -811,11 +808,11 @@ function QuotationContent() {
                 <span className="text-[10px] text-[#9c826e] uppercase tracking-wider block font-semibold">Site Dimensions</span>
                 <span className="font-bold text-[#24160c]">
                   {selectedProject.measurements 
-                    ? `${selectedProject.measurements.length} × ${selectedProject.measurements.width} × ${selectedProject.measurements.height} ${selectedProject.measurements.unit}`
-                    : '20 × 5 × 20 FT'}
+                    ? `${selectedProject.measurements.width || selectedProject.measurements.length} (W) × ${selectedProject.measurements.depth !== undefined ? selectedProject.measurements.depth : 3} (D) × ${selectedProject.measurements.height} (H) ${selectedProject.measurements.unit}`
+                    : '20 × 3 × 20 FT'}
                 </span>
                 <div className="text-[10px] text-[#8c5e39] font-medium font-mono">
-                  Area: {totalAreaSqFt} Sq. Ft.
+                  Calculated Elevation Area: {totalAreaSqFt} Sq. Ft.
                 </div>
               </div>
 
@@ -874,7 +871,7 @@ function QuotationContent() {
       </div>
 
       {/* SECTION B: SCAFFOLDING MATERIAL REQUIREMENTS */}
-      <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs overflow-hidden">
+      <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs relative z-10 overflow-hidden">
         <div className="bg-[#fbf9f5] px-4 py-2.5 border-b border-[#ebdcc9] flex items-center justify-between flex-wrap gap-2">
           <div>
             <h2 className="text-xs font-bold text-[#24160c] flex items-center gap-2 uppercase tracking-wider">
@@ -1004,7 +1001,7 @@ function QuotationContent() {
       </div>
 
       {/* SECTION C: PRICING & COST CALCULATION */}
-      <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs overflow-hidden">
+      <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs relative z-10 overflow-hidden">
         <div className="bg-[#fbf9f5] px-4 py-2.5 border-b border-[#ebdcc9] flex items-center justify-between">
           <h2 className="text-xs font-bold text-[#24160c] flex items-center gap-2 uppercase tracking-wider">
             <Calculator className="w-3.5 h-3.5 text-[#8c5e39]" />
@@ -1225,7 +1222,7 @@ function QuotationContent() {
       </div>
 
       {/* SECTION D: TERMS & CONDITIONS */}
-      <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs overflow-hidden">
+      <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs relative z-10 overflow-hidden">
         <div className="bg-[#fbf9f5] px-4 py-2.5 border-b border-[#ebdcc9]">
           <h2 className="text-xs font-bold text-[#24160c] uppercase tracking-wider flex items-center gap-2">
             <CheckSquare className="w-3.5 h-3.5 text-[#8c5e39]" />

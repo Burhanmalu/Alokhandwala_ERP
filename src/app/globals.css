@@ -92,11 +92,23 @@
   }
 
   html {
-    font-size: 16px;
+    font-size: 15px;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
-  @media (min-width: 1440px) {
+  @media (min-width: 640px) {
     html {
-      font-size: 17px;
+      font-size: 15px;
+    }
+  }
+  @media (min-width: 1024px) {
+    html {
+      font-size: 15.5px;
+    }
+  }
+  @media (min-width: 1600px) {
+    html {
+      font-size: 16px;
     }
   }
 
@@ -121,12 +133,21 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
 /* Touch-optimized horizontal table scroll container */
-.responsive-table-container {
+.responsive-table-container,
+.erp-table-container {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
+}
+
+/* Ensure images and media never overflow parent flex/grid cells */
+img, svg, canvas {
+  max-width: 100%;
+  height: auto;
 }
 
 /* Utility to hide scrollbars while preserving touch scroll */
@@ -136,6 +157,12 @@
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Prevent unwanted horizontal overflow */
+.no-horizontal-overflow {
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Sidebar dark-themed custom scrollbar */

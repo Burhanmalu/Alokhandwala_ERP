@@ -43,6 +43,10 @@ export interface Site {
   customerName?: string;
   siteName: string;
   siteAddress: string;
+  latitude?: number;
+  longitude?: number;
+  locationType?: 'ON_SITE' | 'NOT_ON_SITE';
+  locationAccuracyMeters?: number;
   landmark?: string;
   city: string;
   state: string;
@@ -59,9 +63,11 @@ export interface SiteMeasurement {
   id: string;
   siteId: string;
   projectId?: string;
-  length: number;
   width: number;
+  depth?: number;
   height: number;
+  length: number;
+  elevationAreaSqFt?: number;
   unit: 'METERS' | 'FEET';
   measurementType: 'FAÇADE_SCAFFOLD' | 'TOWER_SCAFFOLD' | 'CUP_LOCK_SYSTEM' | 'HEAVY_DUTY_SHORING' | 'SUSPENDED_CRADLE';
   description?: string;
@@ -115,14 +121,19 @@ export interface Quotation {
   siteId: string;
   siteName: string;
   siteAddress: string;
+  latitude?: number;
+  longitude?: number;
+  locationType?: 'ON_SITE' | 'NOT_ON_SITE';
+  locationAccuracyMeters?: number;
   quotationDate: string;
   status: QuotationStatus;
   
   // Scaffolding Specifications
   dimensions?: {
-    length: number;
     width: number;
+    depth?: number;
     height: number;
+    length: number;
     unit: 'METERS' | 'FEET';
     totalAreaSqFt: number;
     structureType?: string;
@@ -220,6 +231,10 @@ export interface Project {
   siteId: string;
   siteName: string;
   siteAddress: string;
+  latitude?: number;
+  longitude?: number;
+  locationType?: 'ON_SITE' | 'NOT_ON_SITE';
+  locationAccuracyMeters?: number;
   referralName?: string;
   assignedSupervisorId: string;
   supervisorName: string;

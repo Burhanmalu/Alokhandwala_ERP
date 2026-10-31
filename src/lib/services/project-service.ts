@@ -2,6 +2,7 @@
 
 import { dbStore } from '../db/store';
 import { Project, ProjectStatus, SiteMeasurement, FileAttachment } from '../schema';
+import { calculateScaffoldingArea } from '../formatters';
 
 export const VALID_STATUS_TRANSITIONS: Record<ProjectStatus, ProjectStatus[]> = {
   SITE_CREATED: ['QUOTATION_DRAFT', 'QUOTATION_SENT', 'NOT_INSTALLED', 'CANCELLED'],
@@ -61,6 +62,10 @@ export class ProjectService {
     siteId?: string;
     siteName: string;
     siteAddress: string;
+    latitude?: number;
+    longitude?: number;
+    locationType?: 'ON_SITE' | 'NOT_ON_SITE';
+    locationAccuracyMeters?: number;
     landmark?: string;
     city?: string;
     state?: string;
@@ -69,11 +74,12 @@ export class ProjectService {
     assignedSupervisorId?: string;
     supervisorName?: string;
     measurements: {
-      length: number;
       width: number;
+      depth?: number;
       height: number;
+      length?: number;
       unit: 'METERS' | 'FEET';
-      measurementType: 'FAÇADE_SCAFFOLD' | 'TOWER_SCAFFOLD' | 'CUP_LOCK_SYSTEM' | 'HEAVY_DUTY_SHORING' | 'SUSPENDED_CRADLE';
+      measurementType?: 'FAÇADE_SCAFFOLD' | 'TOWER_SCAFFOLD' | 'CUP_LOCK_SYSTEM' | 'HEAVY_DUTY_SHORING' | 'SUSPENDED_CRADLE';
       description?: string;
     };
     siteRemarks?: string;
@@ -136,6 +142,10 @@ export class ProjectService {
           customerName: customer.companyName,
           siteName: data.siteName,
           siteAddress: data.siteAddress,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          locationType: data.locationType,
+          locationAccuracyMeters: data.locationAccuracyMeters,
           referralName: data.referralName || customer.referenceName,
           landmark: data.landmark,
           city: data.city || 'Mumbai',
@@ -154,15 +164,23 @@ export class ProjectService {
       const projectCode = this.generateNextProjectCode(state.projects);
       const projectId = `proj-${Date.now()}`;
 
+      const mWidth = data.measurements.width || data.measurements.length || 0;
+      const mDepth = data.measurements.depth !== undefined ? data.measurements.depth : 3;
+      const mHeight = data.measurements.height || 0;
+      const mLength = data.measurements.length !== undefined ? data.measurements.length : mWidth;
+      const areaSqFt = calculateScaffoldingArea(mWidth, mDepth, mHeight, data.measurements.unit);
+
       const measurementRecord: SiteMeasurement = {
         id: `meas-${Date.now()}`,
         siteId: site.id,
         projectId: projectId,
-        length: data.measurements.length,
-        width: data.measurements.width,
-        height: data.measurements.height,
+        width: mWidth,
+        depth: mDepth,
+        height: mHeight,
+        length: mLength,
         unit: data.measurements.unit,
-        measurementType: data.measurements.measurementType,
+        elevationAreaSqFt: areaSqFt,
+        measurementType: data.measurements.measurementType || 'FAÇADE_SCAFFOLD',
         description: data.measurements.description,
         measuredBy: supervisor.fullName,
         measuredAt: new Date().toISOString(),
@@ -190,6 +208,10 @@ export class ProjectService {
         siteId: site.id,
         siteName: site.siteName,
         siteAddress: site.siteAddress,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        locationType: data.locationType,
+        locationAccuracyMeters: data.locationAccuracyMeters,
         referralName: data.referralName || customer.referenceName,
         assignedSupervisorId: supervisor.id,
         supervisorName: supervisor.fullName,

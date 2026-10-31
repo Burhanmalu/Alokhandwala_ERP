@@ -529,7 +529,7 @@ export default function CustomersPage() {
         </div>
       ) : viewMode === 'grid' ? (
         /* REFINED CARD GRID VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredCustomers.map((c) => {
             const hasOutstanding = (c.outstandingBalance || 0) > 0;
             const hasRentals = (c.activeRentalsCount || 0) > 0;

@@ -4,6 +4,38 @@
  * Format a number as Indian Currency (INR / ₹)
  * Supports Indian number numbering system (e.g. ₹ 1,50,000.00 or ₹ 12,50,000)
  */
+/**
+ * Scaffolding Engineering Dimensions Area Calculation
+ * Formula:
+ *   const adjustedDepth = depth <= 3 ? 1 : depth / 3;
+ *   const area = width * adjustedDepth * height;
+ *
+ * All inputs normalized to Feet (ft).
+ * Rules:
+ *   - If Depth is 3 ft or less, use 1 as multiplier.
+ *   - If Depth is greater than 3 ft, divide it by 3.
+ *   - Multiply Width * Adjusted Depth * Height.
+ * Returns calculated elevation area in sq. ft.
+ */
+export function calculateScaffoldingArea(
+  width: number,
+  depth: number,
+  height: number,
+  unit: 'FEET' | 'METERS' = 'FEET'
+): number {
+  if (width <= 0 || height <= 0 || depth <= 0) return 0;
+
+  // Convert meters to feet if unit is METERS (1m = 1 / 0.3048 ft)
+  const widthFt = unit === 'METERS' ? width / 0.3048 : width;
+  const depthFt = unit === 'METERS' ? depth / 0.3048 : depth;
+  const heightFt = unit === 'METERS' ? height / 0.3048 : height;
+
+  const adjustedDepth = depthFt <= 3 ? 1 : depthFt / 3;
+  const area = widthFt * adjustedDepth * heightFt;
+
+  return Math.round(area * 100) / 100;
+}
+
 export function formatINR(amount: number | undefined | null, includeDecimals = true): string {
   if (amount === undefined || amount === null || isNaN(amount)) {
     return '₹0.00';

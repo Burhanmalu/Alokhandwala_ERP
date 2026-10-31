@@ -2,6 +2,7 @@
 
 import { dbStore } from '../db/store';
 import { Quotation, QuotationStatus, QuotationMaterialItem, Project, ProjectStatus } from '../schema';
+import { calculateScaffoldingArea } from '../formatters';
 
 export interface QuotationCalculationInput {
   ratePerSqFt: number;
@@ -132,19 +133,16 @@ export class QuotationService {
     recommendedPlanTitle: string;
   } {
     const meas = project.measurements;
-    let length = meas?.length || 20;
-    let width = meas?.width || 5;
-    let height = meas?.height || 20;
+    const width = meas?.width || meas?.length || 20;
+    const depth = meas?.depth !== undefined ? meas.depth : 3;
+    const height = meas?.height || 20;
     const unit = meas?.unit || 'FEET';
 
-    // Convert to feet if in meters
+    const totalAreaSqFt = calculateScaffoldingArea(width, depth, height, unit);
+    let length = width;
     if (unit === 'METERS') {
       length = Math.round(length * 3.28084 * 10) / 10;
-      width = Math.round(width * 3.28084 * 10) / 10;
-      height = Math.round(height * 3.28084 * 10) / 10;
     }
-
-    const totalAreaSqFt = Math.round(length * height);
 
     // Calculate standard scaffolding components derived from project dimensions
     const baysLength = Math.max(1, Math.ceil(length / 8));
@@ -232,17 +230,14 @@ export class QuotationService {
       const customer = state.customers.find(c => c.id === project.customerId);
       const site = state.sites.find(s => s.id === project.siteId);
 
-      // Measurements & Total Area
+      // Measurements & Total Area (Engineering Dimensions Formula)
       let area = data.totalAreaSqFt;
       if (!area || area <= 0) {
-        if (project.measurements?.length && project.measurements?.height) {
-          let l = project.measurements.length;
-          let h = project.measurements.height;
-          if (project.measurements.unit === 'METERS') {
-            l *= 3.28084;
-            h *= 3.28084;
-          }
-          area = Math.round(l * h);
+        if (project.measurements) {
+          const w = project.measurements.width || project.measurements.length || 0;
+          const d = project.measurements.depth !== undefined ? project.measurements.depth : 3;
+          const h = project.measurements.height || 0;
+          area = calculateScaffoldingArea(w, d, h, project.measurements.unit);
         } else {
           area = 500;
         }
@@ -251,7 +246,7 @@ export class QuotationService {
       // Calculate complete pricing
       const pricing = this.calculatePricing({
         ratePerSqFt: data.ratePerSqFt,
-        totalAreaSqFt: area,
+        totalAreaSqFt: area || 500,
         durationMonths: data.durationMonths || 1,
         rentalDurationDays: data.rentalDurationDays || 28,
         walkwayJaliIncludedQuantity: data.walkwayJaliIncludedQuantity || 0,
@@ -292,11 +287,12 @@ export class QuotationService {
           quotationDate,
           status: data.status,
           dimensions: project.measurements ? {
-            length: project.measurements.length,
             width: project.measurements.width,
+            depth: project.measurements.depth !== undefined ? project.measurements.depth : 3,
             height: project.measurements.height,
+            length: project.measurements.length,
             unit: project.measurements.unit,
-            totalAreaSqFt: area,
+            totalAreaSqFt: area || 500,
             structureType: project.measurements.measurementType,
             description: project.measurements.description,
           } : undefined,

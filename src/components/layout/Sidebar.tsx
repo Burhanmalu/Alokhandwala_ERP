@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -30,12 +30,21 @@ import { useAuth } from '@/lib/auth/auth-context';
 export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
   const pathname = usePathname();
   const { currentUser, logout } = useAuth();
+  const isInventoryRoute = pathname.startsWith('/inventory');
+  const [inventoryExpanded, setInventoryExpanded] = useState<boolean>(() => isInventoryRoute);
+
+  useEffect(() => {
+    if (isInventoryRoute) {
+      setInventoryExpanded(true);
+    }
+  }, [pathname, isInventoryRoute]);
+
   const isExact = (path: string) => pathname === path;
 
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
     if (path === '/reports') return pathname === '/reports';
-    if (path === '/inventory') return pathname === '/inventory';
+    if (path === '/inventory') return isInventoryRoute;
     return pathname.startsWith(path);
   };
   const navLinkClass = (path: string) => {
@@ -89,7 +98,7 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
         {onClose && (
           <button
             onClick={onClose}
-            className="md:hidden p-1.5 rounded-md text-[#a9927d] hover:text-white hover:bg-[#24150c] transition"
+            className="lg:hidden p-1.5 rounded-md text-[#a9927d] hover:text-white hover:bg-[#24150c] transition cursor-pointer"
             aria-label="Close Navigation"
           >
             <X className="w-4 h-4" />
@@ -192,43 +201,51 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
 
               {/* Inventory Group with Sub-Pages */}
               <div className="space-y-1">
-                <Link href="/inventory" onClick={onClose} className={navLinkClass('/inventory')}>
+                <button
+                  type="button"
+                  onClick={() => setInventoryExpanded(prev => !prev)}
+                  className={`w-full ${navLinkClass('/inventory')} cursor-pointer text-left select-none`}
+                  aria-expanded={inventoryExpanded}
+                  aria-controls="inventory-submenu"
+                >
                   <div className="flex items-center gap-2.5">
                     <Boxes className={iconClass('/inventory')} />
                     <span>Inventory</span>
                   </div>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 text-[#9c826e] ${pathname.startsWith('/inventory') ? 'rotate-180 text-[#c79e7c]' : ''}`} />
-                </Link>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 shrink-0 ${inventoryExpanded ? 'rotate-180 text-[#c79e7c]' : 'text-[#9c826e]'}`} />
+                </button>
 
                 {/* Sub-Pages Section under Inventory */}
-                <div className="pl-3 pr-1 py-0.5 space-y-0.5 border-l-2 border-[#382315] ml-4 mt-1">
-                  <Link 
-                    href="/inventory" 
-                    onClick={onClose} 
-                    className={subNavLinkClass('/inventory')}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/inventory') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                    <span>Stock Overview</span>
-                  </Link>
+                {inventoryExpanded && (
+                  <div id="inventory-submenu" className="pl-3 pr-1 py-0.5 space-y-0.5 border-l-2 border-[#382315] ml-4 mt-1 transition-all duration-200 animate-in fade-in slide-in-from-top-1">
+                    <Link
+                      href="/inventory"
+                      onClick={onClose}
+                      className={subNavLinkClass('/inventory')}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/inventory') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                      <span>Stock Overview</span>
+                    </Link>
 
-                  <Link 
-                    href="/inventory/catalogue" 
-                    onClick={onClose} 
-                    className={subNavLinkClass('/inventory/catalogue')}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/inventory/catalogue') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                    <span>Catalogue</span>
-                  </Link>
+                    <Link
+                      href="/inventory/catalogue"
+                      onClick={onClose}
+                      className={subNavLinkClass('/inventory/catalogue')}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/inventory/catalogue') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                      <span>Catalogue</span>
+                    </Link>
 
-                  <Link 
-                    href="/inventory/movements" 
-                    onClick={onClose} 
-                    className={subNavLinkClass('/inventory/movements')}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/inventory/movements') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                    <span>Ledger</span>
-                  </Link>
-                </div>
+                    <Link
+                      href="/inventory/movements"
+                      onClick={onClose}
+                      className={subNavLinkClass('/inventory/movements')}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/inventory/movements') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                      <span>Ledger</span>
+                    </Link>
+                  </div>
+                )}
               </div>
               <Link href="/billing" onClick={onClose} className={navLinkClass('/billing')}>
                 <div className="flex items-center gap-2.5">

@@ -143,7 +143,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Report Selector Buttons */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-medium">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs font-medium">
         <button
           onClick={() => setSelectedReport('PROJECT_STATUS')}
           className={`p-3 rounded-lg border text-left transition flex items-center ${

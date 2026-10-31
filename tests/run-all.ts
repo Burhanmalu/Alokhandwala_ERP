@@ -6,6 +6,7 @@ import { runAuditTests } from './smart-recommendation-and-audit.test';
 import { runPdfTests } from './pdf-generation.test';
 import { runSearchableSelectionAndImagesTests } from './searchable-selection-and-images.test';
 import { runWorkerSupervisorReportTests } from './worker-supervisor-report.test';
+import { runSiteFormMapTests } from './site-form-map.test';
 
 async function main() {
   await runCriticalTests();
@@ -13,6 +14,7 @@ async function main() {
   await runPdfTests();
   await runSearchableSelectionAndImagesTests();
   await runWorkerSupervisorReportTests();
+  await runSiteFormMapTests();
   console.log('\n===============================================================');
   console.log('ALL TEST SUITES EXECUTED AND PASSED 100%');
   console.log('===============================================================\n');

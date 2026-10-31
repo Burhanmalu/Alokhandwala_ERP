@@ -35,7 +35,7 @@ import {
   Sparkles,
   FileDown
 } from 'lucide-react';
-import { formatINR, formatQuantity, formatDate, formatDateTime, getStatusBadgeConfig, getDaysDifference } from '@/lib/formatters';
+import { formatINR, formatQuantity, formatDate, formatDateTime, getStatusBadgeConfig, getDaysDifference, calculateScaffoldingArea } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
 import { processAndUploadImage } from '@/lib/image-utils';
 import { generateConfirmationPdf, generateInstallationPdf } from '@/lib/pdf/project-pdf';
@@ -572,7 +572,7 @@ export default function ProjectWorkspacePage({
 
       {/* TAB CONTENT 1: OVERVIEW */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {/* Key Quotation & Pricing Summary */}
           <div className="bg-white p-5 rounded-lg border border-[#e8decb] shadow-2xs space-y-4">
             <div className="flex items-center justify-between border-b border-[#f0e8db] pb-3">
@@ -701,7 +701,17 @@ export default function ProjectWorkspacePage({
                 <div className="p-3 bg-[#fbf9f5] rounded-md border border-[#ede3d4]">
                   <div className="font-semibold text-stone-800">Dimensions:</div>
                   <div className="font-mono text-[#714f36] font-bold mt-0.5">
-                    {project.measurements?.length || 0}m (L) x {project.measurements?.width || 0}m (W) x {project.measurements?.height || 0}m (H)
+                    {project.measurements?.depth !== undefined
+                      ? `${project.measurements.width} (W) × ${project.measurements.depth} (D) × ${project.measurements.height} (H) ${project.measurements.unit || 'FT'}`
+                      : `${project.measurements?.length || 0} (L) × ${project.measurements?.width || 0} (W) × ${project.measurements?.height || 0} (H) ${project.measurements?.unit || 'METERS'}`}
+                  </div>
+                  <div className="text-[11px] text-[#8c5e39] font-mono font-semibold mt-0.5">
+                    Elevation Area: {calculateScaffoldingArea(
+                      project.measurements?.width || project.measurements?.length || 0,
+                      project.measurements?.depth !== undefined ? project.measurements.depth : 3,
+                      project.measurements?.height || 0,
+                      project.measurements?.unit || 'FEET'
+                    ).toLocaleString('en-IN')} sq. ft.
                   </div>
                   <div className="text-[11px] text-stone-500 mt-1">
                     Type: {project.measurements?.measurementType?.replace(/_/g, ' ') || 'Façade Scaffold'}
@@ -791,30 +801,35 @@ export default function ProjectWorkspacePage({
             <div className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">1. Planned Site Inspection Dimensions</div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
               <div className="p-4 bg-[#fbf9f5] rounded-md border border-[#ede3d4]">
-                <div className="text-xs text-stone-500 font-medium">Façade Length</div>
+                <div className="text-xs text-stone-500 font-medium">Width</div>
                 <div className="text-2xl font-bold font-mono text-[#24160c] mt-1">
-                  {project.measurements?.length || 0} <span className="text-xs text-stone-500 font-normal">{project.measurements?.unit || 'METERS'}</span>
+                  {project.measurements?.width || project.measurements?.length || 0} <span className="text-xs text-stone-500 font-normal">{project.measurements?.unit === 'METERS' ? 'm' : 'ft'}</span>
                 </div>
               </div>
 
               <div className="p-4 bg-[#fbf9f5] rounded-md border border-[#ede3d4]">
-                <div className="text-xs text-stone-500 font-medium">Scaffold Width / Bay</div>
+                <div className="text-xs text-stone-500 font-medium">Depth</div>
                 <div className="text-2xl font-bold font-mono text-[#24160c] mt-1">
-                  {project.measurements?.width || 0} <span className="text-xs text-stone-500 font-normal">{project.measurements?.unit || 'METERS'}</span>
+                  {project.measurements?.depth !== undefined ? project.measurements.depth : 3} <span className="text-xs text-stone-500 font-normal">{project.measurements?.unit === 'METERS' ? 'm' : 'ft'}</span>
                 </div>
               </div>
 
               <div className="p-4 bg-[#fbf9f5] rounded-md border border-[#ede3d4]">
-                <div className="text-xs text-stone-500 font-medium">Working Height</div>
+                <div className="text-xs text-stone-500 font-medium">Height</div>
                 <div className="text-2xl font-bold font-mono text-[#24160c] mt-1">
-                  {project.measurements?.height || 0} <span className="text-xs text-stone-500 font-normal">{project.measurements?.unit || 'METERS'}</span>
+                  {project.measurements?.height || 0} <span className="text-xs text-stone-500 font-normal">{project.measurements?.unit === 'METERS' ? 'm' : 'ft'}</span>
                 </div>
               </div>
 
               <div className="p-4 bg-[#fbf9f5] rounded-md border border-[#ede3d4]">
-                <div className="text-xs text-stone-500 font-medium">Approx. Façade Area</div>
+                <div className="text-xs text-stone-500 font-medium">Calculated Elevation Area</div>
                 <div className="text-2xl font-bold font-mono text-[#714f36] mt-1">
-                  {((project.measurements?.length || 0) * (project.measurements?.height || 0)).toFixed(1)} <span className="text-xs text-stone-500 font-normal">sq.m</span>
+                  {calculateScaffoldingArea(
+                    project.measurements?.width || project.measurements?.length || 0,
+                    project.measurements?.depth !== undefined ? project.measurements.depth : 3,
+                    project.measurements?.height || 0,
+                    project.measurements?.unit || 'FEET'
+                  ).toLocaleString('en-IN')} <span className="text-xs text-stone-500 font-normal">sq. ft.</span>
                 </div>
               </div>
             </div>

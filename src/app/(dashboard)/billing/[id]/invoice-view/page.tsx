@@ -56,9 +56,9 @@ export default function InvoicePrintViewPage({
         <div className="flex justify-between items-start border-b-2 border-[#322016] pb-5">
           <div>
             <div className="flex items-center gap-3.5">
-              <img 
-                src="/logo.png" 
-                alt="Alokhandwala" 
+              <img
+                src="/logo.png"
+                alt="Alokhandwala"
                 className="h-16 w-auto object-contain print:h-14"
               />
               <div className="border-l border-[#d8c3ae] pl-3.5">
@@ -115,34 +115,36 @@ export default function InvoicePrintViewPage({
         </div>
 
         {/* Line Items Table */}
-        <table className="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
-          <thead className="bg-slate-100 text-slate-700 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200">
-            <tr>
-              <th className="p-3">#</th>
-              <th className="p-3">Service Description</th>
-              <th className="p-3 text-center">HSN/SAC</th>
-              <th className="p-3 text-center">Qty</th>
-              <th className="p-3 text-right">Unit Rate (INR)</th>
-              <th className="p-3 text-right">Taxable Amount</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 font-mono">
-            {invoice.lines.map((l, idx) => (
-              <tr key={l.id}>
-                <td className="p-3 text-slate-400">{idx + 1}</td>
-                <td className="p-3 font-sans font-medium text-slate-900">{l.description}</td>
-                <td className="p-3 text-center text-slate-600">{l.hsnSacCode}</td>
-                <td className="p-3 text-center text-slate-800">{l.quantity}</td>
-                <td className="p-3 text-right">{formatINR(l.rate)}</td>
-                <td className="p-3 text-right font-bold text-slate-900">{formatINR(l.amount)}</td>
+        <div className="overflow-x-auto w-full border border-slate-200 rounded-lg">
+          <table className="w-full text-left text-xs min-w-[500px]">
+            <thead className="bg-slate-100 text-slate-700 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200">
+              <tr>
+                <th className="p-3">#</th>
+                <th className="p-3">Service Description</th>
+                <th className="p-3 text-center">HSN/SAC</th>
+                <th className="p-3 text-center">Qty</th>
+                <th className="p-3 text-right">Unit Rate (INR)</th>
+                <th className="p-3 text-right">Taxable Amount</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-mono">
+              {invoice.lines.map((l, idx) => (
+                <tr key={l.id}>
+                  <td className="p-3 text-slate-400">{idx + 1}</td>
+                  <td className="p-3 font-sans font-medium text-slate-900">{l.description}</td>
+                  <td className="p-3 text-center text-slate-600">{l.hsnSacCode}</td>
+                  <td className="p-3 text-center text-slate-800">{l.quantity}</td>
+                  <td className="p-3 text-right">{formatINR(l.rate)}</td>
+                  <td className="p-3 text-right font-bold text-slate-900">{formatINR(l.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {/* Calculations & GST Breakdown */}
         <div className="flex justify-end">
-          <div className="w-72 space-y-1.5 font-mono text-xs border-t border-slate-200 pt-3">
+          <div className="w-full sm:w-80 space-y-1.5 font-mono text-xs border-t border-slate-200 pt-3">
             <div className="flex justify-between text-slate-600">
               <span>Taxable Subtotal:</span>
               <span>{formatINR(invoice.taxableValue)}</span>
