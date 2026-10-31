@@ -167,16 +167,16 @@ export default function StockMovementLedgerPage() {
       {/* 100% Screen Fitted Ledger Table - Zero Horizontal Scroll on Desktop */}
       <div className="bg-white rounded-xl border border-[#ebdcc9] shadow-2xs overflow-hidden w-full">
         <div className="w-full overflow-x-auto lg:overflow-x-visible">
-          <table className="w-full table-fixed text-left text-sm">
+          <table className="w-full text-left text-sm">
             <thead className="bg-[#fbf9f5] text-[#5c3e24] uppercase tracking-wider text-2xs font-bold border-b border-[#ebdcc9]">
               <tr>
-                <th className="w-[10%] px-4 py-3.5 text-center">Id</th>
-                <th className="w-[18%] px-4 py-3.5">Type</th>
-                <th className="w-[28%] px-4 py-3.5">Where (Route / Site)</th>
-                <th className="w-[16%] px-4 py-3.5">Project / Doc</th>
-                <th className="w-[11%] px-4 py-3.5 text-center">Quantities</th>
-                <th className="w-[10%] px-4 py-3.5">Authorized By</th>
-                <th className="w-[7%] px-4 py-3.5 text-right">Date & Time</th>
+                <th className="w-20 px-4 py-3.5 text-center">Id</th>
+                <th className="w-48 px-4 py-3.5">Type</th>
+                <th className="px-4 py-3.5">Where (Route / Site)</th>
+                <th className="w-36 px-4 py-3.5">Project / Doc</th>
+                <th className="w-28 px-4 py-3.5 text-center">Quantities</th>
+                <th className="w-36 px-4 py-3.5">Authorized By</th>
+                <th className="w-44 px-4 py-3.5 text-right">Date & Time</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f5efe6]">
@@ -205,7 +205,7 @@ export default function StockMovementLedgerPage() {
                         title="Click to view full entry details"
                       >
                         {/* Compact Id Column with direct Link */}
-                        <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                        <td className="px-4 py-4 text-center whitespace-nowrap">
                           <Link
                             href={`/inventory/movements/${t.id}`}
                             className="font-bold font-mono text-[#24160c] group-hover:text-[#8c5e39] group-hover:border-[#8c5e39] px-2.5 py-1 rounded-md bg-[#f5ede3] border border-[#e5dac8] text-xs inline-block transition shadow-2xs"
@@ -214,29 +214,27 @@ export default function StockMovementLedgerPage() {
                             {compactId}
                           </Link>
                         </td>
-
                         {/* Type Column Only (without reason/purpose subtext) */}
-                        <td className="px-4 py-3.5 whitespace-nowrap">
+                        <td className="px-4 py-4 whitespace-nowrap">
                           <Link href={`/inventory/movements/${t.id}`} className="block">
-                            <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-bold border ${getMovementBadge(t.movementType)}`}>
+                            <span className={`inline-block px-3 py-1 rounded-md text-xs font-bold border ${getMovementBadge(t.movementType)}`}>
                               {t.movementType.replace(/_/g, ' ')}
                             </span>
                           </Link>
                         </td>
-
                         {/* Where (Route / Site) */}
-                        <td className="px-4 py-3.5">
+                        <td className="px-4 py-4">
                           <Link href={`/inventory/movements/${t.id}`} className="block">
-                            <div className="flex items-center gap-1.5 text-xs min-w-0">
+                            <div className="flex items-center gap-2 text-xs">
                               <span 
-                                className="font-medium text-stone-600 truncate flex-1" 
+                                className="font-medium text-stone-600 truncate max-w-[170px]" 
                                 title={t.sourceLocation}
                               >
                                 {t.sourceLocation}
                               </span>
                               <ArrowRight className="w-3.5 h-3.5 text-[#8c5e39] shrink-0" />
                               <span 
-                                className="font-bold text-[#24160c] truncate flex-1" 
+                                className="font-bold text-[#24160c] truncate max-w-[200px]" 
                                 title={t.destinationLocation}
                               >
                                 {t.destinationLocation}
@@ -244,9 +242,8 @@ export default function StockMovementLedgerPage() {
                             </div>
                           </Link>
                         </td>
-
                         {/* Project / Doc */}
-                        <td className="px-3.5 py-3 min-w-0">
+                        <td className="px-4 py-4">
                           {t.projectCode ? (
                             <Link 
                               href={t.projectId ? `/projects/${t.projectId}` : '/projects'}
@@ -267,22 +264,22 @@ export default function StockMovementLedgerPage() {
                         </td>
 
                         {/* Quantities */}
-                        <td className="px-3.5 py-3 text-center whitespace-nowrap">
-                          <span className="font-bold font-mono text-[#24160c] text-xs">
+                        <td className="px-4 py-4 text-center whitespace-nowrap">
+                          <span className="font-bold font-mono text-[#24160c] text-sm">
                             {totalPieces.toLocaleString()} Nos
                           </span>
                           <div className="text-2xs text-[#7d6553]">{t.lines.length} lines</div>
                         </td>
 
                         {/* Authorized By */}
-                        <td className="px-4 py-3.5 text-xs font-medium text-stone-700 truncate" title={t.actorName}>
+                        <td className="px-4 py-4 text-xs font-semibold text-[#24160c] whitespace-nowrap truncate" title={t.actorName}>
                           <Link href={`/inventory/movements/${t.id}`} className="block truncate">
                             {t.actorName}
                           </Link>
                         </td>
 
                         {/* Timestamp */}
-                        <td className="px-4 py-3.5 text-2xs font-mono text-stone-600 text-right whitespace-nowrap">
+                        <td className="px-4 py-4 text-xs font-mono text-stone-600 text-right whitespace-nowrap">
                           <Link href={`/inventory/movements/${t.id}`} className="block">
                             {formatDateTime(t.createdAt)}
                           </Link>
