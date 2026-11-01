@@ -23,7 +23,17 @@ import {
   AuditLog,
   ProjectActivityEvent,
   ProjectStatus,
-  Quotation
+  Quotation,
+  ChartOfAccount,
+  AccountingPeriod,
+  JournalEntry,
+  VendorBill,
+  CostCenter,
+  Department,
+  Employee,
+  AttendanceRecord,
+  LeaveRequest,
+  PaySlip
 } from '../schema';
 import { 
   initialCompanySettings, 
@@ -36,10 +46,20 @@ import {
   initialProjects, 
   initialInvoices, 
   initialPayments, 
-  initialTransactions 
+  initialTransactions,
+  initialChartOfAccounts,
+  initialAccountingPeriods,
+  initialCostCenters,
+  initialDepartments,
+  initialJournalEntries,
+  initialVendorBills,
+  initialEmployees,
+  initialAttendanceRecords,
+  initialLeaveRequests,
+  initialPaySlips
 } from './seed-data';
 
-interface DatabaseState {
+export interface DatabaseState {
   companySettings: CompanySettings;
   users: UserProfile[];
   warehouses: Warehouse[];
@@ -59,6 +79,16 @@ interface DatabaseState {
   auditLogs: AuditLog[];
   activityEvents: ProjectActivityEvent[];
   quotations: Quotation[];
+  chartOfAccounts: ChartOfAccount[];
+  accountingPeriods: AccountingPeriod[];
+  costCenters: CostCenter[];
+  departments: Department[];
+  journalEntries: JournalEntry[];
+  vendorBills: VendorBill[];
+  employees: Employee[];
+  attendanceRecords: AttendanceRecord[];
+  leaveRequests: LeaveRequest[];
+  paySlips: PaySlip[];
 }
 
 const DATA_DIR = path.join(process.cwd(), '.data');
@@ -145,6 +175,24 @@ class ERPDataStore {
         if (!parsed.quotations) {
           parsed.quotations = [];
         }
+        if (!parsed.chartOfAccounts || parsed.chartOfAccounts.length === 0) {
+          parsed.chartOfAccounts = JSON.parse(JSON.stringify(initialChartOfAccounts));
+        }
+        if (!parsed.accountingPeriods || parsed.accountingPeriods.length === 0) {
+          parsed.accountingPeriods = JSON.parse(JSON.stringify(initialAccountingPeriods));
+        }
+        if (!parsed.costCenters || parsed.costCenters.length === 0) {
+          parsed.costCenters = JSON.parse(JSON.stringify(initialCostCenters));
+        }
+        if (!parsed.departments || parsed.departments.length === 0) {
+          parsed.departments = JSON.parse(JSON.stringify(initialDepartments));
+        }
+        if (!parsed.journalEntries) parsed.journalEntries = [];
+        if (!parsed.vendorBills) parsed.vendorBills = [];
+        if (!parsed.employees) parsed.employees = [];
+        if (!parsed.attendanceRecords) parsed.attendanceRecords = [];
+        if (!parsed.leaveRequests) parsed.leaveRequests = [];
+        if (!parsed.paySlips) parsed.paySlips = [];
 
         return parsed;
       }
@@ -172,6 +220,16 @@ class ERPDataStore {
       auditLogs: [],
       activityEvents: [],
       quotations: [],
+      chartOfAccounts: JSON.parse(JSON.stringify(initialChartOfAccounts)),
+      accountingPeriods: JSON.parse(JSON.stringify(initialAccountingPeriods)),
+      costCenters: JSON.parse(JSON.stringify(initialCostCenters)),
+      departments: JSON.parse(JSON.stringify(initialDepartments)),
+      journalEntries: [],
+      vendorBills: [],
+      employees: [],
+      attendanceRecords: [],
+      leaveRequests: [],
+      paySlips: [],
     };
   }
 
@@ -270,6 +328,20 @@ class ERPDataStore {
     return this.getState().activityEvents;
   }
 
+  // Accounts & Finance Accessors
+  public getChartOfAccounts() { return this.getState().chartOfAccounts || []; }
+  public getAccountingPeriods() { return this.getState().accountingPeriods || []; }
+  public getCostCenters() { return this.getState().costCenters || []; }
+  public getJournalEntries() { return this.getState().journalEntries || []; }
+  public getVendorBills() { return this.getState().vendorBills || []; }
+
+  // HR & Workforce Accessors
+  public getDepartments() { return this.getState().departments || []; }
+  public getEmployees() { return this.getState().employees || []; }
+  public getAttendanceRecords() { return this.getState().attendanceRecords || []; }
+  public getLeaveRequests() { return this.getState().leaveRequests || []; }
+  public getPaySlips() { return this.getState().paySlips || []; }
+
   // Reset to seed data
   public resetToSeed() {
     this.state = {
@@ -292,6 +364,16 @@ class ERPDataStore {
       auditLogs: [],
       activityEvents: [],
       quotations: [],
+      chartOfAccounts: JSON.parse(JSON.stringify(initialChartOfAccounts)),
+      accountingPeriods: JSON.parse(JSON.stringify(initialAccountingPeriods)),
+      costCenters: JSON.parse(JSON.stringify(initialCostCenters)),
+      departments: JSON.parse(JSON.stringify(initialDepartments)),
+      journalEntries: [],
+      vendorBills: [],
+      employees: [],
+      attendanceRecords: [],
+      leaveRequests: [],
+      paySlips: [],
     };
     this.saveState();
   }

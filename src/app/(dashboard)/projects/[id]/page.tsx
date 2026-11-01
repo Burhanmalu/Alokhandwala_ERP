@@ -229,7 +229,7 @@ export default function ProjectWorkspacePage({
     return (
       <div className="text-center py-16 space-y-4">
         <div className="text-lg font-bold text-slate-800">Project Not Found</div>
-        <p className="text-xs text-slate-500">The project identifier '{id}' could not be located in the database.</p>
+        <p className="text-xs text-slate-500">The project identifier &apos;{id}&apos; could not be located in the database.</p>
         <Link href="/projects" className="px-4 py-2 bg-[#24160c] hover:bg-[#382315] text-[#c79e7c] border border-[#19100a] rounded-md text-xs font-semibold">
           Return to Projects Directory
         </Link>
@@ -906,7 +906,7 @@ export default function ProjectWorkspacePage({
                       <div>Executing: <strong>{project.installationSupervisor.executingSupervisorName}</strong></div>
                       {project.installationSupervisor.delegationRemarks && (
                         <div className="mt-1 text-[11px] text-stone-500 italic">
-                          "{project.installationSupervisor.delegationRemarks}"
+                          &ldquo;{project.installationSupervisor.delegationRemarks}&rdquo;
                         </div>
                       )}
                     </div>
