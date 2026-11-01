@@ -259,7 +259,7 @@ export default function ProjectDismantlingPage({
                 <span>Physical Material Inspection & Condition Classification</span>
               </h2>
               <p className="text-xs text-slate-500">
-                Classify returned materials into Usable (restores warehouse stock), Damaged (quarantine), or Missing (billing recovery).
+                Classify returned materials into Usable (restores warehouse stock), Damage Material (quarantine), or Missing Material (loss recovery).
               </p>
             </div>
 
@@ -271,8 +271,8 @@ export default function ProjectDismantlingPage({
                     <th className="px-3 py-2.5 text-center">Expected on Site</th>
                     <th className="px-3 py-2.5 text-center">Collected Qty</th>
                     <th className="px-3 py-2.5 text-center font-bold text-emerald-800">Usable (Warehouse Stock) *</th>
-                    <th className="px-3 py-2.5 text-center font-bold text-amber-700">Damaged (Quarantine) *</th>
-                    <th className="px-3 py-2.5 text-center font-bold text-rose-700">Missing (Loss Recovery) *</th>
+                    <th className="px-3 py-2.5 text-center font-bold text-amber-700">Damage Material *</th>
+                    <th className="px-3 py-2.5 text-center font-bold text-rose-700">Missing Material *</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-mono">

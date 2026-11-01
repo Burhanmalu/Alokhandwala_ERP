@@ -51,6 +51,8 @@ export class InventoryService {
     advancePercentage?: number;
     advanceRequiredAmount?: number;
     completionDueAmount?: number;
+    clientAccepted?: boolean;
+    clientAcceptanceVerified?: boolean;
     actorId: string;
     actorName: string;
   }): Promise<{ project: Project; transaction: InventoryTransaction }> {
@@ -58,8 +60,48 @@ export class InventoryService {
       const project = state.projects.find(p => p.id === data.projectId);
       if (!project) throw new Error('Project not found');
 
-      if (project.status !== 'NOT_INSTALLED' && project.status !== 'QUOTATION_ACCEPTED' && project.status !== 'SITE_CREATED') {
-        throw new Error(`Cannot confirm project in status ${project.status}. Must have an accepted quotation or be in NOT_INSTALLED status.`);
+      // Prevent duplicate reservations
+      if (project.status === 'CONFIRMED_PROJECT' || project.status === 'SCHEDULED' || project.status === 'INSTALLED' || project.status === 'ACTIVE_RENTAL') {
+        throw new Error(`Project is already confirmed or active (${project.status}). Duplicate reservation is prevented.`);
+      }
+
+      // Prevent confirmation if quotation was rejected
+      if (project.status === 'QUOTATION_REJECTED') {
+        throw new Error('Cannot confirm project with a rejected quotation. Quotation must be revised and accepted first.');
+      }
+
+      // Enforce quotation acceptance: only Quotation Accepted can proceed to Confirmation & Plan
+      if ((project.status === 'QUOTATION_DRAFT' || project.status === 'QUOTATION_SENT') && !data.clientAccepted && !data.clientAcceptanceVerified) {
+        throw new Error('Client quotation acceptance is required before final project confirmation. Only quotations with status "Quotation Accepted" can proceed to Project Confirmation & Plan.');
+      }
+
+      // If client acceptance was verified on confirmation, promote to QUOTATION_ACCEPTED
+      if ((project.status === 'QUOTATION_DRAFT' || project.status === 'QUOTATION_SENT') && (data.clientAccepted || data.clientAcceptanceVerified)) {
+        const now = new Date().toISOString();
+        project.status = 'QUOTATION_ACCEPTED';
+        project.quotationStatus = 'ACCEPTED';
+        project.approval_status = 'ACCEPTED';
+        project.approved_at = now;
+        project.approved_by = data.actorId;
+        project.approvedByName = data.actorName;
+        const linkedQ = state.quotations.find(q => q.id === project.quotationId || q.projectId === project.id);
+        if (linkedQ) {
+          linkedQ.status = 'ACCEPTED';
+          linkedQ.approval_status = 'ACCEPTED';
+          linkedQ.approved_at = now;
+          linkedQ.approved_by = data.actorId;
+          linkedQ.approvedByName = data.actorName;
+        }
+      }
+
+      if (
+        project.status !== 'NOT_INSTALLED' && 
+        project.status !== 'SITE_CREATED' && 
+        project.status !== 'QUOTATION_ACCEPTED' && 
+        project.status !== 'QUOTATION_DRAFT' && 
+        project.status !== 'QUOTATION_SENT'
+      ) {
+        throw new Error(`Cannot confirm project in status ${project.status}. Must be in an eligible quotation or unconfirmed status.`);
       }
 
       // Check stock availability for all requested items
@@ -155,12 +197,20 @@ export class InventoryService {
       if (data.siteDimensions) project.siteDimensions = data.siteDimensions;
       project.updatedAt = new Date().toISOString();
 
+      // Automatically sync and accept linked quotation record if pending
+      const linkedQuotation = state.quotations.find(q => q.projectId === project.id || (project.quotationId && q.id === project.quotationId));
+      if (linkedQuotation && (linkedQuotation.status === 'DRAFT' || linkedQuotation.status === 'SENT')) {
+        linkedQuotation.status = 'ACCEPTED';
+        linkedQuotation.acceptedAt = new Date().toISOString();
+      }
+      project.quotationStatus = 'ACCEPTED';
+
       // Record immutable inventory transaction
       const transaction: InventoryTransaction = {
         id: `txn-${Date.now()}`,
         transactionNumber: txnNumber,
         movementType: 'RESERVATION',
-        sourceLocation: 'Taloja Central Scaffolding Yard',
+        sourceLocation: 'Indore Central Scaffolding Yard',
         destinationLocation: project.siteName,
         projectId: project.id,
         projectCode: project.projectCode,
@@ -242,7 +292,7 @@ export class InventoryService {
         transactionNumber: txnNumber,
         movementType: 'RESERVATION_RELEASE',
         sourceLocation: project.siteName,
-        destinationLocation: 'Taloja Central Scaffolding Yard',
+        destinationLocation: 'Indore Central Scaffolding Yard',
         projectId: project.id,
         projectCode: project.projectCode,
         referenceDocument: project.quotationNumber || 'RELEASE',
@@ -347,7 +397,7 @@ export class InventoryService {
         id: `txn-${Date.now()}`,
         transactionNumber: txnNumber,
         movementType: 'RESERVATION',
-        sourceLocation: 'Taloja Central Scaffolding Yard',
+        sourceLocation: 'Indore Central Scaffolding Yard',
         destinationLocation: project.siteName,
         projectId: project.id,
         projectCode: project.projectCode,
@@ -534,7 +584,7 @@ export class InventoryService {
         id: `txn-${Date.now()}`,
         transactionNumber: txnNumber,
         movementType: 'MATERIAL_ISSUE_DISPATCH',
-        sourceLocation: 'Taloja Central Scaffolding Yard',
+        sourceLocation: 'Indore Central Scaffolding Yard',
         destinationLocation: project.siteName,
         projectId: project.id,
         projectCode: project.projectCode,
@@ -675,7 +725,7 @@ export class InventoryService {
             id: `txn-${Date.now()}`,
             transactionNumber: txnNumber,
             movementType: 'SITE_TO_SITE_TRANSFER',
-            sourceLocation: 'Taloja Central Scaffolding Yard',
+            sourceLocation: 'Indore Central Scaffolding Yard',
             destinationLocation: data.destinationAreaDescription,
             projectId: project.id,
             projectCode: project.projectCode,

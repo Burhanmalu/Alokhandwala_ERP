@@ -20,7 +20,7 @@ import { OFFICIAL_TERMS_AND_CONDITIONS } from '../constants/terms-and-conditions
 export const initialCompanySettings: CompanySettings = {
   companyName: 'Alokhandwala',
   gstin: '23AABCA1234F1Z5',
-  pan: 'AABCA1234F',
+  pan: '',
   address: '4th Floor, Office No. 401 Sapphire Square Tower, Square Indore, Madhya Pradesh (MP), India',
   state: 'Madhya Pradesh',
   stateCode: '23',
@@ -70,10 +70,10 @@ export const initialUsers: UserProfile[] = [
 export const initialWarehouses: Warehouse[] = [
   {
     id: 'wh-01',
-    code: 'WH-TALOJA',
-    name: 'Taloja Central Scaffolding Yard',
-    address: 'Plot 42, MIDC Taloja, Navi Mumbai',
-    city: 'Navi Mumbai',
+    code: 'WH-INDORE',
+    name: 'Indore Central Scaffolding Yard',
+    address: 'Sanwer Road Industrial Area, Indore',
+    city: 'Indore',
     contactPerson: 'Ibrahim Vasi',
     contactPhone: '+91 98200 55555',
     isPrimary: true,

@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { Customer } from '@/lib/schema';
 import { formatINR, formatDate } from '@/lib/formatters';
+import { isValidGSTIN } from '@/lib/validations';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/auth-context';
 
@@ -58,14 +59,25 @@ export default function CustomersPage() {
   const [referenceName, setReferenceName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [billingAddress, setBillingAddress] = useState('');
-  const [city, setCity] = useState('Mumbai');
-  const [state, setState] = useState('Maharashtra');
+  const [hasGst, setHasGst] = useState(false);
   const [gstin, setGstin] = useState('');
-  const [creditLimit, setCreditLimit] = useState<number>(500000);
+  const [gstError, setGstError] = useState<string | null>(null);
+  const [billingAddress, setBillingAddress] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const validateGst = (val: string) => {
+    if (!val || !val.trim()) {
+      setGstError('GSTIN is required when GST Number is selected');
+      return false;
+    }
+    if (!isValidGSTIN(val)) {
+      setGstError('Invalid 15-character Indian GSTIN format (e.g. 23AAACT1234F1Z9)');
+      return false;
+    }
+    setGstError(null);
+    return true;
+  };
 
   useEffect(() => {
     if (currentUser && currentUser.role !== 'ADMIN') {
@@ -97,9 +109,20 @@ export default function CustomersPage() {
     e.preventDefault();
     setFormError(null);
 
-    if (!companyName.trim() || !contactPerson.trim() || !phone.trim() || !email.trim() || !billingAddress.trim()) {
+    if (!companyName.trim() || !contactPerson.trim() || !phone.trim() || !billingAddress.trim()) {
       setFormError('Please fill in all mandatory fields.');
       return;
+    }
+
+    if (hasGst) {
+      if (!gstin.trim()) {
+        setFormError('Please enter client GST Number or uncheck the GST Number option.');
+        return;
+      }
+      if (!isValidGSTIN(gstin)) {
+        setFormError('Please enter a valid 15-character Indian GSTIN or uncheck the GST Number option.');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -112,12 +135,11 @@ export default function CustomersPage() {
           referenceName: referenceName.trim() || undefined,
           contactPerson: contactPerson.trim(),
           phone: phone.trim(),
-          email: email.trim(),
+          email: '',
           billingAddress: billingAddress.trim(),
-          city: city.trim() || 'Mumbai',
-          state: state.trim() || 'Maharashtra',
-          gstin: gstin.trim().toUpperCase() || undefined,
-          creditLimit: Number(creditLimit) || 500000,
+          city: 'Indore',
+          state: 'Madhya Pradesh',
+          gstin: hasGst && gstin.trim() ? gstin.trim().toUpperCase() : 'N/A',
           actorId: currentUser?.id,
           actorName: currentUser?.fullName,
         }),
@@ -131,10 +153,10 @@ export default function CustomersPage() {
         setReferenceName('');
         setContactPerson('');
         setPhone('');
-        setEmail('');
         setBillingAddress('');
+        setHasGst(false);
         setGstin('');
-        setCreditLimit(500000);
+        setGstError(null);
       } else {
         setFormError(json.error || 'Failed to create customer');
       }
@@ -152,10 +174,6 @@ export default function CustomersPage() {
 
   const totalActiveRentals = useMemo(() => {
     return customers.reduce((acc, c) => acc + (c.activeRentalsCount || 0), 0);
-  }, [customers]);
-
-  const totalCreditLimit = useMemo(() => {
-    return customers.reduce((acc, c) => acc + (c.creditLimit || 0), 0);
   }, [customers]);
 
   // Filtering and Sorting
@@ -215,15 +233,11 @@ export default function CustomersPage() {
       'Reference Name',
       'Contact Person',
       'Phone',
-      'Email',
       'GSTIN',
-      'City',
-      'State',
       'Sites Count',
       'Projects Count',
       'Active Rentals',
       'Outstanding Balance (INR)',
-      'Credit Limit (INR)',
       'Status'
     ];
 
@@ -233,15 +247,11 @@ export default function CustomersPage() {
       `"${(c.referenceName || '').replace(/"/g, '""')}"`,
       `"${c.contactPerson.replace(/"/g, '""')}"`,
       `"${c.phone}"`,
-      `"${c.email || ''}"`,
-      `"${c.gstin || ''}"`,
-      `"${c.city || ''}"`,
-      `"${c.state || ''}"`,
+      `"${c.gstin || 'N/A'}"`,
       c.sitesCount || 0,
       c.projectsCount || 0,
       c.activeRentalsCount || 0,
       c.outstandingBalance || 0,
-      c.creditLimit || 0,
       c.status || 'ACTIVE'
     ]);
 
@@ -363,17 +373,17 @@ export default function CustomersPage() {
 
         <div className="bg-white border border-[#e8decb] rounded-lg p-3.5 shadow-2xs hover:border-[#c79e7c] transition-colors">
           <div className="flex items-center justify-between text-xs text-[#7d6553] mb-1">
-            <span className="font-medium text-[11px] uppercase tracking-wider">Credit Approved</span>
+            <span className="font-medium text-[11px] uppercase tracking-wider">Total Sites</span>
             <div className="w-6 h-6 rounded-md bg-[#faf6ee] border border-[#ebdcc9] flex items-center justify-center text-[#8c5e39]">
-              <CreditCard className="w-3.5 h-3.5" />
+              <MapPin className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-xl font-bold font-mono text-[#5c3e24] mt-0.5">
-            {formatCompactINR(totalCreditLimit)}
+            {customers.reduce((acc, c) => acc + (c.sitesCount || 0), 0)}
           </div>
           <div className="text-[11px] text-[#9c826e] mt-1 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#8c5e39]"></span>
-            <span>Total fleet credit limit</span>
+            <span>Client project locations</span>
           </div>
         </div>
       </div>
@@ -599,26 +609,6 @@ export default function CustomersPage() {
                         {c.phone}
                       </a>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-3.5 h-3.5 text-[#9c826e] shrink-0" />
-                      {c.email ? (
-                        <a 
-                          href={`mailto:${c.email}`} 
-                          className="truncate hover:text-[#8c5e39] hover:underline"
-                          title="Click to compose email"
-                        >
-                          {c.email}
-                        </a>
-                      ) : (
-                        <span className="text-[#9c826e] italic">No email on record</span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-[#9c826e] shrink-0" />
-                      <span className="truncate">{c.city || 'Mumbai'}, {c.state || 'Maharashtra'}</span>
-                    </div>
                   </div>
                 </div>
 
@@ -685,11 +675,10 @@ export default function CustomersPage() {
                   <th className="px-4 py-2.5">Code</th>
                   <th className="px-4 py-2.5">Company & Division</th>
                   <th className="px-4 py-2.5">Contact Person</th>
-                  <th className="px-4 py-2.5">Phone & Email</th>
-                  <th className="px-4 py-2.5">Location & GST</th>
+                  <th className="px-4 py-2.5">Phone</th>
+                  <th className="px-4 py-2.5">Billing Address & GST</th>
                   <th className="px-4 py-2.5 text-center">Engagements</th>
                   <th className="px-4 py-2.5 text-right">Outstanding</th>
-                  <th className="px-4 py-2.5 text-right">Credit Limit</th>
                   <th className="px-4 py-2.5 text-center">Status</th>
                   <th className="px-4 py-2.5 text-center">Actions</th>
                 </tr>
@@ -734,17 +723,14 @@ export default function CustomersPage() {
                         <div className="font-mono text-[11px] text-[#4d301c]">
                           <a href={`tel:${c.phone}`} className="hover:text-[#8c5e39] hover:underline">{c.phone}</a>
                         </div>
-                        <div className="text-[10px] text-[#7d6553] truncate max-w-[160px]">
-                          {c.email || '—'}
-                        </div>
                       </td>
 
                       <td className="px-4 py-2.5">
-                        <div className="text-[#24160c]">{c.city || 'Mumbai'}, {c.state || 'Maharashtra'}</div>
-                        {c.gstin ? (
+                        <div className="text-[#24160c] truncate max-w-[200px]" title={c.billingAddress}>{c.billingAddress}</div>
+                        {c.gstin && c.gstin !== 'N/A' ? (
                           <div className="font-mono text-[10px] text-[#59371d] font-semibold">{c.gstin}</div>
                         ) : (
-                          <div className="text-[10px] text-[#9c826e] italic">No GSTIN</div>
+                          <div className="text-[10px] text-[#9c826e] font-mono">GST: N/A</div>
                         )}
                       </td>
 
@@ -760,10 +746,6 @@ export default function CustomersPage() {
 
                       <td className={`px-4 py-2.5 text-right font-mono font-bold ${hasOutstanding ? 'text-amber-800' : 'text-[#24160c]'}`}>
                         {formatINR(c.outstandingBalance || 0).replace(/\.00$/, '')}
-                      </td>
-
-                      <td className="px-4 py-2.5 text-right font-mono text-[#574830]">
-                        {formatCompactINR(c.creditLimit || 0)}
                       </td>
 
                       <td className="px-4 py-2.5 text-center">
@@ -837,16 +819,12 @@ export default function CustomersPage() {
             {/* Dossier Body */}
             <div className="space-y-3.5 text-xs">
               {/* Financial Snapshot Strip */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#faf6ee] p-3 rounded-md border border-[#ebdcc9] text-center font-mono">
+              <div className="grid grid-cols-3 gap-2 bg-[#faf6ee] p-3 rounded-md border border-[#ebdcc9] text-center font-mono">
                 <div>
                   <div className="text-[10px] text-[#7d6553] font-sans">Outstanding Balance</div>
                   <div className={`font-bold text-sm mt-0.5 ${(selectedCustomer.outstandingBalance || 0) > 0 ? 'text-amber-800' : 'text-[#24160c]'}`}>
                     {formatINR(selectedCustomer.outstandingBalance || 0)}
                   </div>
-                </div>
-                <div>
-                  <div className="text-[10px] text-[#7d6553] font-sans">Credit Limit</div>
-                  <div className="font-bold text-sm text-[#24160c] mt-0.5">{formatINR(selectedCustomer.creditLimit || 0)}</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-[#7d6553] font-sans">Active Site Rentals</div>
@@ -877,12 +855,6 @@ export default function CustomersPage() {
                         {selectedCustomer.phone}
                       </a>
                     </div>
-                    <div>
-                      <span className="text-[#9c826e] block text-[10px]">Email Address:</span>
-                      <a href={`mailto:${selectedCustomer.email}`} className="text-[#8c5e39] hover:underline">
-                        {selectedCustomer.email || '—'}
-                      </a>
-                    </div>
                     {selectedCustomer.referenceName && (
                       <div>
                         <span className="text-[#9c826e] block text-[10px]">Internal Reference / Division:</span>
@@ -901,17 +873,13 @@ export default function CustomersPage() {
                   <div className="space-y-1.5 text-[#574830]">
                     <div>
                       <span className="text-[#9c826e] block text-[10px]">GSTIN Registration:</span>
-                      {selectedCustomer.gstin ? (
+                      {selectedCustomer.gstin && selectedCustomer.gstin !== 'N/A' ? (
                         <span className="font-mono font-bold text-[#59371d] bg-[#faf6ee] px-1.5 py-0.5 rounded border border-[#ebdcc9]">
                           {selectedCustomer.gstin}
                         </span>
                       ) : (
-                        <span className="text-[#9c826e] italic">Unregistered Commercial Client</span>
+                        <span className="font-mono text-[#9c826e] font-semibold">N/A</span>
                       )}
-                    </div>
-                    <div>
-                      <span className="text-[#9c826e] block text-[10px]">City & State:</span>
-                      <span className="text-[#24160c]">{selectedCustomer.city || 'Mumbai'}, {selectedCustomer.state || 'Maharashtra'}</span>
                     </div>
                     <div>
                       <span className="text-[#9c826e] block text-[10px]">Registered Billing Address:</span>
@@ -981,47 +949,31 @@ export default function CustomersPage() {
             )}
 
             <form onSubmit={handleCreateCustomer} className="space-y-3 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="block font-semibold text-[#24160c] mb-1">
-                    Company / Contractor Legal Name <span className="text-rose-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Shapoorji Pallonji Real Estate"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    required
-                    className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none font-medium text-[#24160c]"
-                  />
-                </div>
+              <div>
+                <label className="block font-semibold text-[#24160c] mb-1">
+                  Company / Contractor Legal Name <span className="text-rose-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Shapoorji Pallonji Real Estate"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  required
+                  className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none font-medium text-[#24160c]"
+                />
+              </div>
 
-                <div>
-                  <label className="block font-semibold text-[#24160c] mb-1">
-                    Internal Reference / Division Tag
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Commercial Division"
-                    value={referenceName}
-                    onChange={(e) => setReferenceName(e.target.value)}
-                    className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-[#24160c] mb-1">
-                    GSTIN (15 Characters)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 27AAACT1234F1Z9"
-                    value={gstin}
-                    onChange={(e) => setGstin(e.target.value)}
-                    maxLength={15}
-                    className="w-full p-2 border border-[#d8c8b4] rounded-md uppercase font-mono text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
-                  />
-                </div>
+              <div>
+                <label className="block font-semibold text-[#24160c] mb-1">
+                  Internal Reference / Division Tag
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Commercial Division"
+                  value={referenceName}
+                  onChange={(e) => setReferenceName(e.target.value)}
+                  className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1053,55 +1005,55 @@ export default function CustomersPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-[#24160c] mb-1">
-                    Email Address <span className="text-rose-600">*</span>
+              {/* GST Number Checkbox & Conditional Input */}
+              <div className="p-3 bg-[#faf6ee]/60 border border-[#ebdcc9] rounded-md space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={hasGst}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setHasGst(checked);
+                        if (!checked) {
+                          setGstError(null);
+                        } else if (gstin && gstin !== 'N/A') {
+                          validateGst(gstin);
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-[#d6c7b2] text-[#8f6541] focus:ring-[#8f6541] accent-[#8f6541]"
+                    />
+                    <span className="font-semibold text-[#24160c]">GST Number</span>
                   </label>
-                  <input
-                    type="email"
-                    placeholder="e.g. accounts@contractor.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
-                  />
+                  <span className="text-[11px] font-mono font-medium text-[#7d6553]">
+                    {hasGst ? 'GST Registered' : 'N/A'}
+                  </span>
                 </div>
-                <div>
-                  <label className="block font-semibold text-[#24160c] mb-1">
-                    Credit Limit (INR)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="500000"
-                    value={creditLimit}
-                    onChange={(e) => setCreditLimit(Number(e.target.value))}
-                    min={0}
-                    step={50000}
-                    className="w-full p-2 border border-[#d8c8b4] rounded-md font-mono text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-[#24160c] mb-1">City</label>
-                  <input
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-[#24160c] mb-1">State</label>
-                  <input
-                    type="text"
-                    value={state}
-                    onChange={(e) => setState(e.target.value)}
-                    className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
-                  />
-                </div>
+                {hasGst && (
+                  <div className="space-y-1 pt-1">
+                    <label className="block text-[11px] font-semibold text-[#24160c]">
+                      GSTIN (15 Characters) <span className="text-rose-600">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 23AAACT1234F1Z9"
+                      value={gstin}
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15);
+                        setGstin(val);
+                        validateGst(val);
+                      }}
+                      maxLength={15}
+                      className={`w-full p-2 border rounded-md uppercase font-mono text-xs bg-white focus:outline-none text-[#24160c] ${
+                        gstError ? 'border-rose-400 focus:border-rose-500' : 'border-[#d8c8b4] focus:border-[#8c5e39]'
+                      }`}
+                    />
+                    {gstError && (
+                      <span className="text-[11px] text-rose-600 block">{gstError}</span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>

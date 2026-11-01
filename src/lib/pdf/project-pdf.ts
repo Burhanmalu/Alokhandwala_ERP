@@ -4,7 +4,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Project, Customer, Site, Quotation } from '@/lib/schema';
-import { formatDate } from '@/lib/formatters';
+import { formatDate, extractProjectDimensions } from '@/lib/formatters';
 import { OFFICIAL_TERMS_AND_CONDITIONS, BusinessTerm } from '@/lib/constants/terms-and-conditions';
 
 export type ProjectWithRelations = Project & {
@@ -17,11 +17,9 @@ const COMPANY = {
   name: 'ALOKHANDWALA',
   division: 'Scaffolding & Heavy Shoring Solutions Division',
   office: '4th Floor, Office No. 401 Sapphire Square Tower, Square Indore, MP, India',
-  yard: 'Taloja Central Scaffolding Yard, Navi Mumbai / Maharashtra',
   phone: '+91 8818852722',
   email: 'alokhandwala.sh@gmail.com',
   gstin: '23AABCA1234F1Z5',
-  pan: 'AABCA1234F',
 };
 
 // Premium Corporate Color Palette
@@ -141,7 +139,8 @@ async function drawCorporateHeader(
   documentTitle: string,
   badgeText: string,
   docNumber: string,
-  docDate: string
+  docDate: string,
+  companyGstNumber?: string | null
 ): Promise<number> {
   const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -181,12 +180,16 @@ async function drawCorporateHeader(
   doc.setFontSize(6.8);
   doc.setTextColor(...COLORS.textMuted);
   doc.text(COMPANY.office, 50, headerStartY + 10.5);
-  doc.text(`Yard: ${COMPANY.yard}  |  Ph: ${COMPANY.phone}  |  ${COMPANY.email}`, 50, headerStartY + 14);
+  doc.text(`Ph: ${COMPANY.phone}  |  Email: ${COMPANY.email}`, 50, headerStartY + 14);
+
+  const resolvedCompanyGst = companyGstNumber !== undefined
+    ? (companyGstNumber && companyGstNumber !== 'N/A' ? companyGstNumber : 'N/A')
+    : (COMPANY.gstin || 'N/A');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7);
   doc.setTextColor(...COLORS.secondary);
-  doc.text(`GSTIN: ${COMPANY.gstin}   |   PAN: ${COMPANY.pan}`, 50, headerStartY + 17.5);
+  doc.text(`GSTIN: ${resolvedCompanyGst}`, 50, headerStartY + 17.5);
 
   // Right: Document Badge & Reference Numbers
   const badgeWidth = 62;
@@ -255,7 +258,8 @@ function renderLogoFallback(doc: jsPDF, x: number, y: number) {
 function drawPartyDetailsCard(
   doc: jsPDF,
   startY: number,
-  project: ProjectWithRelations
+  project: ProjectWithRelations,
+  quotation?: Quotation | null
 ): number {
   const pageWidth = doc.internal.pageSize.getWidth();
   const cardWidth = (pageWidth - 28 - 6) / 2; // 88mm each
@@ -296,9 +300,11 @@ function drawPartyDetailsCard(
   const phone = project.customer?.phone || 'N/A';
   doc.text(`Contact: ${contactPerson}  |  ${phone}`, leftX + 4, startY + 15);
 
-  // Email
-  const email = project.customer?.email || 'N/A';
-  doc.text(`Email: ${email}`, leftX + 4, startY + 19);
+  // Reference / Contact info (Cleanly handling optional email)
+  const refInfo = (project.customer?.email && project.customer.email !== 'N/A')
+    ? `Email: ${project.customer.email}`
+    : (project.customer?.referenceName ? `Ref / Division: ${project.customer.referenceName}` : 'Account: Active Corporate Client');
+  doc.text(refInfo, leftX + 4, startY + 19);
 
   // Billing Address (Auto-wrapped, 2 lines max)
   const rawAddress = project.customer?.billingAddress || project.siteAddress || 'N/A';
@@ -311,7 +317,18 @@ function drawPartyDetailsCard(
   doc.line(leftX + 4, startY + 31.5, leftX + cardWidth - 4, startY + 31.5);
 
   // GSTIN & Customer Code
-  const gstin = project.customer?.gstin ? `GSTIN: ${project.customer.gstin}` : 'GSTIN: Unregistered / N/A';
+  const hasClientGst = quotation?.hasClientGst !== undefined
+    ? quotation.hasClientGst
+    : (project.hasClientGst !== undefined
+      ? project.hasClientGst
+      : (project.clientGstNumber ? project.clientGstNumber !== 'N/A' : Boolean(project.customer?.gstin && project.customer.gstin !== 'N/A')));
+
+  const rawClientGst = quotation?.clientGstNumber || project.clientGstNumber || project.customer?.gstin;
+  const clientGstText = (!hasClientGst || !rawClientGst || rawClientGst === 'N/A')
+    ? 'N/A'
+    : rawClientGst;
+
+  const gstin = `GSTIN: ${clientGstText}`;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
   doc.setTextColor(...COLORS.primary);
@@ -396,8 +413,8 @@ function drawPartyDetailsCard(
  * Draws Document Running Footers and Page Numbers on all pages
  */
 function applyFooters(doc: jsPDF, docCode: string, docType: string) {
-  const totalPages = typeof (doc as any).getNumberOfPages === 'function' 
-    ? (doc as any).getNumberOfPages() 
+  const totalPages = typeof (doc as any).getNumberOfPages === 'function'
+    ? (doc as any).getNumberOfPages()
     : (doc.internal as any).getNumberOfPages();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -468,9 +485,9 @@ export async function generateConfirmationPdf(project: ProjectWithRelations): Pr
   doc.setTextColor(...COLORS.secondary);
   doc.text('PROJECT SPECIFICATIONS & SCOPE OF RESERVATION', 18, currentY + 4);
 
-  const dims = project.siteDimensions || project.measurements || { length: 0, width: 0, height: 0, unit: 'METERS' };
-  const dimText = `${dims.length || 0}m (L) × ${dims.width || 0}m (W) × ${dims.height || 0}m (H)`;
-  const scafType = project.siteDimensions?.configurationType 
+  const extracted = extractProjectDimensions(project);
+  const dimText = extracted.formattedDimensions;
+  const scafType = project.siteDimensions?.configurationType
     ? project.siteDimensions.configurationType.replace(/_/g, ' ')
     : (project.measurements?.measurementType ? project.measurements.measurementType.replace(/_/g, ' ') : 'Cup-Lock Façade Scaffold');
 
@@ -901,7 +918,7 @@ export async function generateInstallationPdf(project: ProjectWithRelations): Pr
 
   // Right Column: Erection Crew Summary
   const workers = project.installationWorkers || [];
-  const crewText = workers.length > 0 
+  const crewText = workers.length > 0
     ? workers.map(w => `${w.name} (${w.role || 'Scaffolder'})`).join(', ')
     : 'Certified Riggers & Erections Crew';
 
@@ -952,7 +969,8 @@ export async function generateInstallationPdf(project: ProjectWithRelations): Pr
   doc.text('Confirmed Dimensions:', 18, currentY + 10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...COLORS.textDark);
-  doc.text(`${confDims.length || 0}m (L) × ${confDims.width || 0}m (W) × ${confDims.height || 0}m (H)`, 52, currentY + 10);
+  const extractedAct = extractProjectDimensions(project);
+  doc.text(extractedAct.formattedDimensions, 52, currentY + 10);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...COLORS.textMuted);
@@ -1393,17 +1411,22 @@ export async function buildQuotationPdfDoc(
   const qtnNumber = quotation?.quotationNumber || project.quotationNumber || `QTN-${project.projectCode}`;
   const qtnDate = formatDate(quotation?.quotationDate || project.quotationDate || project.createdAt);
 
+  const resolvedCompanyGst = quotation?.hasCompanyGst === false
+    ? 'N/A'
+    : (quotation?.companyGstNumber || project.companyGstNumber || COMPANY.gstin || 'N/A');
+
   let currentY = await drawCorporateHeader(
     doc,
     logoBase64,
     'OFFICIAL COMMERCIAL SCAFFOLDING QUOTATION',
     'Commercial Quotation',
     qtnNumber,
-    qtnDate
+    qtnDate,
+    resolvedCompanyGst
   );
 
   // Party Details Card
-  currentY = drawPartyDetailsCard(doc, currentY, project);
+  currentY = drawPartyDetailsCard(doc, currentY, project, quotation);
 
   // Specifications Banner (Aligned 2-Column Grid)
   const specBannerHeight = 18;
@@ -1423,9 +1446,10 @@ export async function buildQuotationPdfDoc(
   doc.setTextColor(...COLORS.secondary);
   doc.text('PROJECT SCOPE & SCAFFOLDING SPECIFICATIONS', 18, currentY + 4);
 
-  const dims = quotation?.dimensions || project.siteDimensions || project.measurements || { length: 0, width: 0, height: 0, unit: 'FEET' };
-  const dimText = `${dims.length || 0} (L) × ${dims.width || 0} (W) × ${dims.height || 0} (H) ${dims.unit || 'FT'}`;
-  const areaText = `${quotation?.totalAreaSqFt || project.totalAreaSqFt || 0} Sq. Ft.`;
+  // Safe Dimension Parsing using single source of truth
+  const extractedQtn = extractProjectDimensions(quotation?.dimensions || project);
+  const dimText = extractedQtn.formattedDimensions;
+  const areaText = extractedQtn.formattedArea;
   const scafType = quotation?.scaffoldingType || (project.measurements?.measurementType ? project.measurements.measurementType.replace(/_/g, ' ') : 'Cup-Lock Façade Scaffold');
 
   // Left Column Specifications
@@ -1461,15 +1485,17 @@ export async function buildQuotationPdfDoc(
 
   currentY += specBannerHeight + 4.5;
 
-  // Material Requirements Table
+  // Material Requirements Table with Dynamic Item Totals & Sum
   const materials = (quotation?.materials && quotation.materials.length > 0)
     ? quotation.materials
     : (project.materials || []);
 
+  let itemizedMaterialsTotal = 0;
   const tableRows = materials.map((m: any, index: number) => {
-    const qty = m.quantity || m.requiredQuantity || m.reservedQuantity || 0;
-    const rate = m.monthlyRentalRate || 0;
-    const total = qty * rate;
+    const qty = Number(m.quantity ?? m.requiredQuantity ?? m.reservedQuantity ?? 0);
+    const rate = Number(m.monthlyRentalRate ?? 0);
+    const total = Math.round(qty * rate * 100) / 100;
+    itemizedMaterialsTotal += total;
     return [
       (index + 1).toString(),
       m.itemCode || '-',
@@ -1480,11 +1506,48 @@ export async function buildQuotationPdfDoc(
       formatINR(total),
     ];
   });
+  itemizedMaterialsTotal = Math.round(itemizedMaterialsTotal * 100) / 100;
+
+  const rentMonthly = Number(quotation?.monthlyRentalAmount ?? (project.monthlyRentalRate || 0));
+  const extraJali = Number(quotation?.extraJaliCharges ?? (project.extraJaliCharges || 0));
+  const extraJaliQty = Number(quotation?.extraJaliQuantity ?? (project.extraJaliQuantity || 0));
+  const extraJaliRate = Number(quotation?.extraJaliRate ?? 200);
+  const transport = Number(quotation?.transportCharges ?? (project.transportCharges || 0));
+  const shifting = Number(quotation?.shiftingCharges ?? (project.shiftingCharges || 0));
+  const otherCharges = Number(quotation?.otherCharges || 0);
+
+  // Exact dynamic calculations
+  const dynamicSubtotal = Math.round((rentMonthly + extraJali + transport + shifting + otherCharges) * 100) / 100;
+  const subtotal = quotation?.subtotal ? Number(quotation.subtotal) : dynamicSubtotal;
+
+  const gstPct = Number(quotation?.gstPercentage ?? 18);
+  const dynamicGst = Math.round(subtotal * (gstPct / 100) * 100) / 100;
+  const gst = quotation?.gstAmount ? Number(quotation.gstAmount) : dynamicGst;
+
+  const dynamicGrandTotal = Math.round((subtotal + gst) * 100) / 100;
+  const grandTotal = quotation?.grandTotal ? Number(quotation.grandTotal) : dynamicGrandTotal;
+
+  const advancePct = Number(quotation?.advancePercentage ?? 75);
+  const balancePct = 100 - advancePct;
+  const dynamicAdvance = Math.round(grandTotal * (advancePct / 100) * 100) / 100;
+  const advanceAmount = quotation?.advanceAmount ? Number(quotation.advanceAmount) : dynamicAdvance;
+  const dynamicBalance = Math.round((grandTotal - advanceAmount) * 100) / 100;
+  const balanceAmount = quotation?.remainingAmount ? Number(quotation.remainingAmount) : dynamicBalance;
+
+  const displayRows = tableRows.length > 0
+    ? tableRows
+    : [['1', 'SCF-PKG-01', 'Commercial Elevation Scaffolding Package (Façade & Structural Framework)', 'LOT', '1', formatINR(rentMonthly), formatINR(rentMonthly)]];
 
   autoTable(doc, {
     startY: currentY,
     head: [['#', 'Item SKU', 'Material Description & Specification', 'Unit', 'Required Qty', 'Rate / Month', 'Total Month Rent']],
-    body: tableRows,
+    body: displayRows,
+    foot: tableRows.length > 0 ? [
+      [
+        { content: 'Sum of Itemized Material Rates (Monthly):', colSpan: 6, styles: { halign: 'right' as const, fontStyle: 'bold' as const, textColor: COLORS.primary } },
+        { content: formatINR(itemizedMaterialsTotal), styles: { halign: 'right' as const, fontStyle: 'bold' as const, textColor: COLORS.primary } }
+      ]
+    ] : undefined,
     theme: 'grid',
     headStyles: {
       fillColor: COLORS.primary,
@@ -1501,6 +1564,10 @@ export async function buildQuotationPdfDoc(
       4: { cellWidth: 22, halign: 'right', fontStyle: 'bold' },
       5: { cellWidth: 24, halign: 'right' },
       6: { cellWidth: 26, halign: 'right', fontStyle: 'bold' },
+    },
+    footStyles: {
+      fillColor: COLORS.cardHeaderBg,
+      fontSize: 7.2,
     },
     styles: {
       fontSize: 7,
@@ -1520,9 +1587,54 @@ export async function buildQuotationPdfDoc(
 
   // --- Financial & Commercial Terms Block ---
   const blockWidth = (pageWidth - 28 - 4) / 2;
-  const cardHeight = 44;
 
-  if (currentY + cardHeight + 10 > 270) {
+  // Dynamic Rent Label (Package vs Itemized)
+  let rentLabel = 'Scaffolding Rental / Month:';
+  const totalArea = Number(extractedQtn.elevationAreaSqFt || quotation?.totalAreaSqFt || project.totalAreaSqFt || 0);
+  const rateSqFt = Number(quotation?.ratePerSqFt || 0);
+  const isAreaPackage = totalArea > 0 && rateSqFt > 0 && Math.abs(totalArea * rateSqFt - rentMonthly) < 1;
+  const isItemizedMatch = itemizedMaterialsTotal > 0 && Math.abs(itemizedMaterialsTotal - rentMonthly) < 1;
+
+  if (isAreaPackage) {
+    rentLabel = `Scaffold Rent (${totalArea.toLocaleString('en-IN')} sq.ft @ ${formatINR(rateSqFt)}):`;
+  } else if (isItemizedMatch) {
+    rentLabel = 'Scaffolding Rent (Itemized Total):';
+  } else if (itemizedMaterialsTotal > 0 && Math.abs(itemizedMaterialsTotal - rentMonthly) >= 1) {
+    rentLabel = 'Negotiated Package Rent / Month:';
+  }
+
+  const leftItems: Array<{ label: string; val: string; bold?: boolean }> = [
+    { label: rentLabel, val: formatINR(rentMonthly) },
+  ];
+  if (extraJali > 0 || extraJaliQty > 0) {
+    leftItems.push({
+      label: `Walkway Jali (${extraJaliQty} Nos @ ${formatINR(extraJaliRate)}):`,
+      val: formatINR(extraJali)
+    });
+  }
+  leftItems.push({ label: 'Two-Way Dedicated Transport:', val: formatINR(transport) });
+  if (shifting > 0) {
+    leftItems.push({ label: 'Site Shifting Charges:', val: formatINR(shifting) });
+  }
+  if (otherCharges > 0) {
+    leftItems.push({ label: 'Other Additional Charges:', val: formatINR(otherCharges) });
+  }
+  leftItems.push({ label: 'Subtotal (Excl. Taxes):', val: formatINR(subtotal) });
+  leftItems.push({ label: `Applicable GST (${gstPct}%):`, val: formatINR(gst) });
+  leftItems.push({ label: 'Grand Total Amount:', val: formatINR(grandTotal), bold: true });
+
+  const rightItems = [
+    { label: `Advance Payable (${advancePct}%):`, val: formatINR(advanceAmount), note: 'Prior to material dispatch' },
+    { label: `Completion Balance (${balancePct}%):`, val: formatINR(balanceAmount), note: 'Due on site dismantling & handover' },
+    { label: 'Payment Schedule Split:', val: `${advancePct}% + ${balancePct}% = 100%`, note: 'Strict milestone schedule' },
+    { label: 'Rental Billing Cycle:', val: '28 Calendar Days', note: 'Strict commercial cycle per rental month' },
+    { label: 'Rental Extension Policy:', val: 'Advance Payment', note: 'Payable every 28 days for extensions' },
+    { label: 'Security Deposit Scheme:', val: 'Nil / Guarantees', note: 'Active corporate account guarantee' },
+  ];
+
+  const cardHeight = Math.max(50, Math.max(leftItems.length, rightItems.length) * 5.6 + 9);
+
+  if (currentY + cardHeight + 8 > 272) {
     doc.addPage();
     currentY = 20;
   }
@@ -1543,34 +1655,14 @@ export async function buildQuotationPdfDoc(
   doc.setTextColor(...COLORS.secondary);
   doc.text('COMMERCIAL PRICING BREAKDOWN', 18, currentY + 4);
 
-  const rentMonthly = quotation?.monthlyRentalAmount ?? (project.monthlyRentalRate || 0);
-  const extraJali = quotation?.extraJaliCharges ?? (project.extraJaliCharges || 0);
-  const transport = quotation?.transportCharges ?? (project.transportCharges || 0);
-  const shifting = quotation?.shiftingCharges ?? (project.shiftingCharges || 0);
-  const otherCharges = quotation?.otherCharges || 0;
-  const subtotal = quotation?.subtotal ?? (rentMonthly + extraJali + transport + shifting + otherCharges);
-  const gst = quotation?.gstAmount ?? Math.round(subtotal * 0.18 * 100) / 100;
-  const grandTotal = quotation?.grandTotal ?? (subtotal + gst);
-  const advanceAmount = quotation?.advanceAmount ?? Math.round(grandTotal * 0.75 * 100) / 100;
-  const balanceAmount = quotation?.remainingAmount ?? (grandTotal - advanceAmount);
-
-  const leftItems = [
-    { label: 'Scaffolding Rental / Mo:', val: formatINR(rentMonthly) },
-    { label: 'Extra Jali Charges (Rs.200/pc):', val: formatINR(extraJali) },
-    { label: 'Two-Way Transport Charges:', val: formatINR(transport) },
-    { label: 'Subtotal (Excl. Taxes):', val: formatINR(subtotal) },
-    { label: 'Applicable GST (18%):', val: formatINR(gst) },
-    { label: 'Grand Total Amount:', val: formatINR(grandTotal), bold: true },
-  ];
-
-  let lY = currentY + 9.5;
+  let lY = currentY + 10;
   for (const item of leftItems) {
     doc.setFont('helvetica', item.bold ? 'bold' : 'normal');
     doc.setFontSize(item.bold ? 7.5 : 6.8);
     doc.setTextColor(...(item.bold ? COLORS.primary : COLORS.textDark));
     doc.text(item.label, 18, lY);
     doc.text(item.val, 14 + blockWidth - 4, lY, { align: 'right' });
-    lY += 5.2;
+    lY += 5.4;
   }
 
   // Right Card: Payment Schedule & Billing Policy
@@ -1590,15 +1682,6 @@ export async function buildQuotationPdfDoc(
   doc.setTextColor(...COLORS.secondary);
   doc.text('PAYMENT SCHEDULE & RENTAL TERMS', rightX + 4, currentY + 4);
 
-  const rightItems = [
-    { label: 'Advance Payment (75%):', desc: `${formatINR(advanceAmount)} (Required prior to dispatch)` },
-    { label: 'Completion Balance (25%):', desc: `${formatINR(balanceAmount)} (Due upon site handover)` },
-    { label: 'Billing Schedule:', desc: 'Strict 28 Calendar Days cycle per rental month' },
-    { label: 'Security / Deposit:', desc: 'Zero deposit scheme under active corporate account' },
-    { label: 'Walkway Jali Policy:', desc: '1 included per scaffolding unit; extra @ Rs. 200/pc' },
-    { label: 'Two-Way Transport:', desc: 'Includes delivery to site and return to Taloja yard' },
-  ];
-
   let rY = currentY + 9.5;
   for (const item of rightItems) {
     doc.setFont('helvetica', 'bold');
@@ -1606,13 +1689,28 @@ export async function buildQuotationPdfDoc(
     doc.setTextColor(...COLORS.primary);
     doc.text(item.label, rightX + 4, rY);
 
+    doc.setFont('helvetica', 'bold');
+    doc.text(item.val, rightX + blockWidth - 4, rY, { align: 'right' });
+
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...COLORS.textDark);
-    doc.text(item.desc, rightX + 34, rY);
-    rY += 5.2;
+    doc.setFontSize(5.8);
+    doc.setTextColor(...COLORS.textMuted);
+    doc.text(item.note, rightX + 4, rY + 3.2);
+
+    rY += 6.2;
   }
 
-  currentY += cardHeight + 5;
+  currentY += cardHeight + 3.5;
+
+  // Informative note when negotiated package rate differs from itemized total
+  if (itemizedMaterialsTotal > 0 && Math.abs(itemizedMaterialsTotal - rentMonthly) >= 1) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(6.5);
+    doc.setTextColor(...COLORS.textMuted);
+    const noteText = `* Note: A negotiated elevation area package rental of ${formatINR(rentMonthly)}/month has been applied for this project in lieu of the raw itemized rate sum of ${formatINR(itemizedMaterialsTotal)}.`;
+    doc.text(noteText, 14, currentY);
+    currentY += 4.5;
+  }
 
   // --- Site Inspection Photographs (Site Photos Only) ---
   const quotationPhotos = await loadAndPreparePhotos(project.photos || [], 'CONFIRMATION');
@@ -1627,7 +1725,7 @@ export async function buildQuotationPdfDoc(
   );
 
   // --- Official Business Terms & Conditions ---
-  if (currentY + 110 > 270) {
+  if (currentY + 50 > 272) {
     doc.addPage();
     currentY = 20;
   }
@@ -1643,92 +1741,134 @@ export async function buildQuotationPdfDoc(
   doc.setTextColor(...COLORS.primary);
   doc.text('OFFICIAL BUSINESS TERMS & COMMERCIAL CLAUSES', 18, currentY + 4.5);
 
-  currentY += 8.5;
+  currentY += 9;
 
   for (const t of OFFICIAL_TERMS_AND_CONDITIONS) {
-    if (currentY + 12 > 275) {
+    const bulletX = 16.5;
+    const textX = 20;
+    const maxTextWidth = pageWidth - 14 - textX;
+
+    const fullTermText = `${t.title}: ${t.fullText}`;
+    const wrappedLines = doc.splitTextToSize(fullTermText, maxTextWidth);
+    const blockHeight = wrappedLines.length * 3.5 + 2;
+
+    if (currentY + blockHeight > 272) {
       doc.addPage();
       currentY = 20;
     }
 
     doc.setFillColor(...COLORS.accent);
-    doc.circle(16.5, currentY + 2.2, 0.9, 'F');
+    doc.circle(bulletX, currentY + 2.2, 0.8, 'F');
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(6.8);
     doc.setTextColor(...COLORS.primary);
-    doc.text(`${t.title}: `, 21, currentY + 3);
+    const prefix = `${t.title}: `;
+    const prefixWidth = doc.getTextWidth(prefix);
+    doc.text(prefix, textX, currentY + 2.5);
 
-    const titleWidth = doc.getTextWidth(`${t.title}: `);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.8);
     doc.setTextColor(...COLORS.textDark);
+    const firstLineRest = (wrappedLines[0] || '').substring(prefix.length);
+    doc.text(firstLineRest, textX + prefixWidth, currentY + 2.5);
 
-    const remainingText = doc.splitTextToSize(t.fullText, pageWidth - 28 - 7 - titleWidth);
-    doc.text(remainingText[0] || '', 21 + titleWidth, currentY + 3);
-
-    if (remainingText.length > 1) {
-      const restLines = doc.splitTextToSize(
-        t.fullText.substring((remainingText[0] || '').length).trim(),
-        pageWidth - 28 - 7
-      );
-      doc.text(restLines, 21, currentY + 6.5);
-      currentY += (restLines.length * 3.4);
+    if (wrappedLines.length > 1) {
+      for (let li = 1; li < wrappedLines.length; li++) {
+        doc.text(wrappedLines[li], textX, currentY + 2.5 + (li * 3.5));
+      }
     }
 
-    currentY += 5.5;
+    currentY += blockHeight;
   }
 
   currentY += 3;
 
-  // Authorization & Signatures
-  if (currentY + 34 > 270) {
+  // --- Customer Acceptance & Bilateral Signatures Section ---
+  if (currentY + 42 > 272) {
     doc.addPage();
     currentY = 20;
   }
 
-  const sigHeight = 30;
-  doc.setFillColor(255, 255, 255);
+  const sigBoxHeight = 36;
+  const sigColWidth = (pageWidth - 28 - 6) / 2;
+  const rightSigX = 14 + sigColWidth + 6;
+
+  // Left Box: Client Acceptance
+  doc.setFillColor(...COLORS.cardBg);
   doc.setDrawColor(...COLORS.cardBorder);
   doc.setLineWidth(0.3);
-  doc.roundedRect(14, currentY, blockWidth, sigHeight, 1.5, 1.5, 'FD');
-  doc.roundedRect(rightX, currentY, blockWidth, sigHeight, 1.5, 1.5, 'FD');
+  doc.roundedRect(14, currentY, sigColWidth, sigBoxHeight, 1.5, 1.5, 'FD');
 
-  // Client Acceptance Signature Box
+  doc.setFillColor(...COLORS.cardHeaderBg);
+  doc.roundedRect(14, currentY, sigColWidth, 5.5, 1.5, 1.5, 'F');
+  doc.setDrawColor(...COLORS.cardBorder);
+  doc.line(14, currentY + 5.5, 14 + sigColWidth, currentY + 5.5);
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.2);
   doc.setTextColor(...COLORS.secondary);
-  doc.text('CLIENT QUOTATION ACCEPTANCE & WORK ORDER', 18, currentY + 5);
+  doc.text('CLIENT QUOTATION ACCEPTANCE & WORK ORDER', 18, currentY + 4);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.5);
   doc.setTextColor(...COLORS.textMuted);
-  doc.text(`We confirm acceptance of Quotation ${qtnNumber} and its terms:`, 18, currentY + 9);
+  doc.text(`We confirm acceptance of Quotation ${qtnNumber} and its commercial terms.`, 18, currentY + 9.5);
+
+  const clientCompany = project.customer?.companyName || project.customerName || 'Valued Client';
+  doc.text(`Company: ${clientCompany.slice(0, 38)}`, 18, currentY + 14);
+  doc.text(`Authorized Signatory: ________________________`, 18, currentY + 18.5);
+  doc.text(`Designation:           ________________________`, 18, currentY + 23);
+  doc.text(`Acceptance Date:     ____ / ____ / 2026`, 18, currentY + 27.5);
 
   doc.setDrawColor(...COLORS.cardBorder);
-  doc.line(18, currentY + 22, 14 + blockWidth - 8, currentY + 22);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(6.8);
-  doc.text('Authorized Client Signatory & Company Stamp', 18, currentY + 26);
+  doc.line(18, currentY + 31.5, 14 + sigColWidth - 4, currentY + 31.5);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(6);
+  doc.setTextColor(...COLORS.textMuted);
+  doc.text('Authorized Signature & Company Seal / Stamp', 18, currentY + 34.5);
 
-  // ALOKHANDWALA Authorized Signatory
+  // Right Box: Alokhandwala Authorized Signatory
+  doc.setFillColor(...COLORS.cardBg);
+  doc.setDrawColor(...COLORS.cardBorder);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(rightSigX, currentY, sigColWidth, sigBoxHeight, 1.5, 1.5, 'FD');
+
+  doc.setFillColor(...COLORS.cardHeaderBg);
+  doc.roundedRect(rightSigX, currentY, sigColWidth, 5.5, 1.5, 1.5, 'F');
+  doc.setDrawColor(...COLORS.cardBorder);
+  doc.line(rightSigX, currentY + 5.5, rightSigX + sigColWidth, currentY + 5.5);
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.2);
   doc.setTextColor(...COLORS.secondary);
-  doc.text('FOR ALOKHANDWALA (AUTHORIZED SIGNATORY)', rightX + 4, currentY + 5);
+  doc.text('FOR ALOKHANDWALA (AUTHORIZED ISSUER)', rightSigX + 4, currentY + 4);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.5);
   doc.setTextColor(...COLORS.textMuted);
-  doc.text('Commercial Scaffolding & Engineering Division:', rightX + 4, currentY + 9);
+  doc.text('Commercial Scaffolding & Rental Operations Division:', rightSigX + 4, currentY + 9.5);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(...COLORS.textDark);
+  doc.text('Alokhandwala Scaffolding Enterprise', rightSigX + 4, currentY + 14);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.5);
+  doc.setTextColor(...COLORS.textMuted);
+  const issuer = quotation?.createdByName || project.supervisorName || 'Burhan Malu';
+  doc.text(`Authorized Officer: ${issuer}`, rightSigX + 4, currentY + 18.5);
+  doc.text(`Designation: Commercial Operations Executive`, rightSigX + 4, currentY + 23);
+  doc.text(`Issue Date: ${qtnDate}`, rightSigX + 4, currentY + 27.5);
 
   doc.setDrawColor(...COLORS.cardBorder);
-  doc.line(rightX + 4, currentY + 22, rightX + blockWidth - 8, currentY + 22);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(6.8);
-  doc.text('Authorized Commercial Officer Signature', rightX + 4, currentY + 26);
+  doc.line(rightSigX + 4, currentY + 31.5, rightSigX + sigColWidth - 4, currentY + 31.5);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(6);
+  doc.setTextColor(...COLORS.textMuted);
+  doc.text('Digital Enterprise Record • Authorized Issuer Signature', rightSigX + 4, currentY + 34.5);
 
-  // Apply Running Footers
+  // Apply Running Footers on all pages
   applyFooters(doc, qtnNumber, 'Commercial Quotation');
 
   return doc;

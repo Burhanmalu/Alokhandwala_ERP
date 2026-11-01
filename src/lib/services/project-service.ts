@@ -1,14 +1,14 @@
 // ALOKHANDWALA - Project Lifecycle & State Machine Service
 
 import { dbStore } from '../db/store';
-import { Project, ProjectStatus, SiteMeasurement, FileAttachment } from '../schema';
+import { Project, ProjectStatus, SiteMeasurement, FileAttachment, InventoryTransaction } from '../schema';
 import { calculateScaffoldingArea } from '../formatters';
 
 export const VALID_STATUS_TRANSITIONS: Record<ProjectStatus, ProjectStatus[]> = {
-  SITE_CREATED: ['QUOTATION_DRAFT', 'QUOTATION_SENT', 'NOT_INSTALLED', 'CANCELLED'],
+  SITE_CREATED: ['QUOTATION_DRAFT', 'QUOTATION_SENT', 'NOT_INSTALLED', 'CONFIRMED_PROJECT', 'CANCELLED'],
   NOT_INSTALLED: ['QUOTATION_DRAFT', 'QUOTATION_SENT', 'QUOTATION_ACCEPTED', 'CONFIRMED_PROJECT', 'CANCELLED'],
-  QUOTATION_DRAFT: ['QUOTATION_SENT', 'QUOTATION_ACCEPTED', 'QUOTATION_REJECTED', 'CANCELLED'],
-  QUOTATION_SENT: ['QUOTATION_ACCEPTED', 'QUOTATION_REJECTED', 'QUOTATION_DRAFT', 'CANCELLED'],
+  QUOTATION_DRAFT: ['QUOTATION_SENT', 'QUOTATION_ACCEPTED', 'CONFIRMED_PROJECT', 'QUOTATION_REJECTED', 'CANCELLED'],
+  QUOTATION_SENT: ['QUOTATION_ACCEPTED', 'CONFIRMED_PROJECT', 'QUOTATION_REJECTED', 'QUOTATION_DRAFT', 'CANCELLED'],
   QUOTATION_ACCEPTED: ['CONFIRMED_PROJECT', 'QUOTATION_DRAFT', 'CANCELLED'],
   QUOTATION_REJECTED: ['QUOTATION_DRAFT', 'CANCELLED'],
   CONFIRMED_PROJECT: ['SCHEDULED', 'INSTALLED', 'ACTIVE_RENTAL', 'CANCELLED', 'NOT_INSTALLED', 'QUOTATION_ACCEPTED'],
@@ -66,11 +66,18 @@ export class ProjectService {
     longitude?: number;
     locationType?: 'ON_SITE' | 'NOT_ON_SITE';
     locationAccuracyMeters?: number;
+    houseNumber?: string;
+    street?: string;
+    locality?: string;
+    pincode?: string;
+    isLocationConfirmed?: boolean;
     landmark?: string;
     city?: string;
     state?: string;
     contactPerson?: string;
     contactPhone?: string;
+    hasClientGst?: boolean;
+    clientGstNumber?: string;
     assignedSupervisorId?: string;
     supervisorName?: string;
     measurements: {
@@ -88,6 +95,11 @@ export class ProjectService {
     actorName: string;
   }): Promise<Project> {
     return await dbStore.transaction(async (state) => {
+      const resolvedHasClientGst = Boolean(data.hasClientGst);
+      const resolvedClientGstNumber = resolvedHasClientGst && data.clientGstNumber && data.clientGstNumber !== 'N/A'
+        ? data.clientGstNumber.trim().toUpperCase()
+        : 'N/A';
+
       let customer = data.customerId ? state.customers.find(c => c.id === data.customerId) : undefined;
       if (!customer && data.customerName) {
         customer = state.customers.find(c => c.companyName.toLowerCase() === data.customerName?.trim().toLowerCase());
@@ -100,10 +112,11 @@ export class ProjectService {
             referenceName: data.referralName?.trim() || undefined,
             contactPerson: data.contactPerson?.trim() || data.customerName.trim(),
             phone: data.contactPhone?.trim() || '9820000000',
-            email: `${data.customerName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'client'}@scaffold-client.com`,
+            email: '',
             billingAddress: data.siteAddress.trim(),
-            city: data.city || 'Mumbai',
-            state: data.state || 'Maharashtra',
+            city: data.city || 'Indore',
+            state: data.state || 'Madhya Pradesh',
+            gstin: resolvedHasClientGst && resolvedClientGstNumber !== 'N/A' ? resolvedClientGstNumber : undefined,
             status: 'ACTIVE',
             creditLimit: 500000,
             outstandingBalance: 0,
@@ -118,6 +131,9 @@ export class ProjectService {
       }
       if (!customer) {
         customer = state.customers[0];
+      }
+      if (resolvedHasClientGst && resolvedClientGstNumber !== 'N/A' && !customer.gstin) {
+        customer.gstin = resolvedClientGstNumber;
       }
       if (data.referralName && !customer.referenceName) {
         customer.referenceName = data.referralName.trim();
@@ -146,14 +162,22 @@ export class ProjectService {
           longitude: data.longitude,
           locationType: data.locationType,
           locationAccuracyMeters: data.locationAccuracyMeters,
+          houseNumber: data.houseNumber,
+          street: data.street,
+          locality: data.locality,
+          pincode: data.pincode,
+          isLocationConfirmed: data.isLocationConfirmed !== undefined ? data.isLocationConfirmed : true,
           referralName: data.referralName || customer.referenceName,
           landmark: data.landmark,
-          city: data.city || 'Mumbai',
-          state: data.state || 'Maharashtra',
+          city: data.city || 'Indore',
+          state: data.state || 'Madhya Pradesh',
           contactPerson: data.contactPerson || customer.contactPerson,
           contactPhone: data.contactPhone || customer.phone,
           assignedSupervisorId: supervisor.id,
           supervisorName: supervisor.fullName,
+          hasClientGst: resolvedHasClientGst,
+          clientGstNumber: resolvedClientGstNumber,
+          gstin: resolvedClientGstNumber,
           status: 'ACTIVE',
           createdAt: new Date().toISOString(),
         };
@@ -212,10 +236,19 @@ export class ProjectService {
         longitude: data.longitude,
         locationType: data.locationType,
         locationAccuracyMeters: data.locationAccuracyMeters,
+        houseNumber: data.houseNumber,
+        street: data.street,
+        locality: data.locality,
+        pincode: data.pincode,
+        isLocationConfirmed: data.isLocationConfirmed !== undefined ? data.isLocationConfirmed : true,
         referralName: data.referralName || customer.referenceName,
         assignedSupervisorId: supervisor.id,
         supervisorName: supervisor.fullName,
+        hasClientGst: resolvedHasClientGst,
+        clientGstNumber: resolvedClientGstNumber,
         status: 'NOT_INSTALLED',
+        totalAreaSqFt: areaSqFt,
+        elevationAreaSqFt: areaSqFt,
         pricingModel: 'MONTHLY_RENTAL',
         monthlyRentalRate: 0,
         agreedProjectPrice: 0,
@@ -332,6 +365,152 @@ export class ProjectService {
       });
 
       return project;
+    });
+  }
+
+  /**
+   * Cancel Project in Pre-installation Stage
+   * - Enforces pre-installation only (cannot cancel installed or active rentals)
+   * - Requires mandatory cancellation reason
+   * - Releases active reserved warehouse materials atomically
+   * - Updates project status to CANCELLED and records cancellation metadata
+   * - Cancels linked quotations
+   * - Creates inventory transaction and audit records
+   */
+  public static async cancelProject(data: {
+    projectId: string;
+    reason: string;
+    actorId: string;
+    actorName: string;
+  }): Promise<{ project: Project; releasedMaterialsCount: number; transaction?: InventoryTransaction }> {
+    return await dbStore.transaction(async (state) => {
+      const project = state.projects.find(p => p.id === data.projectId);
+      if (!project) throw new Error(`Project with ID ${data.projectId} not found.`);
+
+      if (project.status === 'CANCELLED') {
+        throw new Error('Project is already cancelled.');
+      }
+
+      if (!data.reason || !data.reason.trim()) {
+        throw new Error('Cancellation reason is mandatory.');
+      }
+
+      const PRE_INSTALLATION_STATUSES: ProjectStatus[] = [
+        'SITE_CREATED',
+        'NOT_INSTALLED',
+        'QUOTATION_DRAFT',
+        'QUOTATION_SENT',
+        'QUOTATION_ACCEPTED',
+        'QUOTATION_REJECTED',
+        'CONFIRMED_PROJECT',
+        'SCHEDULED',
+      ];
+
+      // Restrict cancellation if installation has started or completed
+      if (!PRE_INSTALLATION_STATUSES.includes(project.status) || project.actualInstallationDate) {
+        throw new Error(
+          `Cannot cancel project in status '${project.status}'. Cancellation is strictly prohibited once installation has commenced or been commissioned on site.`
+        );
+      }
+
+      // Release active reserved materials
+      let releasedCount = 0;
+      const txnLines: InventoryTransaction['lines'] = [];
+
+      if (project.materials && project.materials.length > 0) {
+        for (const projMat of project.materials) {
+          const reserved = projMat.reservedQuantity || 0;
+          if (reserved > 0) {
+            const material = state.materials.find(m => m.id === projMat.materialId);
+            if (material) {
+              material.reservedQty = Math.max(0, (material.reservedQty || 0) - reserved);
+              material.availableToAllocate = Math.max(0, (material.usableWarehouseQty || 0) - material.reservedQty);
+            }
+            txnLines.push({
+              materialId: projMat.materialId,
+              materialName: projMat.materialName,
+              itemCode: projMat.itemCode,
+              quantity: reserved,
+              condition: 'GOOD',
+              remarks: `Released upon project cancellation: ${project.projectCode}`,
+            });
+            releasedCount += reserved;
+            projMat.reservedQuantity = 0; // Prevent duplicate stock releases
+          }
+        }
+      }
+
+      let transaction: InventoryTransaction | undefined = undefined;
+      const cancelTimestamp = new Date().toISOString();
+
+      if (txnLines.length > 0) {
+        const year = new Date().getFullYear();
+        const count = state.transactions.length + 1;
+        const txnNumber = `TXN-${year}-${count.toString().padStart(6, '0')}`;
+        transaction = {
+          id: `txn-${Date.now()}`,
+          transactionNumber: txnNumber,
+          movementType: 'RESERVATION_RELEASE',
+          sourceLocation: project.siteName || 'Site Location',
+          destinationLocation: 'Indore Central Scaffolding Yard',
+          projectId: project.id,
+          projectCode: project.projectCode,
+          referenceDocument: project.quotationNumber || 'CANCELLATION',
+          actorId: data.actorId,
+          actorName: data.actorName,
+          remarks: `Cancellation stock release: ${data.reason.trim()}`,
+          lines: txnLines,
+          createdAt: cancelTimestamp,
+        };
+        state.transactions.unshift(transaction);
+      }
+
+      // Cancel linked quotations if any
+      const linkedQuotes = state.quotations.filter(q => q.projectId === project.id);
+      for (const q of linkedQuotes) {
+        if (q.status !== 'CANCELLED') {
+          q.status = 'CANCELLED';
+          q.updatedAt = cancelTimestamp;
+          q.updatedBy = data.actorId;
+          q.updatedByName = data.actorName;
+        }
+      }
+
+      const oldStatus = project.status;
+      project.status = 'CANCELLED';
+      project.cancellationReason = data.reason.trim();
+      project.cancelledAt = cancelTimestamp;
+      project.cancelledBy = data.actorId;
+      project.cancelledByName = data.actorName;
+      project.updatedAt = cancelTimestamp;
+
+      // Activity Event
+      state.activityEvents.unshift({
+        id: `act-${Date.now()}`,
+        projectId: project.id,
+        eventType: 'STATUS_CHANGED',
+        eventTitle: 'Project Cancelled (Pre-installation)',
+        eventDescription: `Project cancelled by ${data.actorName}. Reason: ${data.reason.trim()}.${releasedCount > 0 ? ` Automatically released ${releasedCount} reserved scaffolding items back to warehouse stock.` : ''}`,
+        actorId: data.actorId,
+        actorName: data.actorName,
+        metadata: { from: oldStatus, to: 'CANCELLED', reason: data.reason.trim(), releasedCount },
+        createdAt: cancelTimestamp,
+      });
+
+      // Audit Log
+      state.auditLogs.unshift({
+        id: `aud-${Date.now()}`,
+        actorId: data.actorId,
+        actorEmail: data.actorName,
+        action: 'PROJECT_CANCELLED',
+        entityTable: 'projects',
+        entityId: project.id,
+        oldState: { status: oldStatus },
+        newState: { status: 'CANCELLED', reason: data.reason.trim(), cancelledAt: cancelTimestamp, releasedCount },
+        createdAt: cancelTimestamp,
+      });
+
+      return { project, releasedMaterialsCount: releasedCount, transaction };
     });
   }
 }

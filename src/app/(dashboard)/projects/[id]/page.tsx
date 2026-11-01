@@ -33,9 +33,12 @@ import {
   Maximize2,
   ImageIcon,
   Sparkles,
-  FileDown
+  FileDown,
+  Ban,
+  AlertOctagon,
+  Info
 } from 'lucide-react';
-import { formatINR, formatQuantity, formatDate, formatDateTime, getStatusBadgeConfig, getDaysDifference, calculateScaffoldingArea } from '@/lib/formatters';
+import { formatINR, formatQuantity, formatDate, formatDateTime, getStatusBadgeConfig, getDaysDifference, calculateScaffoldingArea, extractProjectDimensions } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
 import { processAndUploadImage } from '@/lib/image-utils';
 import { generateConfirmationPdf, generateInstallationPdf } from '@/lib/pdf/project-pdf';
@@ -79,6 +82,60 @@ export default function ProjectWorkspacePage({
       (project.materials && project.materials.some((m: any) => (m.installedQuantity || 0) > 0))
     )
   );
+
+  const isPreInstallation = Boolean(
+    project &&
+    !isInstalled &&
+    ['SITE_CREATED', 'NOT_INSTALLED', 'QUOTATION_DRAFT', 'QUOTATION_SENT', 'QUOTATION_ACCEPTED', 'QUOTATION_REJECTED', 'CONFIRMED_PROJECT', 'SCHEDULED'].includes(project.status) &&
+    project.status !== 'CANCELLED'
+  );
+
+  // Cancellation Modal State
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelConfirmed, setCancelConfirmed] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleExecuteCancel = async () => {
+    if (!project) return;
+    if (!cancelReason || !cancelReason.trim()) {
+      setCancelError('Please enter a mandatory cancellation reason.');
+      return;
+    }
+    if (!cancelConfirmed) {
+      setCancelError('Please verify and check the confirmation box.');
+      return;
+    }
+
+    setCancelling(true);
+    setCancelError(null);
+
+    try {
+      const res = await fetch(`/api/projects/${project.id}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: cancelReason.trim(),
+          actorId: currentUser?.id || 'usr-admin-01',
+          actorName: currentUser?.fullName || 'Burhan Malu (Admin)',
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to cancel project');
+      }
+
+      setProject(json.data.project);
+      setCancelModalOpen(false);
+      fetchProjectDetails(); // refresh full workspace details
+    } catch (err: any) {
+      setCancelError(err.message || 'An error occurred during project cancellation');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const handleDownloadConfirmationPdf = async () => {
     if (!project || !isConfirmed) return;
@@ -292,6 +349,26 @@ export default function ProjectWorkspacePage({
         <span className="text-stone-600 truncate max-w-xs">{project.customerName}</span>
       </div>
 
+      {/* Project Cancelled Banner */}
+      {project.status === 'CANCELLED' && (
+        <div className="p-4 bg-rose-50 border border-rose-300 rounded-lg text-rose-950 space-y-2 shadow-2xs">
+          <div className="flex items-center gap-2 font-bold text-sm text-rose-950">
+            <AlertOctagon className="w-5 h-5 text-rose-700 shrink-0" />
+            <span>This Project Was Cancelled During Pre-installation</span>
+          </div>
+          <p className="text-xs text-rose-900 leading-relaxed pl-7">
+            <strong className="text-rose-950">Cancellation Reason:</strong> {project.cancellationReason || 'Pre-installation cancellation'}
+          </p>
+          <div className="text-[11px] text-rose-800 flex flex-wrap gap-x-6 pl-7 pt-0.5">
+            {project.cancelledAt && <span><strong>Cancelled Date:</strong> {formatDateTime(project.cancelledAt)}</span>}
+            {project.cancelledByName && <span><strong>Cancelled By:</strong> {project.cancelledByName}</span>}
+          </div>
+          <div className="text-[11px] text-rose-700 italic pl-7 pt-1 border-t border-rose-200">
+            All active scaffolding reservations for this project were automatically released back to available warehouse stock. Complete records, quotations, site forms, and logs remain securely preserved in read-only mode for audit compliance.
+          </div>
+        </div>
+      )}
+
       {/* Project Master Hero Card */}
       <div className="bg-white rounded-lg border border-[#e8decb] p-5 sm:p-6 shadow-2xs flex flex-col lg:flex-row lg:items-start justify-between gap-5 sm:gap-6">
         <div className="space-y-2.5">
@@ -332,8 +409,19 @@ export default function ProjectWorkspacePage({
         <div className="flex flex-col sm:items-end justify-center gap-2.5 w-full lg:w-auto shrink-0">
           {/* Row 1: Workflow Lifecycle Actions */}
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
-            {/* Status NOT_INSTALLED -> Confirm Action */}
-            {project.status === 'NOT_INSTALLED' && can('PROJECT_CONFIRM') && (
+            {/* Status SITE_CREATED / NOT_INSTALLED / QUOTATION_* -> Quotation & Confirm Actions */}
+            {['SITE_CREATED', 'NOT_INSTALLED', 'QUOTATION_DRAFT', 'QUOTATION_SENT', 'QUOTATION_ACCEPTED', 'QUOTATION_REJECTED'].includes(project.status) && (
+              <Link
+                href={`/quotation?projectId=${project.id}`}
+                className="w-full sm:w-auto h-9 px-3.5 bg-[#fbf9f5] hover:bg-[#f3ebe1] text-[#24160c] border border-[#ebdcc9] rounded-md text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5"
+              >
+                <FileText className="w-3.5 h-3.5 text-[#8c5e39]" />
+                <span>Commercial Quotation</span>
+              </Link>
+            )}
+
+            {/* Unconfirmed Project -> Confirm Action (Strictly eligible only when Quotation is Accepted) */}
+            {project.status === 'QUOTATION_ACCEPTED' && can('PROJECT_CONFIRM') && (
               <Link
                 href={`/projects/${project.id}/confirm`}
                 className="w-full sm:w-auto h-9 px-4 bg-[#24160c] hover:bg-[#382315] text-[#c79e7c] border border-[#19100a] rounded-md text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5"
@@ -352,6 +440,24 @@ export default function ProjectWorkspacePage({
                 <Boxes className="w-3.5 h-3.5 text-[#c79e7c]" />
                 <span>Record Installation & Activate Rental</span>
               </Link>
+            )}
+
+            {/* Cancel Project Button (Pre-installation only) */}
+            {isPreInstallation && can('PROJECT_CLOSE') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCancelReason('');
+                  setCancelConfirmed(false);
+                  setCancelError(null);
+                  setCancelModalOpen(true);
+                }}
+                className="w-full sm:w-auto h-9 px-3.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-md text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                title="Cancel Pre-installation Project"
+              >
+                <Ban className="w-3.5 h-3.5 text-rose-700" />
+                <span>Cancel Project</span>
+              </button>
             )}
 
             {/* Active Rental Operations: Buffer, Extend, Shift, Dismantle */}
@@ -607,14 +713,18 @@ export default function ProjectWorkspacePage({
                   {project.agreedProjectPrice > 0 ? formatINR(project.agreedProjectPrice) : '-'}
                 </span>
               </div>
-              {project.totalAreaSqFt > 0 && (
-                <div className="flex justify-between items-center py-1.5 border-b border-[#f0e8db] bg-[#fbf9f5] px-2 rounded">
-                  <span className="text-stone-700 font-semibold">Billable Façade Area (Term 1)</span>
-                  <span className="font-mono font-bold text-stone-900">
-                    {project.totalAreaSqFt} sq. ft. {project.ratePerSqFt ? `(@ ₹${project.ratePerSqFt}/sqft)` : ''}
-                  </span>
-                </div>
-              )}
+              {(() => {
+                const dims = extractProjectDimensions(project);
+                if (dims.elevationAreaSqFt <= 0) return null;
+                return (
+                  <div className="flex justify-between items-center py-1.5 border-b border-[#f0e8db] bg-[#fbf9f5] px-2 rounded">
+                    <span className="text-stone-700 font-semibold">Billable Façade Area (Term 1)</span>
+                    <span className="font-mono font-bold text-stone-900">
+                      {dims.formattedArea} {project.ratePerSqFt ? `(@ ₹${project.ratePerSqFt}/sq. ft.)` : ''}
+                    </span>
+                  </div>
+                );
+              })()}
               <div className="flex justify-between items-center py-1.5 border-b border-[#f0e8db] bg-[#fbf7f0] px-2 rounded">
                 <span className="text-[#714f36] font-semibold">
                   75% Advance (Term 7)
@@ -701,17 +811,10 @@ export default function ProjectWorkspacePage({
                 <div className="p-3 bg-[#fbf9f5] rounded-md border border-[#ede3d4]">
                   <div className="font-semibold text-stone-800">Dimensions:</div>
                   <div className="font-mono text-[#714f36] font-bold mt-0.5">
-                    {project.measurements?.depth !== undefined
-                      ? `${project.measurements.width} (W) × ${project.measurements.depth} (D) × ${project.measurements.height} (H) ${project.measurements.unit || 'FT'}`
-                      : `${project.measurements?.length || 0} (L) × ${project.measurements?.width || 0} (W) × ${project.measurements?.height || 0} (H) ${project.measurements?.unit || 'METERS'}`}
+                    {extractProjectDimensions(project).formattedDimensions}
                   </div>
                   <div className="text-[11px] text-[#8c5e39] font-mono font-semibold mt-0.5">
-                    Elevation Area: {calculateScaffoldingArea(
-                      project.measurements?.width || project.measurements?.length || 0,
-                      project.measurements?.depth !== undefined ? project.measurements.depth : 3,
-                      project.measurements?.height || 0,
-                      project.measurements?.unit || 'FEET'
-                    ).toLocaleString('en-IN')} sq. ft.
+                    Elevation Area: {extractProjectDimensions(project).formattedArea}
                   </div>
                   <div className="text-[11px] text-stone-500 mt-1">
                     Type: {project.measurements?.measurementType?.replace(/_/g, ' ') || 'Façade Scaffold'}
@@ -824,12 +927,7 @@ export default function ProjectWorkspacePage({
               <div className="p-4 bg-[#fbf9f5] rounded-md border border-[#ede3d4]">
                 <div className="text-xs text-stone-500 font-medium">Calculated Elevation Area</div>
                 <div className="text-2xl font-bold font-mono text-[#714f36] mt-1">
-                  {calculateScaffoldingArea(
-                    project.measurements?.width || project.measurements?.length || 0,
-                    project.measurements?.depth !== undefined ? project.measurements.depth : 3,
-                    project.measurements?.height || 0,
-                    project.measurements?.unit || 'FEET'
-                  ).toLocaleString('en-IN')} <span className="text-xs text-stone-500 font-normal">sq. ft.</span>
+                  {extractProjectDimensions(project).formattedArea}
                 </div>
               </div>
             </div>
@@ -1511,7 +1609,7 @@ export default function ProjectWorkspacePage({
                     <span className="font-bold text-stone-900">{term.title}</span>
                     <span className="text-[10px] text-stone-400 uppercase font-mono ml-auto">{term.category}</span>
                   </div>
-                  <p className="text-stone-600 text-xs mt-1 leading-relaxed pl-7">{term.content}</p>
+                  <p className="text-stone-600 text-xs mt-1 leading-relaxed pl-7">{term.fullText || term.shortSummary || term.content}</p>
                 </div>
               ))}
             </div>
@@ -1523,6 +1621,142 @@ export default function ProjectWorkspacePage({
                 className="px-4 py-2 bg-[#24160c] hover:bg-[#382315] text-white rounded-md text-xs font-semibold transition"
               >
                 Close Terms
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CANCEL PROJECT CONFIRMATION MODAL */}
+      {cancelModalOpen && project && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#140b06]/70 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="fixed inset-0" onClick={() => !cancelling && setCancelModalOpen(false)} />
+          <div className="relative z-10 w-full max-w-lg bg-white rounded-xl shadow-2xl border border-[#d6c7b2] p-6 text-stone-800 space-y-4 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-[#f0e8db] pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-rose-100 text-rose-800 flex items-center justify-center shrink-0 border border-rose-200">
+                  <AlertOctagon className="w-5 h-5 text-rose-700" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#24160c]">
+                    Cancel Project: {project.projectCode}
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Pre-installation project cancellation and stock reservation release
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={cancelling}
+                onClick={() => setCancelModalOpen(false)}
+                className="text-stone-400 hover:text-stone-600 p-1 rounded-md"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Error Banner */}
+            {cancelError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-800 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{cancelError}</span>
+              </div>
+            )}
+
+            {/* Project Summary Card */}
+            <div className="bg-[#fbf9f5] rounded-lg p-3.5 border border-[#ede3d4] text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Customer:</span>
+                <span className="font-bold text-[#24160c]">{project.customerName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Site Location:</span>
+                <span className="font-semibold text-stone-800 truncate max-w-[260px]">{project.siteName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Current Lifecycle Status:</span>
+                <span className="font-mono font-semibold text-[#8f6541] bg-white px-2 py-0.5 rounded border border-[#ebdcc9]">
+                  {project.status}
+                </span>
+              </div>
+
+              {/* Reserved Stock Details */}
+              {project.materials && project.materials.some((m: any) => (m.reservedQuantity || 0) > 0) && (
+                <div className="pt-2 border-t border-[#ebdcc9] flex items-center justify-between text-[#8c5e39]">
+                  <span className="font-semibold flex items-center gap-1">
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Active Reserved Scaffolding:</span>
+                  </span>
+                  <span className="font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-300">
+                    {project.materials.reduce((sum: number, m: any) => sum + (m.reservedQuantity || 0), 0)} pieces will be released
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Warning Message */}
+            <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-md text-[11px] text-amber-900 leading-relaxed space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-amber-950">
+                <Info className="w-3.5 h-3.5 text-amber-700" />
+                <span>Important Cancellation Rules:</span>
+              </div>
+              <div>• Project will be transitioned to <strong className="text-rose-900">Cancelled</strong> status and moved out of active directory.</div>
+              <div>• Any active material reservations will be automatically released back to warehouse usable stock.</div>
+              <div>• All project records, site forms, quotations, dimensions, and photos remain permanently saved for audit compliance.</div>
+            </div>
+
+            {/* Mandatory Reason Input */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-[#24160c]">
+                Mandatory Cancellation Reason <span className="text-rose-600">*</span>
+              </label>
+              <textarea
+                rows={3}
+                required
+                disabled={cancelling}
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Enter detailed reason (e.g. Client postponed construction start date, municipal height permit denied, commercial renegotiation)..."
+                className="w-full p-2.5 text-xs bg-white border border-[#d6c7b2] rounded-md focus:border-rose-600 focus:ring-1 focus:ring-rose-500 focus:outline-none text-[#24160c]"
+              />
+            </div>
+
+            {/* Final Confirmation Checkbox */}
+            <div className="pt-1">
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  disabled={cancelling}
+                  checked={cancelConfirmed}
+                  onChange={(e) => setCancelConfirmed(e.target.checked)}
+                  className="w-4 h-4 mt-0.5 rounded border-[#d6c7b2] text-rose-700 focus:ring-rose-600 accent-rose-700 cursor-pointer"
+                />
+                <span className="text-xs font-semibold text-stone-800 leading-snug">
+                  I confirm final cancellation of this pre-installation project. I understand reserved materials will be restored to warehouse available stock.
+                </span>
+              </label>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#f0e8db]">
+              <button
+                type="button"
+                disabled={cancelling}
+                onClick={() => setCancelModalOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-stone-700 bg-white hover:bg-[#faf6ee] border border-[#d8c8b4] rounded-md transition cursor-pointer"
+              >
+                Keep Project (Back)
+              </button>
+              <button
+                type="button"
+                disabled={cancelling || !cancelReason.trim() || !cancelConfirmed}
+                onClick={handleExecuteCancel}
+                className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-rose-700 hover:bg-rose-800 border border-rose-800 rounded-md shadow-xs transition disabled:opacity-50 cursor-pointer"
+              >
+                <Ban className="w-3.5 h-3.5" />
+                <span>{cancelling ? 'Cancelling Project...' : 'Confirm Project Cancellation'}</span>
               </button>
             </div>
           </div>

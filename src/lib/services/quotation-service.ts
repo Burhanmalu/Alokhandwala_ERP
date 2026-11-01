@@ -2,7 +2,8 @@
 
 import { dbStore } from '../db/store';
 import { Quotation, QuotationStatus, QuotationMaterialItem, Project, ProjectStatus } from '../schema';
-import { calculateScaffoldingArea } from '../formatters';
+import { calculateScaffoldingArea, extractProjectDimensions } from '../formatters';
+import { calculateCommercialPricing } from './pricing-service';
 
 export interface QuotationCalculationInput {
   ratePerSqFt: number;
@@ -24,6 +25,7 @@ export interface QuotationCalculationOutput {
   rentalDurationDays: number;
   durationMonths: number;
   monthlyRentalAmount: number;
+  rentalTotalAmount?: number;
   walkwayJaliIncludedQuantity: number;
   extraJaliQuantity: number;
   extraJaliRate: number;
@@ -67,60 +69,41 @@ export class QuotationService {
    * - 18% standard GST (or configured company rate)
    */
   public static calculatePricing(input: QuotationCalculationInput): QuotationCalculationOutput {
-    const ratePerSqFt = Math.max(0, Number(input.ratePerSqFt) || 0);
-    const totalAreaSqFt = Math.max(0, Number(input.totalAreaSqFt) || 0);
-    const durationMonths = Math.max(1, Number(input.durationMonths) || 1);
-    const rentalDurationDays = input.rentalDurationDays || (durationMonths * 28);
-    
-    // Monthly rental amount = Area * Rate per sq.ft. * Months
-    const monthlyRentalAmount = Math.round(totalAreaSqFt * ratePerSqFt * durationMonths * 100) / 100;
-
-    // Walkway Jali charges
-    const walkwayJaliIncludedQuantity = Math.max(0, Number(input.walkwayJaliIncludedQuantity) || 0);
-    const extraJaliQuantity = Math.max(0, Number(input.extraJaliQuantity) || 0);
-    const extraJaliRate = input.extraJaliRate !== undefined ? Number(input.extraJaliRate) : 200;
-    const extraJaliCharges = extraJaliQuantity * extraJaliRate;
-
-    // Transport & Other Charges
-    const transportCharges = Math.max(0, Number(input.transportCharges) || 0);
-    const shiftingCharges = Math.max(0, Number(input.shiftingCharges) || 0);
-    const otherCharges = Math.max(0, Number(input.otherCharges) || 0);
-
-    // Subtotal
-    const subtotal = Math.round((monthlyRentalAmount + extraJaliCharges + transportCharges + shiftingCharges + otherCharges) * 100) / 100;
-
-    // GST
-    const gstPercentage = input.gstPercentage !== undefined ? Number(input.gstPercentage) : 18;
-    const gstAmount = Math.round((subtotal * (gstPercentage / 100)) * 100) / 100;
-
-    // Grand Total
-    const grandTotal = Math.round((subtotal + gstAmount) * 100) / 100;
-
-    // Payment Schedule (75% Advance, 25% Completion Due)
-    const advancePercentage = 75;
-    const advanceAmount = Math.round((grandTotal * 0.75) * 100) / 100;
-    const remainingAmount = Math.round((grandTotal - advanceAmount) * 100) / 100;
+    const pricing = calculateCommercialPricing({
+      totalAreaSqFt: input.totalAreaSqFt,
+      ratePerSqFt: input.ratePerSqFt,
+      durationMonths: input.durationMonths,
+      rentalDurationDays: input.rentalDurationDays,
+      walkwayJaliIncludedQuantity: input.walkwayJaliIncludedQuantity,
+      extraJaliQuantity: input.extraJaliQuantity,
+      extraJaliRate: input.extraJaliRate,
+      transportCharges: input.transportCharges,
+      shiftingCharges: input.shiftingCharges,
+      otherCharges: input.otherCharges,
+      gstPercentage: input.gstPercentage,
+    });
 
     return {
-      ratePerSqFt,
-      totalAreaSqFt,
-      rentalDurationDays,
-      durationMonths,
-      monthlyRentalAmount,
-      walkwayJaliIncludedQuantity,
-      extraJaliQuantity,
-      extraJaliRate,
-      extraJaliCharges,
-      transportCharges,
-      shiftingCharges,
-      otherCharges,
-      subtotal,
-      gstPercentage,
-      gstAmount,
-      grandTotal,
-      advancePercentage,
-      advanceAmount,
-      remainingAmount,
+      ratePerSqFt: pricing.ratePerSqFt,
+      totalAreaSqFt: pricing.applicableAreaSqFt,
+      rentalDurationDays: pricing.rentalDurationDays,
+      durationMonths: pricing.durationMonths,
+      monthlyRentalAmount: pricing.monthlyRentalAmount,
+      rentalTotalAmount: pricing.rentalTotalAmount,
+      walkwayJaliIncludedQuantity: pricing.walkwayJaliIncludedQuantity,
+      extraJaliQuantity: pricing.extraJaliQuantity,
+      extraJaliRate: pricing.extraJaliRate,
+      extraJaliCharges: pricing.extraJaliCharges,
+      transportCharges: pricing.transportCharges,
+      shiftingCharges: pricing.shiftingCharges,
+      otherCharges: pricing.otherCharges,
+      subtotal: pricing.subtotal,
+      gstPercentage: pricing.gstPercentage,
+      gstAmount: pricing.gstAmount,
+      grandTotal: pricing.grandTotal,
+      advancePercentage: pricing.advancePercentage,
+      advanceAmount: pricing.advanceAmount,
+      remainingAmount: pricing.remainingAmount,
     };
   }
 
@@ -200,6 +183,7 @@ export class QuotationService {
     rentalDurationDays?: number;
     walkwayJaliIncludedQuantity?: number;
     extraJaliQuantity?: number;
+    extraJaliRate?: number;
     transportCharges?: number;
     shiftingCharges?: number;
     otherCharges?: number;
@@ -208,6 +192,10 @@ export class QuotationService {
     scaffoldingType?: string;
     termsAndConditions?: string[];
     notes?: string;
+    hasCompanyGst?: boolean;
+    companyGstNumber?: string;
+    hasClientGst?: boolean;
+    clientGstNumber?: string;
     rejectionReason?: string;
     actorId: string;
     actorName: string;
@@ -230,28 +218,22 @@ export class QuotationService {
       const customer = state.customers.find(c => c.id === project.customerId);
       const site = state.sites.find(s => s.id === project.siteId);
 
-      // Measurements & Total Area (Engineering Dimensions Formula)
-      let area = data.totalAreaSqFt;
-      if (!area || area <= 0) {
-        if (project.measurements) {
-          const w = project.measurements.width || project.measurements.length || 0;
-          const d = project.measurements.depth !== undefined ? project.measurements.depth : 3;
-          const h = project.measurements.height || 0;
-          area = calculateScaffoldingArea(w, d, h, project.measurements.unit);
-        } else {
-          area = 500;
-        }
-      }
+      // Measurements & Total Area (Engineering Dimensions Formula - Single Source of Truth)
+      const projectDims = extractProjectDimensions(project);
+      const area = projectDims.elevationAreaSqFt > 0
+        ? projectDims.elevationAreaSqFt
+        : (data.totalAreaSqFt && data.totalAreaSqFt > 0 ? data.totalAreaSqFt : 1000);
 
       // Calculate complete pricing
       const pricing = this.calculatePricing({
-        ratePerSqFt: data.ratePerSqFt,
-        totalAreaSqFt: area || 500,
+        ratePerSqFt: data.ratePerSqFt !== undefined ? data.ratePerSqFt : 22,
+        totalAreaSqFt: area,
         durationMonths: data.durationMonths || 1,
         rentalDurationDays: data.rentalDurationDays || 28,
         walkwayJaliIncludedQuantity: data.walkwayJaliIncludedQuantity || 0,
         extraJaliQuantity: data.extraJaliQuantity || 0,
-        transportCharges: data.transportCharges || 0,
+        extraJaliRate: data.extraJaliRate || 200,
+        transportCharges: data.transportCharges !== undefined ? data.transportCharges : (project.transportCharges || 4500),
         shiftingCharges: data.shiftingCharges || 0,
         otherCharges: data.otherCharges || 0,
         gstPercentage: data.gstPercentage !== undefined ? data.gstPercentage : (state.companySettings?.defaultGstRate || 18),
@@ -287,14 +269,14 @@ export class QuotationService {
           quotationDate,
           status: data.status,
           dimensions: project.measurements ? {
-            width: project.measurements.width,
-            depth: project.measurements.depth !== undefined ? project.measurements.depth : 3,
-            height: project.measurements.height,
-            length: project.measurements.length,
-            unit: project.measurements.unit,
-            totalAreaSqFt: area || 500,
-            structureType: project.measurements.measurementType,
-            description: project.measurements.description,
+            width: projectDims.width,
+            depth: projectDims.depth,
+            height: projectDims.height,
+            length: projectDims.width,
+            unit: projectDims.unit,
+            totalAreaSqFt: area,
+            structureType: project.measurements.measurementType || 'FAÇADE_SCAFFOLD',
+            description: projectDims.formattedDimensions,
           } : undefined,
           materials: data.materials,
           scaffoldingType: data.scaffoldingType || project.measurements?.measurementType || 'FAÇADE_SCAFFOLD',
@@ -302,6 +284,16 @@ export class QuotationService {
           termsAndConditions: data.termsAndConditions || [],
           notes: data.notes,
           siteImages,
+          hasCompanyGst: data.hasCompanyGst !== undefined ? data.hasCompanyGst : true,
+          companyGstNumber: data.hasCompanyGst !== false 
+            ? (data.companyGstNumber && data.companyGstNumber !== 'N/A' ? data.companyGstNumber.trim().toUpperCase() : (state.companySettings?.gstin || '23AABCA1234F1Z5')) 
+            : 'N/A',
+          hasClientGst: data.hasClientGst !== undefined 
+            ? data.hasClientGst 
+            : (project.hasClientGst !== undefined ? project.hasClientGst : Boolean(customer?.gstin && customer.gstin !== 'N/A')),
+          clientGstNumber: data.hasClientGst !== false 
+            ? (data.clientGstNumber && data.clientGstNumber !== 'N/A' ? data.clientGstNumber.trim().toUpperCase() : (project.clientGstNumber || customer?.gstin || 'N/A')) 
+            : 'N/A',
           createdBy: data.actorId,
           createdByName: data.actorName,
           createdAt: now,
@@ -310,6 +302,17 @@ export class QuotationService {
           acceptedAt: data.status === 'ACCEPTED' ? now : undefined,
           rejectedAt: data.status === 'REJECTED' ? now : undefined,
           rejectionReason: data.rejectionReason,
+          rejection_reason: data.rejectionReason,
+          quotation_status: data.status,
+          approval_status: data.status === 'ACCEPTED' ? 'ACCEPTED' : data.status === 'REJECTED' ? 'REJECTED' : 'PENDING_APPROVAL',
+          approved_at: data.status === 'ACCEPTED' ? now : undefined,
+          approved_by: data.status === 'ACCEPTED' ? data.actorId : undefined,
+          approvedByName: data.status === 'ACCEPTED' ? data.actorName : undefined,
+          rejected_at: data.status === 'REJECTED' ? now : undefined,
+          rejected_by: data.status === 'REJECTED' ? data.actorId : undefined,
+          rejectedByName: data.status === 'REJECTED' ? data.actorName : undefined,
+          last_edited_by: data.actorId,
+          lastEditedByName: data.actorName,
         };
         state.quotations.unshift(newQuotation);
         quotation = newQuotation;
@@ -317,6 +320,7 @@ export class QuotationService {
         // Update existing quotation
         quotation.quotationDate = quotationDate;
         quotation.status = data.status;
+        quotation.quotation_status = data.status;
         quotation.materials = data.materials;
         quotation.scaffoldingType = data.scaffoldingType || quotation.scaffoldingType;
         quotation.termsAndConditions = data.termsAndConditions || quotation.termsAndConditions;
@@ -324,20 +328,68 @@ export class QuotationService {
         quotation.siteImages = siteImages.length > 0 ? siteImages : quotation.siteImages;
         quotation.updatedBy = data.actorId;
         quotation.updatedByName = data.actorName;
+        quotation.last_edited_by = data.actorId;
+        quotation.lastEditedByName = data.actorName;
         quotation.updatedAt = now;
+
+        if (data.hasCompanyGst !== undefined) {
+          quotation.hasCompanyGst = data.hasCompanyGst;
+          quotation.companyGstNumber = data.hasCompanyGst
+            ? (data.companyGstNumber && data.companyGstNumber !== 'N/A' ? data.companyGstNumber.trim().toUpperCase() : (state.companySettings?.gstin || '23AABCA1234F1Z5'))
+            : 'N/A';
+        }
+        if (data.hasClientGst !== undefined) {
+          quotation.hasClientGst = data.hasClientGst;
+          quotation.clientGstNumber = data.hasClientGst
+            ? (data.clientGstNumber && data.clientGstNumber !== 'N/A' ? data.clientGstNumber.trim().toUpperCase() : (project.clientGstNumber || customer?.gstin || 'N/A'))
+            : 'N/A';
+        }
+
+        if (quotation.dimensions) {
+          quotation.dimensions.width = projectDims.width || quotation.dimensions.width;
+          quotation.dimensions.depth = projectDims.depth || quotation.dimensions.depth;
+          quotation.dimensions.height = projectDims.height || quotation.dimensions.height;
+          quotation.dimensions.totalAreaSqFt = area;
+          quotation.dimensions.description = projectDims.formattedDimensions;
+        }
 
         // Apply updated pricing
         Object.assign(quotation, pricing);
 
-        if (data.status === 'SENT' && !quotation.sentAt) {
-          quotation.sentAt = now;
-        }
-        if (data.status === 'ACCEPTED') {
+        if (data.status === 'SENT') {
+          quotation.sentAt = quotation.sentAt || now;
+          quotation.approval_status = 'PENDING_APPROVAL';
+        } else if (data.status === 'ACCEPTED') {
           quotation.acceptedAt = now;
-        }
-        if (data.status === 'REJECTED') {
+          quotation.approval_status = 'ACCEPTED';
+          quotation.approved_at = now;
+          quotation.approved_by = data.actorId;
+          quotation.approvedByName = data.actorName;
+          quotation.rejected_at = undefined;
+          quotation.rejected_by = undefined;
+          quotation.rejection_reason = undefined;
+          quotation.rejectionReason = undefined;
+        } else if (data.status === 'REJECTED') {
           quotation.rejectedAt = now;
+          quotation.rejected_at = now;
+          quotation.rejected_by = data.actorId;
+          quotation.rejectedByName = data.actorName;
           quotation.rejectionReason = data.rejectionReason;
+          quotation.rejection_reason = data.rejectionReason;
+          quotation.approval_status = 'REJECTED';
+          quotation.approved_at = undefined;
+          quotation.approved_by = undefined;
+        } else {
+          // If quotation was edited and re-saved as DRAFT, invalidate previous approval
+          quotation.approval_status = 'PENDING_APPROVAL';
+          quotation.approved_at = undefined;
+          quotation.approved_by = undefined;
+          quotation.approvedByName = undefined;
+          quotation.rejected_at = undefined;
+          quotation.rejected_by = undefined;
+          quotation.rejectedByName = undefined;
+          quotation.rejection_reason = undefined;
+          quotation.rejectionReason = undefined;
         }
       }
 
@@ -347,6 +399,17 @@ export class QuotationService {
       project.quotationDate = quotation.quotationDate;
       project.quotationAmount = quotation.grandTotal;
       project.quotationStatus = quotation.status;
+      project.quotation_status = quotation.status;
+      project.approval_status = quotation.approval_status;
+      project.approved_at = quotation.approved_at;
+      project.approved_by = quotation.approved_by;
+      project.approvedByName = quotation.approvedByName;
+      project.rejected_at = quotation.rejected_at;
+      project.rejected_by = quotation.rejected_by;
+      project.rejectedByName = quotation.rejectedByName;
+      project.rejection_reason = quotation.rejection_reason;
+      project.last_edited_by = quotation.last_edited_by;
+      project.lastEditedByName = quotation.lastEditedByName;
       project.monthlyRentalRate = quotation.monthlyRentalAmount;
       project.agreedProjectPrice = quotation.grandTotal;
       project.ratePerSqFt = quotation.ratePerSqFt;
@@ -358,6 +421,10 @@ export class QuotationService {
       project.advanceRequiredAmount = quotation.advanceAmount;
       project.completionDueAmount = quotation.remainingAmount;
       project.gstPercentage = quotation.gstPercentage;
+      if (quotation.hasCompanyGst !== undefined) project.hasCompanyGst = quotation.hasCompanyGst;
+      if (quotation.companyGstNumber !== undefined) project.companyGstNumber = quotation.companyGstNumber;
+      if (quotation.hasClientGst !== undefined) project.hasClientGst = quotation.hasClientGst;
+      if (quotation.clientGstNumber !== undefined) project.clientGstNumber = quotation.clientGstNumber;
       project.updatedAt = now;
 
       // Update Project Workflow Status based on quotation action
@@ -428,33 +495,85 @@ export class QuotationService {
     actorName: string;
   }): Promise<{ quotation: Quotation; project: Project }> {
     return await dbStore.transaction(async (state) => {
-      const quotation = state.quotations.find(q => q.id === params.quotationId);
+      let quotation = state.quotations.find(q => q.id === params.quotationId || q.projectId === params.quotationId);
+      if (!quotation) {
+        const proj = state.projects.find(p => p.id === params.quotationId);
+        if (proj && proj.quotationId) {
+          quotation = state.quotations.find(q => q.id === proj.quotationId);
+        }
+      }
       if (!quotation) throw new Error(`Quotation ${params.quotationId} not found`);
 
-      const project = state.projects.find(p => p.id === quotation.projectId);
+      const project = state.projects.find(p => p.id === quotation.projectId || p.id === params.quotationId);
       if (!project) throw new Error(`Associated project ${quotation.projectId} not found`);
 
       if (project.status === 'INSTALLED' && (params.status === 'REJECTED' || params.status === 'DRAFT')) {
         throw new Error('Project is already installed. Quotation status cannot be changed to Draft or Rejected.');
       }
 
+      if (params.status === 'REJECTED') {
+        if (!params.reason || !params.reason.trim()) {
+          throw new Error('Rejection reason is mandatory when rejecting a quotation.');
+        }
+      }
+
       const now = new Date().toISOString();
       quotation.status = params.status;
+      quotation.quotation_status = params.status;
       quotation.updatedBy = params.actorId;
       quotation.updatedByName = params.actorName;
       quotation.updatedAt = now;
 
-      if (params.status === 'SENT') {
-        quotation.sentAt = now;
-      } else if (params.status === 'ACCEPTED') {
+      if (params.status === 'ACCEPTED') {
+        quotation.approval_status = 'ACCEPTED';
+        quotation.approved_at = now;
+        quotation.approved_by = params.actorId;
+        quotation.approvedByName = params.actorName;
         quotation.acceptedAt = now;
+        quotation.rejected_at = undefined;
+        quotation.rejected_by = undefined;
+        quotation.rejectedByName = undefined;
+        quotation.rejection_reason = undefined;
+        quotation.rejectionReason = undefined;
       } else if (params.status === 'REJECTED') {
+        const cleanReason = params.reason!.trim();
+        quotation.approval_status = 'REJECTED';
+        quotation.rejected_at = now;
+        quotation.rejected_by = params.actorId;
+        quotation.rejectedByName = params.actorName;
         quotation.rejectedAt = now;
-        quotation.rejectionReason = params.reason;
+        quotation.rejection_reason = cleanReason;
+        quotation.rejectionReason = cleanReason;
+        quotation.approved_at = undefined;
+        quotation.approved_by = undefined;
+        quotation.approvedByName = undefined;
+        quotation.acceptedAt = undefined;
+      } else if (params.status === 'SENT') {
+        quotation.approval_status = 'PENDING_APPROVAL';
+        quotation.sentAt = quotation.sentAt || now;
+      } else {
+        quotation.approval_status = 'PENDING_APPROVAL';
+        quotation.approved_at = undefined;
+        quotation.approved_by = undefined;
+        quotation.approvedByName = undefined;
+        quotation.rejected_at = undefined;
+        quotation.rejected_by = undefined;
+        quotation.rejectedByName = undefined;
+        quotation.rejection_reason = undefined;
+        quotation.rejectionReason = undefined;
       }
 
       // Synchronize project
       project.quotationStatus = quotation.status;
+      project.quotation_status = quotation.status;
+      project.approval_status = quotation.approval_status;
+      project.approved_at = quotation.approved_at;
+      project.approved_by = quotation.approved_by;
+      project.approvedByName = quotation.approvedByName;
+      project.rejected_at = quotation.rejected_at;
+      project.rejected_by = quotation.rejected_by;
+      project.rejectedByName = quotation.rejectedByName;
+      project.rejection_reason = quotation.rejection_reason;
       project.updatedAt = now;
 
       if (project.status === 'NOT_INSTALLED' || 

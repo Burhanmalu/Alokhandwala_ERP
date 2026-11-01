@@ -21,10 +21,10 @@ export interface Customer {
   referenceName?: string;
   contactPerson: string;
   phone: string;
-  email: string;
+  email?: string;
   billingAddress: string;
-  city: string;
-  state: string;
+  city?: string;
+  state?: string;
   gstin?: string;
   status: 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
   creditLimit: number;
@@ -47,6 +47,11 @@ export interface Site {
   longitude?: number;
   locationType?: 'ON_SITE' | 'NOT_ON_SITE';
   locationAccuracyMeters?: number;
+  houseNumber?: string;
+  street?: string;
+  locality?: string;
+  pincode?: string;
+  isLocationConfirmed?: boolean;
   landmark?: string;
   city: string;
   state: string;
@@ -55,6 +60,9 @@ export interface Site {
   referralName?: string;
   assignedSupervisorId?: string;
   supervisorName?: string;
+  hasClientGst?: boolean;
+  clientGstNumber?: string;
+  gstin?: string;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
 }
@@ -172,6 +180,12 @@ export interface Quotation {
   // Site Images
   siteImages?: string[];
   
+  // Client & Company GST Details
+  hasClientGst?: boolean;
+  clientGstNumber?: string;
+  hasCompanyGst?: boolean;
+  companyGstNumber?: string;
+  
   // Tracking & Audit
   createdBy: string;
   createdByName: string;
@@ -183,6 +197,19 @@ export interface Quotation {
   acceptedAt?: string;
   rejectedAt?: string;
   rejectionReason?: string;
+  
+  // Quotation Approval Workflow (Section 6)
+  quotation_status?: QuotationStatus;
+  approval_status?: 'PENDING_APPROVAL' | 'ACCEPTED' | 'REJECTED';
+  approved_at?: string;
+  approved_by?: string;
+  approvedByName?: string;
+  rejected_at?: string;
+  rejected_by?: string;
+  rejectedByName?: string;
+  rejection_reason?: string;
+  last_edited_by?: string;
+  lastEditedByName?: string;
 }
 
 export type ProjectStatus = 
@@ -235,6 +262,11 @@ export interface Project {
   longitude?: number;
   locationType?: 'ON_SITE' | 'NOT_ON_SITE';
   locationAccuracyMeters?: number;
+  houseNumber?: string;
+  street?: string;
+  locality?: string;
+  pincode?: string;
+  isLocationConfirmed?: boolean;
   referralName?: string;
   assignedSupervisorId: string;
   supervisorName: string;
@@ -258,16 +290,31 @@ export interface Project {
   actualDismantlingDate?: string;
   closureDate?: string;
   cancellationReason?: string;
+  cancelledAt?: string;
+  cancelledBy?: string;
+  cancelledByName?: string;
   quotationId?: string;
   quotationNumber?: string;
   quotationDate?: string;
   quotationAmount?: number;
   quotationStatus?: QuotationStatus;
+  quotation_status?: QuotationStatus;
+  approval_status?: 'PENDING_APPROVAL' | 'ACCEPTED' | 'REJECTED';
+  approved_at?: string;
+  approved_by?: string;
+  approvedByName?: string;
+  rejected_at?: string;
+  rejected_by?: string;
+  rejectedByName?: string;
+  rejection_reason?: string;
+  last_edited_by?: string;
+  lastEditedByName?: string;
   paymentTerms?: string;
   siteRemarks?: string;
   termsSnapshot?: any;
   ratePerSqFt?: number;
   totalAreaSqFt?: number;
+  elevationAreaSqFt?: number;
   extraJaliQuantity?: number;
   extraJaliCharges?: number;
   twoWayTransportCharges?: number;
@@ -305,6 +352,10 @@ export interface Project {
   assignedWorkerIds?: string[];
   clientRepresentativeName?: string;
   clientSignOff?: boolean;
+  hasClientGst?: boolean;
+  clientGstNumber?: string;
+  hasCompanyGst?: boolean;
+  companyGstNumber?: string;
   scaffoldingPlan?: ScaffoldingMaterialPlanOption;
   siteDimensions?: {
     length: number;

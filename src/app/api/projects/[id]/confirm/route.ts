@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { InventoryService } from '@/lib/services/inventory-service';
 import { projectConfirmationSchema } from '@/lib/validations';
+import { dbStore } from '@/lib/db/store';
 
 export async function POST(
   req: NextRequest,
@@ -9,6 +10,32 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await req.json();
+
+    // Backend validation: Verify project and quotation approval status
+    const project = dbStore.getProjects().find(p => p.id === id);
+    if (!project) {
+      return NextResponse.json({ success: false, error: 'Project not found' }, { status: 404 });
+    }
+
+    if (project.status === 'QUOTATION_REJECTED') {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Cannot confirm project: Quotation has been rejected. It must be revised and accepted before proceeding.' 
+      }, { status: 400 });
+    }
+
+    // Only quotations with status Quotation Accepted can proceed to Project Confirmation & Plan
+    const isQuotationWorkflow = project.status === 'QUOTATION_DRAFT' || 
+      project.status === 'QUOTATION_SENT' || 
+      project.status === 'QUOTATION_ACCEPTED' || 
+      project.status === 'SITE_CREATED';
+
+    if (isQuotationWorkflow && project.status !== 'QUOTATION_ACCEPTED' && !body.clientAccepted && !body.clientAcceptanceVerified) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Cannot confirm project: Only quotations with status "Quotation Accepted" can proceed to Project Confirmation & Plan. Current status: Pending Approval.' 
+      }, { status: 400 });
+    }
 
     const validated = projectConfirmationSchema.parse({
       ...body,
@@ -40,6 +67,7 @@ export async function POST(
       advancePercentage: validated.advancePercentage,
       advanceRequiredAmount: validated.advanceRequiredAmount,
       completionDueAmount: validated.completionDueAmount,
+      clientAccepted: validated.clientAccepted || validated.clientAcceptanceVerified || body.clientAccepted || false,
       actorId: body.actorId || 'usr-admin-01',
       actorName: body.actorName || 'Burhan Malu',
     });

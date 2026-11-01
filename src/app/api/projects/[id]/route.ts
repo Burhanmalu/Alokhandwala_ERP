@@ -106,7 +106,21 @@ export async function PATCH(
         if (body.longitude !== undefined) proj.longitude = body.longitude;
         if (body.locationType !== undefined) proj.locationType = body.locationType;
         if (body.locationAccuracyMeters !== undefined) proj.locationAccuracyMeters = body.locationAccuracyMeters;
+        if (body.houseNumber !== undefined) proj.houseNumber = body.houseNumber;
+        if (body.street !== undefined) proj.street = body.street;
+        if (body.locality !== undefined) proj.locality = body.locality;
+        if (body.pincode !== undefined) proj.pincode = body.pincode;
+        if (body.isLocationConfirmed !== undefined) proj.isLocationConfirmed = body.isLocationConfirmed;
         if (body.siteRemarks !== undefined) proj.siteRemarks = body.siteRemarks;
+
+        if (body.hasClientGst !== undefined) {
+          proj.hasClientGst = Boolean(body.hasClientGst);
+        }
+        if (body.clientGstNumber !== undefined) {
+          proj.clientGstNumber = proj.hasClientGst
+            ? (body.clientGstNumber && body.clientGstNumber !== 'N/A' ? body.clientGstNumber.trim().toUpperCase() : 'N/A')
+            : 'N/A';
+        }
 
         if ((body.width !== undefined || body.length !== undefined) && body.height !== undefined) {
           const numW = Number(body.width !== undefined ? body.width : body.length);
@@ -140,6 +154,21 @@ export async function PATCH(
             proj.measurements.unit = unit;
             proj.measurements.elevationAreaSqFt = area;
           }
+          proj.totalAreaSqFt = area;
+          proj.elevationAreaSqFt = area;
+
+          // Sync quotation dimensions if quotation exists
+          const qtn = state.quotations.find(q => q.projectId === proj.id || (proj.quotationId && q.id === proj.quotationId));
+          if (qtn && qtn.dimensions) {
+            qtn.dimensions.width = numW;
+            qtn.dimensions.depth = numD;
+            qtn.dimensions.height = numH;
+            qtn.dimensions.length = numL;
+            qtn.dimensions.unit = unit;
+            qtn.dimensions.totalAreaSqFt = area;
+            qtn.dimensions.description = `${numW} (W) × ${numD} (D) × ${numH} (H) ${unit}`;
+            qtn.totalAreaSqFt = area;
+          }
         }
 
         if (body.photoUrls && Array.isArray(body.photoUrls)) {
@@ -166,8 +195,23 @@ export async function PATCH(
           if (body.longitude !== undefined) site.longitude = body.longitude;
           if (body.locationType !== undefined) site.locationType = body.locationType;
           if (body.locationAccuracyMeters !== undefined) site.locationAccuracyMeters = body.locationAccuracyMeters;
+          if (body.houseNumber !== undefined) site.houseNumber = body.houseNumber;
+          if (body.street !== undefined) site.street = body.street;
+          if (body.locality !== undefined) site.locality = body.locality;
+          if (body.pincode !== undefined) site.pincode = body.pincode;
+          if (body.isLocationConfirmed !== undefined) site.isLocationConfirmed = body.isLocationConfirmed;
           if (body.phone) site.contactPhone = body.phone.trim();
           if (body.referralName !== undefined) site.referralName = body.referralName;
+          if (proj.hasClientGst !== undefined) site.hasClientGst = proj.hasClientGst;
+          if (proj.clientGstNumber !== undefined) {
+            site.clientGstNumber = proj.clientGstNumber;
+            site.gstin = proj.clientGstNumber;
+          }
+        }
+
+        const customer = state.customers.find(c => c.id === proj.customerId);
+        if (customer && proj.hasClientGst && proj.clientGstNumber && proj.clientGstNumber !== 'N/A') {
+          customer.gstin = proj.clientGstNumber;
         }
 
         proj.updatedAt = new Date().toISOString();

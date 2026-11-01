@@ -15,9 +15,11 @@ import {
   FileText,
   UserCheck,
   ShieldCheck,
-  CreditCard
+  CreditCard,
+  Check
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
+import { isValidGSTIN } from '@/lib/validations';
 
 export default function NewCustomerPage() {
   const router = useRouter();
@@ -33,23 +35,45 @@ export default function NewCustomerPage() {
   const [referenceName, setReferenceName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
   const [billingAddress, setBillingAddress] = useState('');
-  const [city, setCity] = useState('Mumbai');
-  const [state, setState] = useState('Maharashtra');
+  const [hasGst, setHasGst] = useState(false);
   const [gstin, setGstin] = useState('');
-  const [creditLimit, setCreditLimit] = useState<number>(1000000);
+  const [gstError, setGstError] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const validateGst = (val: string) => {
+    if (!val || !val.trim()) {
+      setGstError('GSTIN is required when GST Number is selected');
+      return false;
+    }
+    if (!isValidGSTIN(val)) {
+      setGstError('Invalid 15-character Indian GSTIN format (e.g. 23AAACG1234F1Z1)');
+      return false;
+    }
+    setGstError(null);
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!companyName.trim() || !contactPerson.trim() || !phone.trim() || !email.trim() || !billingAddress.trim()) {
+    if (!companyName.trim() || !contactPerson.trim() || !phone.trim() || !billingAddress.trim()) {
       setError('Please fill all mandatory fields marked with an asterisk (*).');
       return;
+    }
+
+    if (hasGst) {
+      if (!gstin.trim()) {
+        setError('Please enter client GST Number or uncheck the GST Number option.');
+        return;
+      }
+      if (!isValidGSTIN(gstin)) {
+        setError('Please enter a valid 15-character Indian GSTIN or uncheck the GST Number option.');
+        return;
+      }
     }
 
     setLoading(true);
@@ -62,12 +86,11 @@ export default function NewCustomerPage() {
           referenceName: referenceName.trim() || undefined,
           contactPerson: contactPerson.trim(),
           phone: phone.trim(),
-          email: email.trim(),
+          email: '',
           billingAddress: billingAddress.trim(),
-          city,
-          state,
-          gstin: gstin.trim().toUpperCase() || undefined,
-          creditLimit: Number(creditLimit),
+          city: 'Indore',
+          state: 'Madhya Pradesh',
+          gstin: hasGst && gstin.trim() ? gstin.trim().toUpperCase() : 'N/A',
           actorId: currentUser?.id,
           actorName: currentUser?.fullName,
         }),
@@ -190,7 +213,7 @@ export default function NewCustomerPage() {
           <div className="flex items-center justify-between border-b border-[#f0e8db] pb-3">
             <h2 className="text-sm font-bold text-[#24160c] flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-[#8f6541]" />
-              <span>2. Commercial Communication & Credit Parameters</span>
+              <span>2. Commercial Contact Information</span>
             </h2>
             <span className="text-[11px] text-stone-400 font-mono">STEP 2 OF 3</span>
           </div>
@@ -210,7 +233,7 @@ export default function NewCustomerPage() {
               />
             </div>
 
-            <div>
+            <div className="sm:col-span-2">
               <label className="block font-semibold text-stone-700 mb-1">
                 Direct Contact Phone / Mobile <span className="text-rose-600">*</span>
               </label>
@@ -221,34 +244,6 @@ export default function NewCustomerPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 required
                 className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-stone-700 mb-1">
-                Official Billing Email Address <span className="text-rose-600">*</span>
-              </label>
-              <input
-                type="email"
-                placeholder="e.g. billing@godrejproperties.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-stone-700 mb-1 flex items-center justify-between">
-                <span>Credit Limit (INR)</span>
-                <span className="text-[11px] text-stone-400 font-normal">Pre-approved ceiling</span>
-              </label>
-              <input
-                type="number"
-                step="50000"
-                value={creditLimit}
-                onChange={(e) => setCreditLimit(Number(e.target.value))}
-                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none font-mono font-bold text-[#24160c]"
               />
             </div>
           </div>
@@ -279,39 +274,64 @@ export default function NewCustomerPage() {
               />
             </div>
 
-            <div>
-              <label className="block font-semibold text-stone-700 mb-1">City</label>
-              <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none"
-              />
-            </div>
+            {/* GST Number Checkbox & Conditional Input */}
+            <div className="sm:col-span-2 p-3 bg-[#faf6ee]/70 border border-[#ebdcc9] rounded-lg space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={hasGst}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setHasGst(checked);
+                      if (!checked) {
+                        setGstError(null);
+                      } else if (gstin && gstin !== 'N/A') {
+                        validateGst(gstin);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-[#d6c7b2] text-[#8f6541] focus:ring-[#8f6541] accent-[#8f6541]"
+                  />
+                  <span className="text-xs font-bold text-[#4a3525] uppercase tracking-wider">
+                    GST Number
+                  </span>
+                </label>
+                <span className="text-[11px] font-mono font-medium text-[#7d6553]">
+                  {hasGst ? 'Client has GST registration' : 'GST: N/A'}
+                </span>
+              </div>
 
-            <div>
-              <label className="block font-semibold text-stone-700 mb-1">State</label>
-              <input
-                type="text"
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block font-semibold text-stone-700 mb-1 flex items-center justify-between">
-                <span>Customer GSTIN (15 Alphanumeric Characters)</span>
-                <span className="text-[11px] text-stone-400 font-normal">State-matched for CGST / SGST</span>
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 27AAACG1234F1Z1"
-                value={gstin}
-                onChange={(e) => setGstin(e.target.value)}
-                maxLength={15}
-                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md uppercase font-mono font-bold text-stone-900 focus:bg-white focus:border-[#8f6541] focus:outline-none"
-              />
+              {hasGst && (
+                <div className="space-y-1.5 pt-1">
+                  <label className="block text-2xs font-bold text-[#5c3e24] uppercase tracking-wider">
+                    Customer GSTIN (15 Alphanumeric Characters) <span className="text-rose-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 23AAACG1234F1Z1"
+                    value={gstin}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15);
+                      setGstin(val);
+                      validateGst(val);
+                    }}
+                    maxLength={15}
+                    className={`w-full p-2.5 bg-white border rounded-md uppercase font-mono font-bold text-stone-900 focus:outline-none ${
+                      gstError ? 'border-rose-400 focus:border-rose-500' : 'border-[#d6c7b2] focus:border-[#8f6541]'
+                    }`}
+                  />
+                  {gstError && (
+                    <span className="text-[11px] text-rose-600 font-medium block">
+                      {gstError}
+                    </span>
+                  )}
+                  {gstin && isValidGSTIN(gstin) && (
+                    <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Valid 15-character Indian GSTIN
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -10,8 +10,6 @@ import {
   AlertCircle, 
   Download, 
   Save, 
-  Send, 
-  XCircle, 
   Check, 
   RotateCcw, 
   Layers,  
@@ -30,15 +28,28 @@ import {
   CheckSquare, 
   Info,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Loader2,
+  XCircle,
+  X
 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { ImageUploaderWithLightbox } from '@/components/ui/ImageUploaderWithLightbox';
 import { useAuth } from '@/lib/auth/auth-context';
 import { Project, Customer, Material, Quotation, QuotationMaterialItem, QuotationStatus } from '@/lib/schema';
-import { formatINR, formatDate, calculateScaffoldingArea } from '@/lib/formatters';
+import { formatINR, formatDate, calculateScaffoldingArea, extractProjectDimensions } from '@/lib/formatters';
+import { calculateCommercialPricing } from '@/lib/services/pricing-service';
+import { isValidGSTIN } from '@/lib/validations';
 import { OFFICIAL_TERMS_AND_CONDITIONS } from '@/lib/constants/terms-and-conditions';
-import { generateQuotationPdf } from '@/lib/pdf/project-pdf';
+import { generateQuotationPdf, buildQuotationPdfDoc } from '@/lib/pdf/project-pdf';
+
+function WhatsAppIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+    </svg>
+  );
+}
 
 export default function QuotationPage() {
   return (
@@ -63,6 +74,7 @@ function QuotationContent() {
   // Data Loading State
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -81,6 +93,31 @@ function QuotationContent() {
   const [quotationNumber, setQuotationNumber] = useState('');
   const [quotationDate, setQuotationDate] = useState(new Date().toISOString().slice(0, 10));
   const [quotationStatus, setQuotationStatus] = useState<QuotationStatus>('DRAFT');
+
+  // Quotation Approval Modal States (Section 4 & 5)
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionReasonText, setRejectionReasonText] = useState('');
+  const [approvalSubmitting, setApprovalSubmitting] = useState(false);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
+
+  // Company GST Details (Independent of Client GST)
+  const [hasCompanyGst, setHasCompanyGst] = useState(true);
+  const [companyGstNumber, setCompanyGstNumber] = useState('23AABCA1234F1Z5');
+  const [companyGstError, setCompanyGstError] = useState<string | null>(null);
+
+  const validateCompanyGst = (val: string) => {
+    if (!val || !val.trim()) {
+      setCompanyGstError('Company GSTIN is required when GST Number is selected');
+      return false;
+    }
+    if (!isValidGSTIN(val)) {
+      setCompanyGstError('Invalid 15-character GSTIN format (e.g. 23AABCA1234F1Z5)');
+      return false;
+    }
+    setCompanyGstError(null);
+    return true;
+  };
 
   // Form Fields - Section B: Materials Table
   const [materialItems, setMaterialItems] = useState<QuotationMaterialItem[]>([]);
@@ -110,9 +147,16 @@ function QuotationContent() {
     return customers.find(c => c.id === selectedCustomerId) || null;
   }, [customers, selectedProject, selectedCustomerId]);
 
-  // Filter projects by customer if customer is selected
+  // Filter projects by customer and eligible status (unconfirmed projects in site or quotation stage)
   const availableProjects = useMemo(() => {
-    let list = projects;
+    let list = projects.filter(p =>
+      p.status === 'SITE_CREATED' ||
+      p.status === 'NOT_INSTALLED' ||
+      p.status === 'QUOTATION_DRAFT' ||
+      p.status === 'QUOTATION_SENT' ||
+      p.status === 'QUOTATION_ACCEPTED' ||
+      p.status === 'QUOTATION_REJECTED'
+    );
     if (selectedCustomerId) {
       list = list.filter(p => p.customerId === selectedCustomerId);
     }
@@ -159,6 +203,7 @@ function QuotationContent() {
     fetch(`/api/quotations?projectId=${selectedProjectId}`)
       .then(r => r.json())
       .then(json => {
+        const projDims = extractProjectDimensions(proj);
         if (json.success && json.data && json.data.length > 0) {
           const q: Quotation = json.data[0];
           setExistingQuotation(q);
@@ -167,30 +212,44 @@ function QuotationContent() {
           setQuotationStatus(q.status);
           setMaterialItems(q.materials || []);
           setRatePerSqFt(q.ratePerSqFt || 22);
-          setTotalAreaSqFt(q.totalAreaSqFt || 500);
+
+          // Synchronize Façade Elevation Area: Prioritize project inspection dimensions as single source of truth
+          const effectiveArea = projDims.elevationAreaSqFt > 0
+            ? projDims.elevationAreaSqFt
+            : (q.totalAreaSqFt || 1000);
+          setTotalAreaSqFt(effectiveArea);
+
           setDurationMonths(q.durationMonths || 1);
-          setExtraJaliQuantity(q.extraJaliQuantity || 0);
+          setExtraJaliQuantity(q.extraJaliQuantity !== undefined ? q.extraJaliQuantity : (q.dimensions ? 14 : 0));
           setExtraJaliRate(q.extraJaliRate || 200);
-          setTransportCharges(q.transportCharges || 4500);
+          setTransportCharges(q.transportCharges !== undefined && q.transportCharges > 0 ? q.transportCharges : (proj.transportCharges || 4500));
           setShiftingCharges(q.shiftingCharges || 0);
           setOtherCharges(q.otherCharges || 0);
           setGstPercentage(q.gstPercentage !== undefined ? q.gstPercentage : 18);
           setNotes(q.notes || '');
+
+          const restoredHasCompGst = q.hasCompanyGst !== undefined 
+            ? q.hasCompanyGst 
+            : (q.companyGstNumber ? q.companyGstNumber !== 'N/A' : true);
+          setHasCompanyGst(Boolean(restoredHasCompGst));
+          setCompanyGstNumber(restoredHasCompGst 
+            ? (q.companyGstNumber && q.companyGstNumber !== 'N/A' ? q.companyGstNumber : '23AABCA1234F1Z5') 
+            : '');
+          setCompanyGstError(null);
         } else {
           // Initialize fresh quotation from Site Form data
           setExistingQuotation(null);
           setQuotationNumber(`QTN-${proj.projectCode.replace(/^AW-SCF-/, '') || Date.now().toString().slice(-6)}`);
           setQuotationDate(new Date().toISOString().slice(0, 10));
           setQuotationStatus('DRAFT');
+          setHasCompanyGst(true);
+          setCompanyGstNumber('23AABCA1234F1Z5');
+          setCompanyGstError(null);
+          setRatePerSqFt(22);
+          setTransportCharges(proj.transportCharges || 4500);
 
           // Compute elevation area using Scaffolding Engineering Dimensions Formula
-          let area = 500;
-          if (proj.measurements) {
-            const w = proj.measurements.width || proj.measurements.length || 0;
-            const d = proj.measurements.depth !== undefined ? proj.measurements.depth : 3;
-            const h = proj.measurements.height || 0;
-            area = calculateScaffoldingArea(w, d, h, proj.measurements.unit);
-          }
+          const area = projDims.elevationAreaSqFt || 1000;
           setTotalAreaSqFt(area);
 
           // Auto-suggest scaffolding material requirements
@@ -268,36 +327,19 @@ function QuotationContent() {
     setMaterialItems(items);
   };
 
-  // Pricing calculations
+  // Pricing calculations using shared pricing service
   const calculations = useMemo(() => {
-    const area = Math.max(0, totalAreaSqFt);
-    const rate = Math.max(0, ratePerSqFt);
-    const months = Math.max(1, durationMonths);
-    const monthlyRent = Math.round(area * rate * months * 100) / 100;
-
-    const extraJali = Math.max(0, extraJaliQuantity) * extraJaliRate;
-    const transport = Math.max(0, transportCharges);
-    const shifting = Math.max(0, shiftingCharges);
-    const other = Math.max(0, otherCharges);
-
-    const subtotal = Math.round((monthlyRent + extraJali + transport + shifting + other) * 100) / 100;
-    const gstAmount = Math.round((subtotal * (gstPercentage / 100)) * 100) / 100;
-    const grandTotal = Math.round((subtotal + gstAmount) * 100) / 100;
-    const advance75 = Math.round((grandTotal * 0.75) * 100) / 100;
-    const balance25 = Math.round((grandTotal - advance75) * 100) / 100;
-
-    return {
-      monthlyRent,
-      extraJali,
-      transport,
-      shifting,
-      other,
-      subtotal,
-      gstAmount,
-      grandTotal,
-      advance75,
-      balance25,
-    };
+    return calculateCommercialPricing({
+      totalAreaSqFt,
+      ratePerSqFt,
+      durationMonths,
+      extraJaliQuantity,
+      extraJaliRate,
+      transportCharges,
+      shiftingCharges,
+      otherCharges,
+      gstPercentage,
+    });
   }, [totalAreaSqFt, ratePerSqFt, durationMonths, extraJaliQuantity, extraJaliRate, transportCharges, shiftingCharges, otherCharges, gstPercentage]);
 
   // Material item manipulation
@@ -346,24 +388,45 @@ function QuotationContent() {
   };
 
   // Save Quotation Handler
-  const handleSaveQuotation = async (targetStatus: QuotationStatus = quotationStatus) => {
+  const handleSaveQuotation = async (targetStatus?: QuotationStatus): Promise<Quotation | null> => {
+    const finalStatus: QuotationStatus = targetStatus || quotationStatus || 'DRAFT';
+
     if (!selectedProjectId) {
-      setErrorMessage('Please select a site project first.');
-      return;
+      setErrorMessage('Please select an inspected site project first.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return null;
+    }
+
+    if (hasCompanyGst) {
+      if (!companyGstNumber || !companyGstNumber.trim()) {
+        setCompanyGstError('Company GSTIN is required when GST Number is selected');
+        setErrorMessage('Please enter our Company GST Number or uncheck the GST Number option.');
+        return null;
+      }
+      if (!isValidGSTIN(companyGstNumber)) {
+        setCompanyGstError('Invalid 15-character GSTIN format (e.g. 23AABCA1234F1Z5)');
+        setErrorMessage('Please enter a valid 15-character Indian GSTIN for company (e.g. 23AABCA1234F1Z5) or uncheck the GST Number option.');
+        return null;
+      }
     }
 
     setSaving(true);
+    setSaveSuccess(false);
     setErrorMessage(null);
     setSuccessMessage(null);
 
     try {
+      const clientGstVal = selectedProject?.hasClientGst !== undefined 
+        ? (selectedProject.hasClientGst ? (selectedProject.clientGstNumber || selectedCustomer?.gstin || 'N/A') : 'N/A')
+        : (selectedProject?.clientGstNumber || selectedCustomer?.gstin || 'N/A');
+
       const res = await fetch('/api/quotations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: existingQuotation?.id,
           projectId: selectedProjectId,
-          status: targetStatus,
+          status: finalStatus,
           quotationDate,
           ratePerSqFt,
           totalAreaSqFt,
@@ -376,6 +439,10 @@ function QuotationContent() {
           otherCharges,
           gstPercentage,
           materials: materialItems,
+          hasCompanyGst,
+          companyGstNumber: hasCompanyGst && companyGstNumber.trim() ? companyGstNumber.trim().toUpperCase() : 'N/A',
+          hasClientGst: selectedProject?.hasClientGst !== undefined ? selectedProject.hasClientGst : (clientGstVal !== 'N/A'),
+          clientGstNumber: clientGstVal,
           notes,
           actorId: currentUser?.id || 'usr-admin-01',
           actorName: currentUser?.fullName || 'Burhan Malu',
@@ -389,62 +456,119 @@ function QuotationContent() {
 
       setExistingQuotation(json.data.quotation);
       setQuotationStatus(json.data.quotation.status);
-      setSuccessMessage(`Quotation ${json.data.quotation.quotationNumber} saved as ${targetStatus}.`);
+      setQuotationNumber(json.data.quotation.quotationNumber);
+      setSuccessMessage(`Quotation ${json.data.quotation.quotationNumber} saved successfully in database.`);
+      setSaveSuccess(true);
+
+      // Auto dismiss temporary success button state after 4 seconds
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 4000);
 
       // Update project in local state
-      setProjects(prev => prev.map(p => p.id === selectedProjectId ? json.data.project : p));
+      if (json.data.project) {
+        setProjects(prev => prev.map(p => p.id === selectedProjectId ? json.data.project : p));
+      }
+      return json.data.quotation;
     } catch (err: any) {
       setErrorMessage(err.message || 'An error occurred while saving the quotation.');
+      setSaveSuccess(false);
+      return null;
     } finally {
       setSaving(false);
     }
   };
 
-  // Status Change Handler (Mark as Sent, Accepted, Rejected)
-  const handleUpdateStatus = async (status: QuotationStatus) => {
-    if (!existingQuotation?.id) {
-      await handleSaveQuotation(status);
-      return;
-    }
-
-    let reason: string | undefined = undefined;
-    if (status === 'REJECTED') {
-      const promptRes = window.prompt('Please enter customer rejection reason (optional):');
-      if (promptRes === null) return;
-      reason = promptRes;
-    }
-
-    setSaving(true);
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
+  // Accept Quotation Action
+  const handleAcceptQuotation = async () => {
+    if (!existingQuotation && !selectedProjectId) return;
+    const targetId = existingQuotation?.id || selectedProjectId;
+    setApprovalSubmitting(true);
+    setApprovalError(null);
     try {
-      const res = await fetch(`/api/quotations/${existingQuotation.id}/status`, {
+      const res = await fetch(`/api/quotations/${targetId}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          status,
-          reason,
+          status: 'ACCEPTED',
           actorId: currentUser?.id || 'usr-admin-01',
           actorName: currentUser?.fullName || 'Burhan Malu',
         }),
       });
-
       const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Failed to update quotation status');
-      }
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to accept quotation');
 
+      setQuotationStatus('ACCEPTED');
       setExistingQuotation(json.data.quotation);
-      setQuotationStatus(json.data.quotation.status);
-      setSuccessMessage(`Quotation marked as ${status} successfully.`);
-
+      setSuccessMessage(`Quotation ${json.data.quotation.quotationNumber} has been accepted! Project is now eligible for confirmation.`);
+      setShowAcceptModal(false);
       setProjects(prev => prev.map(p => p.id === selectedProjectId ? json.data.project : p));
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to update status');
+      setApprovalError(err.message || 'Failed to accept quotation');
     } finally {
-      setSaving(false);
+      setApprovalSubmitting(false);
     }
+  };
+
+  // Reject Quotation Action
+  const handleRejectQuotation = async () => {
+    if (!rejectionReasonText.trim()) {
+      setApprovalError('Rejection reason is mandatory.');
+      return;
+    }
+    if (!existingQuotation && !selectedProjectId) return;
+    const targetId = existingQuotation?.id || selectedProjectId;
+    setApprovalSubmitting(true);
+    setApprovalError(null);
+    try {
+      const res = await fetch(`/api/quotations/${targetId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'REJECTED',
+          reason: rejectionReasonText.trim(),
+          actorId: currentUser?.id || 'usr-admin-01',
+          actorName: currentUser?.fullName || 'Burhan Malu',
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to reject quotation');
+
+      setQuotationStatus('REJECTED');
+      setExistingQuotation(json.data.quotation);
+      setSuccessMessage(`Quotation ${json.data.quotation.quotationNumber} marked as Rejected.`);
+      setShowRejectModal(false);
+      setRejectionReasonText('');
+      setProjects(prev => prev.map(p => p.id === selectedProjectId ? json.data.project : p));
+    } catch (err: any) {
+      setApprovalError(err.message || 'Failed to reject quotation');
+    } finally {
+      setApprovalSubmitting(false);
+    }
+  };
+
+  // Proceed to Project Confirmation & Material Reservation Handler
+  const handleProceedToConfirmation = () => {
+    if (!selectedProjectId) {
+      setErrorMessage('Please select an inspected site project from Section A first.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (quotationStatus === 'REJECTED') {
+      setErrorMessage('Quotation is Rejected. Under company policy, rejected quotations cannot proceed to Project Confirmation & Material Reservation until revised and accepted.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (quotationStatus !== 'ACCEPTED') {
+      setErrorMessage('Quotation is Pending Approval. Please review and accept the quotation before proceeding to Project Confirmation & Material Reservation.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    const qId = existingQuotation?.id || quotationNumber || '';
+    router.push(`/confirmation?projectId=${encodeURIComponent(selectedProjectId)}${qId ? `&quotationId=${encodeURIComponent(qId)}` : ''}`);
   };
 
   // PDF Generation Handler
@@ -463,8 +587,8 @@ function QuotationContent() {
             customerName: selectedProject.customerName,
             siteName: selectedProject.siteName,
             siteAddress: selectedProject.siteAddress,
-            city: 'Mumbai',
-            state: 'Maharashtra',
+            city: 'Indore',
+            state: 'Madhya Pradesh',
             status: 'ACTIVE',
             createdAt: selectedProject.createdAt,
           } : undefined,
@@ -502,6 +626,12 @@ function QuotationContent() {
           advanceAmount: calculations.advance75,
           remainingAmount: calculations.balance25,
           notes,
+          hasCompanyGst,
+          companyGstNumber: hasCompanyGst && companyGstNumber.trim() ? companyGstNumber.trim().toUpperCase() : 'N/A',
+          hasClientGst: selectedProject.hasClientGst !== undefined 
+            ? selectedProject.hasClientGst 
+            : (selectedProject.clientGstNumber ? selectedProject.clientGstNumber !== 'N/A' : Boolean(selectedCustomer?.gstin && selectedCustomer.gstin !== 'N/A')),
+          clientGstNumber: selectedProject.clientGstNumber || selectedCustomer?.gstin || 'N/A',
           createdBy: currentUser?.id || 'usr-admin-01',
           createdByName: currentUser?.fullName || 'Burhan Malu',
           createdAt: new Date().toISOString(),
@@ -510,6 +640,118 @@ function QuotationContent() {
       );
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to generate PDF document');
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
+  // Send to Customer via WhatsApp Handler (with auto-downloaded PDF and pre-filled message)
+  const handleSendToCustomerWhatsApp = async () => {
+    if (!selectedProjectId || !selectedProject) {
+      setErrorMessage('Please select a site project first.');
+      return;
+    }
+
+    // 1. Save quotation (if status is DRAFT, advance it to SENT)
+    const targetStatus = quotationStatus === 'DRAFT' ? 'SENT' : quotationStatus;
+    const savedQuote = await handleSaveQuotation(targetStatus);
+    if (!savedQuote) return;
+
+    // 2. Resolve customer phone number
+    let rawPhone = selectedCustomer?.phone || (selectedProject as any)?.contactPhone || (selectedProject as any)?.phone || '';
+    let cleanPhone = rawPhone.replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      const promptPhone = window.prompt("Enter customer's 10-digit mobile number for WhatsApp:", cleanPhone || '');
+      if (!promptPhone) return;
+      cleanPhone = promptPhone.replace(/\D/g, '');
+    }
+    const formattedPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
+
+    // 3. Prepare PDF & WhatsApp Message
+    setGeneratingPdf(true);
+    try {
+      const projectData = {
+        ...selectedProject,
+        customer: selectedCustomer || undefined,
+        site: selectedProject.siteName ? {
+          id: selectedProject.siteId,
+          siteCode: 'SITE-0001',
+          customerId: selectedProject.customerId,
+          customerName: selectedProject.customerName,
+          siteName: selectedProject.siteName,
+          siteAddress: selectedProject.siteAddress,
+          city: 'Indore',
+          state: 'Madhya Pradesh',
+          status: 'ACTIVE',
+          createdAt: selectedProject.createdAt,
+        } : undefined,
+      };
+
+      const qNum = savedQuote.quotationNumber || selectedProject.projectCode;
+      const clientName = selectedCustomer?.companyName || selectedProject?.customerName || 'Valued Client';
+      const siteLocation = selectedProject?.siteAddress || selectedProject?.siteName || 'Indore Site';
+
+      const waMessage = 
+`*COMMERCIAL SCAFFOLDING QUOTATION*
+*Alokhandwala Scaffolding*
+----------------------------------------
+*Quotation No:* ${qNum}
+*Date:* ${quotationDate}
+*Customer:* ${clientName}
+*Site / Project:* ${siteLocation}
+
+📋 *Commercial Quotation Summary:*
+• Scaffolding Elevation Area: ${totalAreaSqFt.toLocaleString('en-IN')} sq. ft.
+• Rental Rate: ₹${ratePerSqFt}/sq. ft. / month
+• Monthly Rental: ₹${calculations.monthlyRent.toLocaleString('en-IN')}
+• Rental Duration: ${durationMonths} Month(s) (${durationMonths * 28} Days)
+• Extra Walkway Jali: ${extraJaliQuantity} Nos (₹${calculations.extraJali.toLocaleString('en-IN')})
+• Transport & Shifting: ₹${(calculations.transport + calculations.shifting).toLocaleString('en-IN')}
+• Subtotal: ₹${calculations.subtotal.toLocaleString('en-IN')}
+• GST (${gstPercentage}%): ₹${calculations.gstAmount.toLocaleString('en-IN')}
+• *Total Estimated:* ₹${calculations.grandTotal.toLocaleString('en-IN')}
+
+💰 *Payment Terms (Commercial Milestone):*
+• *75% Advance Payable:* ₹${calculations.advance75.toLocaleString('en-IN')}
+• *25% Balance on Dismantling:* ₹${calculations.balance25.toLocaleString('en-IN')}
+
+📄 *Note:* The official PDF quotation has been generated. Please find the attached document for full itemized details and terms.
+Thank you for partnering with Alokhandwala Scaffolding!`;
+
+      const doc = await buildQuotationPdfDoc(projectData as any, savedQuote as any);
+      const filename = `${qNum}-Quotation.pdf`;
+
+      // Always save PDF to user's device
+      doc.save(filename);
+
+      // Attempt native Web Share API with PDF file if supported (mobile/tablet browsers)
+      let sharedViaWebShare = false;
+      if (typeof navigator !== 'undefined' && typeof navigator.canShare === 'function') {
+        try {
+          const pdfBlob = doc.output('blob');
+          const pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
+          if (navigator.canShare({ files: [pdfFile] })) {
+            await navigator.share({
+              title: `Commercial Quotation ${qNum}`,
+              text: waMessage,
+              files: [pdfFile],
+            });
+            sharedViaWebShare = true;
+          }
+        } catch (shareErr) {
+          console.log('Web share aborted or unsupported:', shareErr);
+        }
+      }
+
+      // If not shared via native share sheet, launch WhatsApp Web / WhatsApp App directly
+      if (!sharedViaWebShare) {
+        const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(waMessage)}`;
+        window.open(waUrl, '_blank', 'noopener,noreferrer');
+      }
+
+      setSuccessMessage(`Quotation ${qNum} saved as ${targetStatus}, PDF generated, and WhatsApp opened for ${clientName}!`);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to process WhatsApp quotation.');
     } finally {
       setGeneratingPdf(false);
     }
@@ -538,25 +780,26 @@ function QuotationContent() {
           </h1>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          {/* Top Action: Single Clearly Visible Quotation PDF Button (Section 3) */}
           <button
             type="button"
             onClick={handleDownloadPdf}
             disabled={!selectedProjectId || generatingPdf}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#4d301c] bg-white border border-[#d8c8b4] rounded-md hover:bg-[#faf6ee] transition shadow-2xs disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-[#24150c] hover:bg-[#382315] border border-[#24150c] rounded-md shadow-xs transition disabled:opacity-50 cursor-pointer"
+            title="Generate and preview / download official Commercial Quotation PDF"
           >
-            <Download className="w-3.5 h-3.5 text-[#8c5e39]" />
-            <span>{generatingPdf ? 'Generating PDF...' : 'Quotation PDF'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSaveQuotation(quotationStatus)}
-            disabled={!selectedProjectId || saving}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#24150c] hover:bg-[#382315] border border-[#4d301c] rounded-md shadow-2xs transition disabled:opacity-50 cursor-pointer"
-          >
-            <Save className="w-3.5 h-3.5 text-[#c79e7c]" />
-            <span>{saving ? 'Saving...' : 'Save Quotation'}</span>
+            {generatingPdf ? (
+              <>
+                <Loader2 className="w-4 h-4 text-[#c79e7c] animate-spin" />
+                <span>Generating PDF...</span>
+              </>
+            ) : (
+              <>
+                <FileText className="w-4 h-4 text-[#c79e7c]" />
+                <span>Quotation PDF</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -590,13 +833,14 @@ function QuotationContent() {
             </div>
           </div>
 
-          <Link
-            href={`/projects/${selectedProjectId}/confirm`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white rounded-md font-semibold text-xs shadow-sm transition whitespace-nowrap self-start sm:self-auto"
+          <button
+            type="button"
+            onClick={handleProceedToConfirmation}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white rounded-md font-semibold text-xs shadow-sm transition whitespace-nowrap self-start sm:self-auto cursor-pointer"
           >
-            <span>Proceed to Project Confirmation</span>
+            <span>Proceed to Confirmation & Plan</span>
             <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          </button>
         </div>
       )}
 
@@ -678,7 +922,6 @@ function QuotationContent() {
                     <div className="flex items-center gap-2 text-[10px] text-[#7d6553] mt-0.5 flex-wrap">
                       <span>{c.contactPerson}</span>
                       {c.phone && <span>• {c.phone}</span>}
-                      {c.city && <span>• {c.city}</span>}
                     </div>
                   </div>
                 )}
@@ -747,9 +990,16 @@ function QuotationContent() {
           {selectedProject && (
             <div className="p-3 bg-[#faf6ee]/60 border border-[#ebdcc9] rounded-lg grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
               <div>
-                <span className="text-[10px] text-[#9c826e] uppercase tracking-wider block font-semibold">Client Name</span>
+                <span className="text-[10px] text-[#9c826e] uppercase tracking-wider block font-semibold">Client Name & GST</span>
                 <span className="font-bold text-[#24160c]">{selectedProject.customerName}</span>
                 <div className="text-[10px] text-[#7d6553]">{selectedCustomer?.phone || 'No phone recorded'}</div>
+                <div className="text-[10px] font-mono text-[#59371d] font-semibold mt-0.5">
+                  Client GST: {selectedProject.hasClientGst === false 
+                    ? 'N/A' 
+                    : (selectedProject.clientGstNumber && selectedProject.clientGstNumber !== 'N/A' 
+                      ? selectedProject.clientGstNumber 
+                      : (selectedCustomer?.gstin || 'N/A'))}
+                </div>
               </div>
 
               <div>
@@ -761,12 +1011,10 @@ function QuotationContent() {
               <div>
                 <span className="text-[10px] text-[#9c826e] uppercase tracking-wider block font-semibold">Site Dimensions</span>
                 <span className="font-bold text-[#24160c]">
-                  {selectedProject.measurements 
-                    ? `${selectedProject.measurements.width || selectedProject.measurements.length} (W) × ${selectedProject.measurements.depth !== undefined ? selectedProject.measurements.depth : 3} (D) × ${selectedProject.measurements.height} (H) ${selectedProject.measurements.unit}`
-                    : '20 × 3 × 20 FT'}
+                  {selectedProject ? extractProjectDimensions(selectedProject).formattedDimensions : 'Dimensions Pending'}
                 </span>
                 <div className="text-[10px] text-[#8c5e39] font-medium font-mono">
-                  Calculated Elevation Area: {totalAreaSqFt} Sq. Ft.
+                  Calculated Elevation Area: {selectedProject ? extractProjectDimensions(selectedProject).formattedArea : `${totalAreaSqFt} sq. ft.`}
                 </div>
               </div>
 
@@ -819,6 +1067,83 @@ function QuotationContent() {
             </div>
           )}
 
+          {/* Company Business Details & GSTIN */}
+          {selectedProject && (
+            <div className="p-3.5 bg-[#faf6ee]/60 border border-[#ebdcc9] rounded-lg space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={hasCompanyGst}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setHasCompanyGst(checked);
+                      if (!checked) {
+                        setCompanyGstError(null);
+                      } else if (companyGstNumber && companyGstNumber !== 'N/A') {
+                        validateCompanyGst(companyGstNumber);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-[#d8c8b4] text-[#8c5e39] focus:ring-[#8c5e39] accent-[#8c5e39]"
+                  />
+                  <span className="text-xs font-bold text-[#24160c] uppercase tracking-wider">
+                    GST Number
+                  </span>
+                  <span className="text-[11px] text-[#7d6553]">(Our Company GSTIN)</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-[#7d6553] uppercase tracking-wider font-semibold">Status:</span>
+                  <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-white border border-[#ebdcc9] text-[#59371d]">
+                    {hasCompanyGst ? 'Company GST Active' : 'N/A'}
+                  </span>
+                </div>
+              </div>
+
+              {hasCompanyGst ? (
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-[#4d301c] uppercase tracking-wider">
+                    Our Company GSTIN (15-Character Alphanumeric) <span className="text-rose-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={15}
+                    value={companyGstNumber}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15);
+                      setCompanyGstNumber(val);
+                      validateCompanyGst(val);
+                    }}
+                    placeholder="e.g. 23AABCA1234F1Z5"
+                    className={`w-full p-2.5 bg-white border rounded-md font-mono text-xs text-[#24160c] uppercase focus:outline-none transition ${
+                      companyGstError 
+                        ? 'border-rose-400 focus:border-rose-500' 
+                        : companyGstNumber && isValidGSTIN(companyGstNumber)
+                          ? 'border-emerald-500'
+                          : 'border-[#d8c8b4] focus:border-[#8c5e39]'
+                    }`}
+                  />
+                  {companyGstError && (
+                    <span className="text-[11px] text-rose-600 font-medium block">
+                      {companyGstError}
+                    </span>
+                  )}
+                  {companyGstNumber && isValidGSTIN(companyGstNumber) && (
+                    <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Valid Indian GSTIN format
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-xs text-[#7d6553] bg-white p-2.5 rounded border border-[#ebdcc9]">
+                  <span className="text-[11px]">Official Company Tax Identification for Quotation:</span>
+                  <span className="font-mono font-bold text-[#59371d] bg-[#faf6ee] px-2.5 py-0.5 rounded border border-[#ebdcc9]">
+                    N/A
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Site Inspection Photos Preview */}
           {selectedProject?.photos && selectedProject.photos.length > 0 && (
             <div className="pt-2 border-t border-[#f2eadf]">
@@ -864,8 +1189,8 @@ function QuotationContent() {
               </label>
               <input
                 type="number"
-                min="1"
-                step="0.5"
+                min="0"
+                step="any"
                 value={ratePerSqFt}
                 onChange={(e) => setRatePerSqFt(Number(e.target.value))}
                 className="w-full p-2 font-mono font-bold text-sm bg-white border border-[#d8c8b4] rounded-md focus:outline-none text-[#24160c]"
@@ -1101,76 +1426,416 @@ function QuotationContent() {
       </div>
 
       {/* SECTION E: QUOTATION ACTIONS & WORKFLOW TRANSITIONS */}
-      <div className="bg-white rounded-lg border border-[#e8decb] p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-[#7d6553] font-semibold">Workflow Actions:</span>
+      <div className="bg-white rounded-lg border border-[#e8decb] p-4 shadow-2xs space-y-3">
+        {/* 1. Quotation Accepted Banner */}
+        {quotationStatus === 'ACCEPTED' && (
+          <div className="w-full p-3.5 bg-emerald-50 border border-emerald-300 rounded-lg text-xs text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-start sm:items-center gap-2.5">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
+              <div>
+                <div className="font-bold text-emerald-900 text-sm">
+                  Quotation Accepted by Administrator ({existingQuotation?.quotationNumber || quotationNumber})
+                </div>
+                <p className="text-[11px] text-emerald-800 mt-0.5">
+                  This quotation has been approved. The project is officially eligible for Project Confirmation and Material Reservation.
+                </p>
+              </div>
+            </div>
 
-          <button
-            type="button"
-            onClick={() => handleUpdateStatus('DRAFT')}
-            disabled={saving}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md border transition cursor-pointer ${
-              quotationStatus === 'DRAFT'
-                ? 'bg-[#24150c] text-white border-[#24150c]'
-                : 'bg-white text-[#4d301c] border-[#d8c8b4] hover:bg-[#faf6ee]'
-            }`}
-          >
-            Save Draft
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleUpdateStatus('SENT')}
-            disabled={saving}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md border transition flex items-center gap-1 cursor-pointer ${
-              quotationStatus === 'SENT'
-                ? 'bg-blue-800 text-white border-blue-900'
-                : 'bg-white text-blue-900 border-blue-300 hover:bg-blue-50'
-            }`}
-          >
-            <Send className="w-3 h-3" />
-            <span>Mark as Sent</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleUpdateStatus('ACCEPTED')}
-            disabled={saving}
-            className={`px-3.5 py-1.5 text-xs font-bold rounded-md border transition flex items-center gap-1 cursor-pointer ${
-              quotationStatus === 'ACCEPTED'
-                ? 'bg-emerald-700 text-white border-emerald-800'
-                : 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-            }`}
-          >
-            <Check className="w-3.5 h-3.5" />
-            <span>Mark as Accepted</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleUpdateStatus('REJECTED')}
-            disabled={saving}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md border transition flex items-center gap-1 cursor-pointer ${
-              quotationStatus === 'REJECTED'
-                ? 'bg-rose-800 text-white border-rose-900'
-                : 'bg-white text-rose-800 border-rose-300 hover:bg-rose-50'
-            }`}
-          >
-            <XCircle className="w-3 h-3" />
-            <span>Mark as Rejected</span>
-          </button>
-        </div>
-
-        {quotationStatus === 'ACCEPTED' && selectedProjectId && (
-          <Link
-            href={`/projects/${selectedProjectId}/confirm`}
-            className="px-4 py-2 bg-[#24160c] hover:bg-[#382315] text-white font-bold text-xs rounded-md shadow-xs transition flex items-center gap-1.5 self-start sm:self-auto"
-          >
-            <span>Proceed to Confirmation & Material Plan</span>
-            <ArrowRight className="w-3.5 h-3.5 text-[#c79e7c]" />
-          </Link>
+            <button
+              type="button"
+              onClick={handleProceedToConfirmation}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#24160c] hover:bg-[#382315] text-white rounded-md font-bold text-xs shadow-sm transition whitespace-nowrap self-start sm:self-auto cursor-pointer"
+            >
+              <span>Proceed to Confirmation & Plan</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#c79e7c]" />
+            </button>
+          </div>
         )}
+
+        {/* 2. Quotation Pending Approval Banner with Review Actions */}
+        {((existingQuotation && (quotationStatus === 'DRAFT' || quotationStatus === 'SENT')) || (saveSuccess && quotationStatus !== 'ACCEPTED' && quotationStatus !== 'REJECTED')) && (
+          <div className="w-full p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-950 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-start sm:items-center gap-2.5">
+              <Clock className="w-5 h-5 text-amber-700 shrink-0 mt-0.5 sm:mt-0" />
+              <div>
+                <span className="font-bold text-amber-950">
+                  {saveSuccess ? 'Quotation saved successfully. ' : ''}
+                  Quotation Pending Administrator Approval ({existingQuotation?.quotationNumber || quotationNumber})
+                </span>
+                <p className="text-[11px] text-amber-800 mt-0.5">
+                  Review commercial rates, material schedule, and pricing. Approval is required before proceeding to Project Confirmation & Plan.
+                </p>
+              </div>
+            </div>
+            {existingQuotation && (
+              <div className="flex items-center gap-2 shrink-0 self-start md:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setShowAcceptModal(true)}
+                  disabled={saving}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-md shadow-xs transition cursor-pointer"
+                  title="Accept quotation and make project eligible for confirmation"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Accept Quotation</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRejectionReasonText('');
+                    setShowRejectModal(true);
+                  }}
+                  disabled={saving}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-rose-700 hover:bg-rose-800 rounded-md shadow-xs transition cursor-pointer"
+                  title="Reject quotation with mandatory reason"
+                >
+                  <XCircle className="w-3.5 h-3.5" />
+                  <span>Reject Quotation</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 3. Quotation Rejected Banner */}
+        {quotationStatus === 'REJECTED' && (
+          <div className="w-full p-3 bg-rose-50 border border-rose-300 rounded-lg text-xs text-rose-950 flex items-start gap-2.5 shadow-xs">
+            <XCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-rose-900">Quotation Rejected: </span>
+              <span className="text-rose-800">
+                {existingQuotation?.rejection_reason || existingQuotation?.rejectionReason || 'Commercial terms or rates require revision.'}
+              </span>
+              <p className="text-[11px] text-rose-700 mt-0.5">
+                Confirmation is blocked. You can edit this quotation and save changes to return it to Pending Approval.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Localized Inline Error Banner in Section E */}
+        {errorMessage && (
+          <div className="w-full p-3 bg-rose-50 border border-rose-300 rounded-lg text-xs text-rose-950 flex items-center gap-2.5 shadow-xs">
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            <div>
+              <span className="font-bold text-rose-900">Unable to Save Quotation: </span>
+              <span className="text-rose-800">{errorMessage}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* 1. Primary Save Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!selectedProjectId) {
+                  setErrorMessage('Please select a Customer and Site / Project from Section A first.');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  return;
+                }
+                handleSaveQuotation('DRAFT');
+              }}
+              disabled={saving}
+              className={`inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white rounded-md shadow-xs transition cursor-pointer disabled:opacity-50 ${
+                saveSuccess
+                  ? 'bg-amber-700 hover:bg-amber-800 border border-amber-800'
+                  : 'bg-[#24150c] hover:bg-[#382315] border border-[#24150c]'
+              }`}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-[#c79e7c] animate-spin" />
+                  <span>Saving Quotation...</span>
+                </>
+              ) : saveSuccess ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-200" />
+                  <span>✓ Quotation Saved!</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 text-[#c79e7c]" />
+                  <span>{existingQuotation ? 'Save Updated Quotation' : 'Submit & Save Quotation'}</span>
+                </>
+              )}
+            </button>
+
+            {/* 2. Send to Customer (WhatsApp & PDF) Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!selectedProjectId) {
+                  setErrorMessage('Please select a Customer and Site / Project from Section A first.');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  return;
+                }
+                handleSendToCustomerWhatsApp();
+              }}
+              disabled={saving || generatingPdf}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 border border-emerald-700 rounded-md shadow-xs transition cursor-pointer disabled:opacity-50"
+              title="Save quotation, generate PDF, and send quotation to customer on WhatsApp"
+            >
+              {generatingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-emerald-100 animate-spin" />
+                  <span>Preparing PDF & WhatsApp...</span>
+                </>
+              ) : (
+                <>
+                  <WhatsAppIcon className="w-4 h-4 text-white" />
+                  <span>Send to Customer (WhatsApp & PDF)</span>
+                </>
+              )}
+            </button>
+
+            {/* 3. Quotation PDF Preview/Download Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!selectedProjectId) {
+                  setErrorMessage('Please select a Customer and Site / Project from Section A first.');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  return;
+                }
+                handleDownloadPdf();
+              }}
+              disabled={saving || generatingPdf}
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs font-semibold text-[#4d301c] bg-white border border-[#d8c8b4] rounded-md hover:bg-[#faf6ee] shadow-xs transition cursor-pointer disabled:opacity-50"
+              title="Download or preview official Quotation PDF"
+            >
+              <FileText className="w-4 h-4 text-[#8c5e39]" />
+              <span>{generatingPdf ? 'Generating PDF...' : 'Quotation PDF'}</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-auto">
+            <span className={`px-2.5 py-1 rounded text-2xs font-mono font-bold uppercase tracking-wider border flex items-center gap-1.5 ${
+              quotationStatus === 'ACCEPTED'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                : quotationStatus === 'REJECTED'
+                  ? 'bg-rose-50 text-rose-800 border-rose-300'
+                  : existingQuotation
+                    ? 'bg-amber-50 text-amber-900 border-amber-300'
+                    : 'bg-[#fbf9f5] text-[#78593a] border-[#e8decb]'
+            }`}>
+              {quotationStatus === 'ACCEPTED' ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>STATUS: QUOTATION ACCEPTED</span>
+                </>
+              ) : quotationStatus === 'REJECTED' ? (
+                <>
+                  <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                  <span>STATUS: QUOTATION REJECTED</span>
+                </>
+              ) : existingQuotation ? (
+                <>
+                  <Clock className="w-3.5 h-3.5 text-amber-700" />
+                  <span>STATUS: PENDING APPROVAL</span>
+                </>
+              ) : (
+                <span>STATUS: DRAFT</span>
+              )}
+            </span>
+
+            {selectedProjectId && quotationStatus !== 'ACCEPTED' && (
+              <button
+                type="button"
+                onClick={handleProceedToConfirmation}
+                className="px-3.5 py-2 font-bold text-xs rounded-md shadow-xs transition flex items-center gap-1.5 cursor-pointer shrink-0 bg-[#f4efe8] hover:bg-[#e8decb] text-[#5c3e24] border border-[#d6c7b2]"
+                title={
+                  quotationStatus === 'REJECTED'
+                    ? 'Quotation Rejected: cannot proceed to confirmation'
+                    : 'Pending Approval: quotation must be approved before proceeding'
+                }
+              >
+                <span>Proceed to Confirmation & Plan</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#c79e7c]" />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Floating Screen-Wide Toast Alert */}
+      {saveSuccess && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#24150c] text-white px-4 py-3 rounded-lg shadow-2xl border border-[#c79e7c] flex items-center gap-3 animate-bounce-short">
+          <div className="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">
+            <Clock className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-[#faf6ee]">
+              Quotation {existingQuotation?.quotationNumber || quotationNumber} Saved!
+            </div>
+            <div className="text-[11px] text-[#d8c8b4]">Status: PENDING APPROVAL (Awaiting Review)</div>
+          </div>
+        </div>
+      )}
+
+      {/* ACCEPT QUOTATION MODAL */}
+      {showAcceptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#140b06]/70 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="fixed inset-0" onClick={() => !approvalSubmitting && setShowAcceptModal(false)} />
+          <div className="relative z-10 w-full max-w-lg bg-white rounded-xl shadow-2xl border border-[#d6c7b2] p-6 text-stone-800 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between border-b border-[#f0e8db] pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-200">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-700" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#24160c]">
+                    Accept Commercial Quotation
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5 font-mono">
+                    {quotationNumber} • {selectedProject?.customerName}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={approvalSubmitting}
+                onClick={() => setShowAcceptModal(false)}
+                className="text-stone-400 hover:text-stone-600 p-1 rounded-md"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {approvalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-800 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{approvalError}</span>
+              </div>
+            )}
+
+            <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-md text-[11px] text-emerald-950 leading-relaxed space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-emerald-900">
+                <Info className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Approval Rules:</span>
+              </div>
+              <div>• Status will update to <strong className="text-emerald-900">Quotation Accepted</strong>.</div>
+              <div>• Project will become eligible to proceed to <strong className="text-stone-900">Project Confirmation & Plan</strong>.</div>
+              <div>• Approval timestamp and administrator details will be recorded in database.</div>
+            </div>
+
+            <div className="pt-2 border-t border-[#f0e8db] flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={approvalSubmitting}
+                onClick={() => setShowAcceptModal(false)}
+                className="px-4 py-2 rounded-md border border-[#d6c7b2] text-stone-700 hover:bg-[#fbf9f5] text-xs font-semibold transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={approvalSubmitting}
+                onClick={handleAcceptQuotation}
+                className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 border border-emerald-800 rounded-md shadow-xs transition disabled:opacity-50 cursor-pointer"
+              >
+                {approvalSubmitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
+                    <span>Approving...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Confirm & Accept</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REJECT QUOTATION MODAL */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#140b06]/70 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="fixed inset-0" onClick={() => !approvalSubmitting && setShowRejectModal(false)} />
+          <div className="relative z-10 w-full max-w-lg bg-white rounded-xl shadow-2xl border border-[#d6c7b2] p-6 text-stone-800 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between border-b border-[#f0e8db] pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-rose-100 text-rose-800 flex items-center justify-center shrink-0 border border-rose-200">
+                  <XCircle className="w-5 h-5 text-rose-700" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#24160c]">
+                    Reject Commercial Quotation
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5 font-mono">
+                    {quotationNumber} • {selectedProject?.customerName}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={approvalSubmitting}
+                onClick={() => setShowRejectModal(false)}
+                className="text-stone-400 hover:text-stone-600 p-1 rounded-md"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {approvalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-800 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{approvalError}</span>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-[#24160c]">
+                Mandatory Rejection Reason <span className="text-rose-600">*</span>
+              </label>
+              <textarea
+                rows={3}
+                value={rejectionReasonText}
+                onChange={(e) => {
+                  setRejectionReasonText(e.target.value);
+                  if (approvalError) setApprovalError(null);
+                }}
+                placeholder="Enter mandatory reason for rejecting this quotation..."
+                className="w-full p-2.5 text-xs bg-white border border-[#d6c7b2] rounded-md focus:border-rose-600 focus:ring-1 focus:ring-rose-600 focus:outline-none"
+              />
+            </div>
+
+            <div className="pt-2 border-t border-[#f0e8db] flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={approvalSubmitting}
+                onClick={() => setShowRejectModal(false)}
+                className="px-4 py-2 rounded-md border border-[#d6c7b2] text-stone-700 hover:bg-[#fbf9f5] text-xs font-semibold transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={approvalSubmitting || !rejectionReasonText.trim()}
+                onClick={handleRejectQuotation}
+                className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-rose-700 hover:bg-rose-800 border border-rose-800 rounded-md shadow-xs transition disabled:opacity-50 cursor-pointer"
+              >
+                {approvalSubmitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
+                    <span>Rejecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>Reject Quotation</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
         </>
       )}
     </div>
