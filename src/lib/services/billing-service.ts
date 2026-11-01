@@ -106,7 +106,7 @@ export class BillingService {
           projectId: project.id,
           eventType: 'INVOICE_GENERATED',
           eventTitle: `Invoice ${invoiceNumber} Generated`,
-          eventDescription: `Tax invoice issued for ₹${invoice.totalAmount} (${data.invoiceType.replace(/_/g, ' ')}).`,
+          eventDescription: `Tax invoice issued for ₹${invoice.totalAmount} (${(data.invoiceType || 'RENTAL_MONTHLY').replace(/_/g, ' ')}).`,
           actorId: data.actorId,
           actorName: data.actorName,
           createdAt: new Date().toISOString(),

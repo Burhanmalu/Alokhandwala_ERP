@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
 
     // Summary Calculations
     const totalCustomers = customers.length;
-    const totalProjects = projects.length;
+    const totalProjects = projects.filter(p => p.status !== 'CANCELLED').length;
+    const cancelledCount = projects.filter(p => p.status === 'CANCELLED').length;
     const notInstalledCount = projects.filter(p => p.status === 'NOT_INSTALLED').length;
     const confirmedCount = projects.filter(p => p.status === 'CONFIRMED_PROJECT').length;
     const scheduledCount = projects.filter(p => p.status === 'SCHEDULED').length;
@@ -103,6 +104,7 @@ export async function GET(req: NextRequest) {
         cards: {
           totalCustomers,
           totalProjects,
+          cancelledCount,
           notInstalledCount,
           confirmedCount,
           scheduledCount,

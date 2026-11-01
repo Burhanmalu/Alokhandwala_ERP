@@ -6,7 +6,6 @@ import {
   Search, 
   Menu, 
   LogOut, 
-  Building2, 
   X 
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -66,14 +65,8 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* Branch / Facility Badge */}
-        <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#fbf9f5] border border-[#e8decb] text-xs text-[#574830] font-medium shrink-0">
-          <Building2 className="w-3.5 h-3.5 text-[#ab7c57]" />
-          <span>Taloja Central Yard</span>
-        </div>
-
         {/* User Pill */}
-        <div className="flex items-center gap-2 sm:gap-2.5 pl-2 sm:pl-3 border-l border-[#ebdcc9]">
+        <div className="flex items-center gap-2 sm:gap-2.5">
           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#24150c] text-[#fdf8f4] flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 border border-[#4d301c]">
             {currentUser.fullName ? currentUser.fullName[0] : 'U'}
           </div>

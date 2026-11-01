@@ -13,7 +13,7 @@ import {
   MapPin 
 } from 'lucide-react';
 import { Project, Material } from '@/lib/schema';
-import { formatQuantity, formatINR } from '@/lib/formatters';
+import { formatQuantity, formatINR, extractProjectDimensions } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
 import { RENTAL_CONSTANTS } from '@/lib/constants/terms-and-conditions';
 
@@ -255,10 +255,8 @@ export default function ProjectShiftingPage({
 
               {/* Mode Selection and Quick Apply */}
               {(() => {
-                const m = project.measurements;
-                const lengthFt = m ? (m.unit === 'METERS' ? m.length * 3.28084 : m.length) : 0;
-                const heightFt = m ? (m.unit === 'METERS' ? m.height * 3.28084 : m.height) : 0;
-                const areaSqFt = project.totalAreaSqFt || Math.round(lengthFt * heightFt) || 0;
+                const projectDims = extractProjectDimensions(project);
+                const areaSqFt = projectDims.elevationAreaSqFt;
                 const mode1Cost = Math.round(areaSqFt * RENTAL_CONSTANTS.SHIFTING_RATE_PER_SQFT);
                 const mode2Cost = Math.round((project.monthlyRentalRate || 0) * RENTAL_CONSTANTS.SHIFTING_PERCENTAGE_OF_UNIT_RENTAL);
 
@@ -278,10 +276,10 @@ export default function ProjectShiftingPage({
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-slate-800 text-xs">Mode 1: ₹6 / sq. ft.</span>
-                        <span className="text-xs font-mono font-bold text-amber-800">₹{formatINR(mode1Cost, false)}</span>
+                        <span className="text-xs font-mono font-bold text-amber-800">{formatINR(mode1Cost, false)}</span>
                       </div>
                       <div className="text-[10px] text-slate-500 mt-0.5">
-                        {areaSqFt > 0 ? `${areaSqFt} sq. ft. × ₹6/sq. ft.` : 'Area calculated from site dimensions'}
+                        {areaSqFt > 0 ? `${projectDims.formattedArea} (${projectDims.formattedDimensions}) × ₹6/sq. ft.` : 'Area calculated from site dimensions'}
                       </div>
                     </button>
 
@@ -299,10 +297,10 @@ export default function ProjectShiftingPage({
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-slate-800 text-xs">Mode 2: 60% of Unit Rate</span>
-                        <span className="text-xs font-mono font-bold text-amber-800">₹{formatINR(mode2Cost, false)}</span>
+                        <span className="text-xs font-mono font-bold text-amber-800">{formatINR(mode2Cost, false)}</span>
                       </div>
                       <div className="text-[10px] text-slate-500 mt-0.5">
-                        60% of monthly rental (₹{formatINR(project.monthlyRentalRate || 0, false)})
+                        60% of monthly rental ({formatINR(project.monthlyRentalRate || 0, false)})
                       </div>
                     </button>
                   </div>

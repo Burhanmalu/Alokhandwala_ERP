@@ -110,7 +110,8 @@ export async function runSiteFormMapTests() {
     mapComponentContent.includes("'NOT_ON_SITE'") &&
     mapComponentContent.includes('enableHighAccuracy: true') &&
     mapComponentContent.includes('Confirm Location') &&
-    mapComponentContent.includes('places.Autocomplete'),
+    (mapComponentContent.includes('nominatim.openstreetmap.org') || mapComponentContent.includes('OpenStreetMap')) &&
+    !mapComponentContent.includes('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY'),
     'SiteLocationMap must support ON_SITE, NOT_ON_SITE, enableHighAccuracy, Confirm Location, and Places Autocomplete'
   );
   console.log('  ✓ PASS: 8. SiteLocationMap provides On-Site GPS, Not On-Site Places Autocomplete, and Confirm Location');

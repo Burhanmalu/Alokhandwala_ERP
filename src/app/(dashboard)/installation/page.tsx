@@ -26,7 +26,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Project } from '@/lib/schema';
-import { formatDate } from '@/lib/formatters';
+import { formatDate, calculateScaffoldingArea, extractProjectDimensions } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { ImageUploaderWithLightbox } from '@/components/ui/ImageUploaderWithLightbox';
@@ -169,13 +169,13 @@ function InstallationFormContent() {
       }
     }
 
-    // Initialize dimensions from project measurements if available
-    const meas = p.measurements;
-    const pLen = meas?.length || 20;
-    const pWid = meas?.width || 2;
-    const pHgt = meas?.height || 15;
-    const unit = meas?.unit || 'METERS';
-    const type = meas?.measurementType || 'FAÇADE_SCAFFOLD';
+    // Initialize dimensions from project measurements as single source of truth
+    const dims = extractProjectDimensions(p);
+    const pLen = dims.width || 10;
+    const pWid = dims.depth || 3;
+    const pHgt = dims.height || 20;
+    const unit = dims.unit;
+    const type = p.measurements?.measurementType || 'FAÇADE_SCAFFOLD';
 
     setPlannedLength(pLen);
     setPlannedWidth(pWid);
@@ -224,8 +224,8 @@ function InstallationFormContent() {
     Boolean(assignedSupName && executingSupName && assignedSupName === executingSupName);
 
   // Dimension comparison calculations
-  const plannedArea = plannedLength * plannedHeight;
-  const actualArea = actualLength * actualHeight;
+  const plannedArea = calculateScaffoldingArea(plannedLength, plannedWidth, plannedHeight, dimUnit);
+  const actualArea = calculateScaffoldingArea(actualLength, actualWidth, actualHeight, dimUnit);
   const lengthDiff = Math.abs(actualLength - plannedLength);
   const widthDiff = Math.abs(actualWidth - plannedWidth);
   const heightDiff = Math.abs(actualHeight - plannedHeight);
@@ -868,21 +868,21 @@ function InstallationFormContent() {
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center font-mono">
                   <div className="p-2 bg-white rounded border border-[#ebdcc9]">
-                    <div className="text-[10px] text-[#7d6553] font-sans">Length</div>
+                    <div className="text-[10px] text-[#7d6553] font-sans">Width (W)</div>
                     <div className="font-bold text-[#24160c] text-sm">{plannedLength} {dimUnit === 'METERS' ? 'm' : 'ft'}</div>
                   </div>
                   <div className="p-2 bg-white rounded border border-[#ebdcc9]">
-                    <div className="text-[10px] text-[#7d6553] font-sans">Width</div>
+                    <div className="text-[10px] text-[#7d6553] font-sans">Depth (D)</div>
                     <div className="font-bold text-[#24160c] text-sm">{plannedWidth} {dimUnit === 'METERS' ? 'm' : 'ft'}</div>
                   </div>
                   <div className="p-2 bg-white rounded border border-[#ebdcc9]">
-                    <div className="text-[10px] text-[#7d6553] font-sans">Height</div>
+                    <div className="text-[10px] text-[#7d6553] font-sans">Height (H)</div>
                     <div className="font-bold text-[#24160c] text-sm">{plannedHeight} {dimUnit === 'METERS' ? 'm' : 'ft'}</div>
                   </div>
                 </div>
                 <div className="text-[11px] text-[#7d6553] flex justify-between pt-1 border-t border-[#ebdcc9]">
-                  <span>Planned Surface Area (L × H):</span>
-                  <span className="font-mono font-bold text-[#24160c]">{plannedArea.toFixed(1)} {dimUnit === 'METERS' ? 'sq.m' : 'sq.ft'}</span>
+                  <span>Planned Elevation Area:</span>
+                  <span className="font-mono font-bold text-[#24160c]">{Math.round(plannedArea).toLocaleString('en-IN')} sq. ft.</span>
                 </div>
               </div>
 

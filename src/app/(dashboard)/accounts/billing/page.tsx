@@ -531,7 +531,7 @@ export default function BillingPage() {
                         }}
                         className="px-2 py-1 bg-[#fbf7f0] hover:bg-[#f4ebe1] text-[#714f36] border border-[#ebdcc9] rounded font-semibold text-[10px]"
                       >
-                        75% Advance: ₹{formatINR(adv75, false)}
+                        75% Advance: {formatINR(adv75, false)}
                       </button>
 
                       <button
@@ -542,7 +542,7 @@ export default function BillingPage() {
                         }}
                         className="px-2 py-1 bg-[#fbf7f0] hover:bg-[#f4ebe1] text-[#714f36] border border-[#ebdcc9] rounded font-semibold text-[10px]"
                       >
-                        25% Balance: ₹{formatINR(bal25, false)}
+                        25% Balance: {formatINR(bal25, false)}
                       </button>
 
                       <button
@@ -553,7 +553,7 @@ export default function BillingPage() {
                         }}
                         className="px-2 py-1 bg-[#f7f2eb] hover:bg-[#ebdcc9] text-[#24160c] border border-[#d6c7b2] rounded font-semibold text-[10px]"
                       >
-                        28d Rental: ₹{formatINR(proj.monthlyRentalRate || 0, false)}
+                        28d Rental: {formatINR(proj.monthlyRentalRate || 0, false)}
                       </button>
 
                       {transport2Way > 0 && (
@@ -565,7 +565,7 @@ export default function BillingPage() {
                           }}
                           className="px-2 py-1 bg-[#fbf7f0] hover:bg-[#f4ebe1] text-[#78350f] border border-[#ebdcc9] rounded font-semibold text-[10px]"
                         >
-                          2-Way Transport: ₹{formatINR(transport2Way, false)}
+                          2-Way Transport: {formatINR(transport2Way, false)}
                         </button>
                       )}
 
@@ -578,7 +578,7 @@ export default function BillingPage() {
                           }}
                           className="px-2 py-1 bg-[#fbf9f5] hover:bg-[#ede3d4] text-stone-800 border border-[#ede3d4] rounded font-semibold text-[10px]"
                         >
-                          Shifting: ₹{formatINR(shiftCost, false)}
+                          Shifting: {formatINR(shiftCost, false)}
                         </button>
                       )}
                     </div>

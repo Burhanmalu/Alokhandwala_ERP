@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
           transactionNumber: txnNumber,
           movementType: 'OPENING_STOCK',
           sourceLocation: 'Vendor / Opening Fleet',
-          destinationLocation: 'Taloja Central Scaffolding Yard',
+          destinationLocation: 'Indore Central Scaffolding Yard',
           actorId,
           actorName,
           remarks: `Opening stock registration for new material ${newMat.name} (${newMat.itemCode})`,

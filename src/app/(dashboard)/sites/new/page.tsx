@@ -28,6 +28,7 @@ import {
 import { useAuth } from '@/lib/auth/auth-context';
 import { Customer, UserProfile } from '@/lib/schema';
 import { calculateScaffoldingArea } from '@/lib/formatters';
+import { isValidGSTIN } from '@/lib/validations';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { ImageUploaderWithLightbox } from '@/components/ui/ImageUploaderWithLightbox';
 import { SiteLocationMap, LocationData } from '@/components/maps/SiteLocationMap';
@@ -71,9 +72,31 @@ function SiteFormContent() {
   // 4. Phone Number
   const [phone, setPhone] = useState('');
 
+  // 4b. Optional Client GST Number
+  const [hasClientGst, setHasClientGst] = useState(false);
+  const [clientGstNumber, setClientGstNumber] = useState('');
+  const [clientGstError, setClientGstError] = useState<string | null>(null);
+
+  const validateClientGst = (val: string) => {
+    if (!val || !val.trim()) {
+      setClientGstError('GSTIN is required when GST Number is selected');
+      return false;
+    }
+    if (!isValidGSTIN(val)) {
+      setClientGstError('Invalid 15-character GSTIN format (e.g. 23AAACG1234F1Z1)');
+      return false;
+    }
+    setClientGstError(null);
+    return true;
+  };
+
   // 5. Address & Coordinates
   const [address, setAddress] = useState('');
   const [landmark, setLandmark] = useState('');
+  const [houseNumber, setHouseNumber] = useState('');
+  const [street, setStreet] = useState('');
+  const [locality, setLocality] = useState('');
+  const [pincode, setPincode] = useState('');
   const [latitude, setLatitude] = useState<number | undefined>(undefined);
   const [longitude, setLongitude] = useState<number | undefined>(undefined);
   const [locationType, setLocationType] = useState<'ON_SITE' | 'NOT_ON_SITE' | undefined>(undefined);
@@ -151,8 +174,19 @@ function SiteFormContent() {
           const rawPhone = p.contactPhone || p.customer?.phone || '';
           setPhone(rawPhone.replace(/\D/g, '').slice(-10));
 
+          const restoredHasGst = p.hasClientGst !== undefined 
+            ? p.hasClientGst 
+            : (p.clientGstNumber ? p.clientGstNumber !== 'N/A' : Boolean(p.customer?.gstin && p.customer.gstin !== 'N/A'));
+          setHasClientGst(Boolean(restoredHasGst));
+          setClientGstNumber(restoredHasGst ? (p.clientGstNumber && p.clientGstNumber !== 'N/A' ? p.clientGstNumber : (p.customer?.gstin || '')) : '');
+          setClientGstError(null);
+
           setAddress(p.siteAddress || p.address || '');
           setLandmark(p.landmark || p.site?.landmark || '');
+          if (p.houseNumber || p.site?.houseNumber) setHouseNumber(p.houseNumber || p.site?.houseNumber || '');
+          if (p.street || p.site?.street) setStreet(p.street || p.site?.street || '');
+          if (p.locality || p.site?.locality) setLocality(p.locality || p.site?.locality || '');
+          if (p.pincode || p.site?.pincode) setPincode(p.pincode || p.site?.pincode || '');
           
           if (p.latitude !== undefined && p.longitude !== undefined) {
             setLatitude(p.latitude);
@@ -214,6 +248,9 @@ function SiteFormContent() {
       setCustomerName('');
       setPhone('');
       setReferralName('');
+      setHasClientGst(false);
+      setClientGstNumber('');
+      setClientGstError(null);
       return;
     }
     const cust = existingCustomers.find(c => c.id === val);
@@ -222,6 +259,15 @@ function SiteFormContent() {
       const cleanPhone = (cust.phone || '').replace(/\D/g, '').slice(-10);
       setPhone(cleanPhone);
       setReferralName(cust.referenceName || '');
+      if (cust.gstin && cust.gstin !== 'N/A') {
+        setHasClientGst(true);
+        setClientGstNumber(cust.gstin);
+        setClientGstError(null);
+      } else {
+        setHasClientGst(false);
+        setClientGstNumber('');
+        setClientGstError(null);
+      }
       if (cust.billingAddress && !address) {
         setAddress(cust.billingAddress);
       }
@@ -254,6 +300,13 @@ function SiteFormContent() {
     }
     if (loc.locationAccuracyMeters !== undefined) {
       setLocationAccuracyMeters(loc.locationAccuracyMeters);
+    }
+    if (loc.components) {
+      if (loc.components.houseNumber) setHouseNumber(loc.components.houseNumber);
+      if (loc.components.street) setStreet(loc.components.street);
+      if (loc.components.locality) setLocality(loc.components.locality);
+      if (loc.components.pincode) setPincode(loc.components.pincode);
+      if (loc.components.landmark && !landmark) setLandmark(loc.components.landmark);
     }
     setIsLocationConfirmed(loc.isConfirmed);
   };
@@ -306,6 +359,17 @@ function SiteFormContent() {
       return;
     }
 
+    if (hasClientGst) {
+      if (!clientGstNumber || !clientGstNumber.trim()) {
+        setError('Please enter the client GST Number or uncheck the GST Number option.');
+        return;
+      }
+      if (!isValidGSTIN(clientGstNumber)) {
+        setError('Please enter a valid 15-character Indian GSTIN (e.g. 23AAACG1234F1Z1) or uncheck the GST Number option.');
+        return;
+      }
+    }
+
     if (locationType && !isLocationConfirmed) {
       setError('Please click "Confirm Location" on the map to confirm the site location before saving.');
       return;
@@ -326,8 +390,16 @@ function SiteFormContent() {
             supervisorName: supervisorName.trim(),
             assignedSupervisorId: assignedSupervisorId || currentUser?.id,
             phone: phone.trim(),
+            hasClientGst: hasClientGst,
+            clientGstNumber: hasClientGst && clientGstNumber.trim() ? clientGstNumber.trim().toUpperCase() : 'N/A',
+            gstin: hasClientGst && clientGstNumber.trim() ? clientGstNumber.trim().toUpperCase() : 'N/A',
             siteAddress: address.trim(),
             landmark: landmark.trim() || undefined,
+            houseNumber: houseNumber.trim() || undefined,
+            street: street.trim() || undefined,
+            locality: locality.trim() || undefined,
+            pincode: pincode.trim() || undefined,
+            isLocationConfirmed: true,
             latitude,
             longitude,
             locationType,
@@ -367,15 +439,23 @@ function SiteFormContent() {
             assignedSupervisorId: assignedSupervisorId || currentUser?.id,
             phone: phone.trim(),
             contactPhone: phone.trim(),
+            hasClientGst: hasClientGst,
+            clientGstNumber: hasClientGst && clientGstNumber.trim() ? clientGstNumber.trim().toUpperCase() : 'N/A',
+            gstin: hasClientGst && clientGstNumber.trim() ? clientGstNumber.trim().toUpperCase() : 'N/A',
             address: address.trim(),
             siteAddress: address.trim(),
             landmark: landmark.trim() || undefined,
+            houseNumber: houseNumber.trim() || undefined,
+            street: street.trim() || undefined,
+            locality: locality.trim() || undefined,
+            pincode: pincode.trim() || undefined,
+            isLocationConfirmed: true,
             latitude,
             longitude,
             locationType,
             locationAccuracyMeters,
-            city: 'Mumbai',
-            state: 'Maharashtra',
+            city: 'Indore',
+            state: 'Madhya Pradesh',
             photoUrls: photos,
             width: numW,
             depth: numD,
@@ -455,7 +535,7 @@ function SiteFormContent() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} noValidate className="space-y-6">
         {/* ========================================================= */}
         {/* SECTION 1: CUSTOMER & REFERRAL                            */}
         {/* ========================================================= */}
@@ -612,11 +692,75 @@ function SiteFormContent() {
                 )}
               </div>
             </div>
+
+            {/* Client GSTIN Checkbox & Conditional Input */}
+            <div className="pt-3 border-t border-[#f2eadf]">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={hasClientGst}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setHasClientGst(checked);
+                      if (!checked) {
+                        setClientGstError(null);
+                      } else if (clientGstNumber && clientGstNumber !== 'N/A') {
+                        validateClientGst(clientGstNumber);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-[#d6c7b2] text-[#8f6541] focus:ring-[#8f6541] accent-[#8f6541]"
+                  />
+                  <span className="text-xs font-bold text-[#4a3525] uppercase tracking-wider">
+                    GST Number
+                  </span>
+                </label>
+                <span className="text-[11px] font-mono font-medium text-[#7d6553]">
+                  {hasClientGst ? 'Client has GST registration' : 'GST: N/A'}
+                </span>
+              </div>
+
+              {hasClientGst && (
+                <div className="mt-3 space-y-1.5">
+                  <label className="block text-2xs font-bold text-[#5c3e24] uppercase tracking-wider">
+                    Client GSTIN (15-Character Alphanumeric) <span className="text-rose-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={15}
+                    value={clientGstNumber}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15);
+                      setClientGstNumber(val);
+                      validateClientGst(val);
+                    }}
+                    placeholder="e.g. 23AAACG1234F1Z1"
+                    className={`w-full text-sm px-4 py-2.5 rounded-lg border uppercase font-mono transition bg-white text-[#24160c] focus:outline-none focus:ring-2 ${
+                      clientGstError 
+                        ? 'border-rose-400 focus:ring-rose-200 focus:border-rose-500' 
+                        : clientGstNumber && isValidGSTIN(clientGstNumber)
+                          ? 'border-emerald-500 focus:ring-emerald-200 focus:border-emerald-500'
+                          : 'border-[#d6c7b2] focus:ring-[#8f6541]/20 focus:border-[#8f6541]'
+                    }`}
+                  />
+                  {clientGstError && (
+                    <span className="text-[11px] text-rose-600 font-medium block">
+                      {clientGstError}
+                    </span>
+                  )}
+                  {clientGstNumber && isValidGSTIN(clientGstNumber) && (
+                    <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Valid 15-character Indian GSTIN
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* ========================================================= */}
-        {/* SECTION 2: ADDRESS & GOOGLE MAPS SITE LOCATION            */}
+        {/* SECTION 2: ADDRESS & OPENSTREETMAP SITE LOCATION           */}
         {/* ========================================================= */}
         <div className="bg-white p-6 sm:p-7 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-5">
           <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-4">
@@ -633,7 +777,7 @@ function SiteFormContent() {
             </span>
           </div>
 
-          {/* Interactive Google Map with Current Location Button & Places Autocomplete */}
+          {/* Interactive OpenStreetMap Leaflet Map with Device GPS & Nominatim Search */}
           <div className="space-y-4">
             <SiteLocationMap
                 initialAddress={address}
@@ -726,7 +870,7 @@ function SiteFormContent() {
               <input
                 type="number"
                 required
-                min={0.1}
+                min="0"
                 step="any"
                 value={width}
                 onChange={e => setWidth(e.target.value === '' ? '' : Number(e.target.value))}
@@ -743,7 +887,7 @@ function SiteFormContent() {
               <input
                 type="number"
                 required
-                min={0.1}
+                min="0"
                 step="any"
                 value={depth}
                 onChange={e => setDepth(e.target.value === '' ? '' : Number(e.target.value))}
@@ -760,7 +904,7 @@ function SiteFormContent() {
               <input
                 type="number"
                 required
-                min={0.1}
+                min="0"
                 step="any"
                 value={height}
                 onChange={e => setHeight(e.target.value === '' ? '' : Number(e.target.value))}

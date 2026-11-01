@@ -2,15 +2,26 @@
 
 import { z } from 'zod';
 
+/**
+ * Standard Indian 15-character GSTIN regular expression
+ * 2 digits (State code) + 10 chars (PAN) + 1 entity num + 'Z' + 1 checksum char
+ */
+export const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
+export function isValidGSTIN(val?: string | null): boolean {
+  if (!val || val === 'N/A') return false;
+  return GSTIN_REGEX.test(val.trim().toUpperCase());
+}
+
 export const customerSchema = z.object({
   companyName: z.string().min(2, 'Company name is required'),
   referenceName: z.string().optional(),
   contactPerson: z.string().min(2, 'Contact person name is required'),
   phone: z.string().min(10, 'Valid 10-digit phone number is required'),
-  email: z.string().email('Valid email address is required'),
+  email: z.string().email('Valid email address is required').optional().or(z.literal('')),
   billingAddress: z.string().min(5, 'Billing address is required'),
-  city: z.string().optional(),
-  state: z.string().optional(),
+  city: z.string().optional().default('Indore'),
+  state: z.string().optional().default('Madhya Pradesh'),
   gstin: z.string().optional(),
   creditLimit: z.coerce.number().min(0).default(500000),
 });
@@ -30,11 +41,19 @@ export const siteInspectionSchema = z.object({
   longitude: z.coerce.number().optional(),
   locationType: z.enum(['ON_SITE', 'NOT_ON_SITE']).optional(),
   locationAccuracyMeters: z.coerce.number().optional(),
+  houseNumber: z.string().optional(),
+  street: z.string().optional(),
+  locality: z.string().optional(),
+  pincode: z.string().optional(),
+  isLocationConfirmed: z.boolean().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
   contactPerson: z.string().optional(),
   contactPhone: z.string().optional(),
   phone: z.string().optional(),
+  hasClientGst: z.boolean().optional(),
+  clientGstNumber: z.string().optional(),
+  gstin: z.string().optional(),
   // Measurements / Size
   width: z.coerce.number().min(0).default(0),
   depth: z.coerce.number().min(0).default(3),
@@ -86,6 +105,8 @@ export const projectConfirmationSchema = z.object({
   advancePercentage: z.coerce.number().optional(),
   advanceRequiredAmount: z.coerce.number().optional(),
   completionDueAmount: z.coerce.number().optional(),
+  clientAccepted: z.boolean().optional(),
+  clientAcceptanceVerified: z.boolean().optional(),
 });
 
 export const installationSubmissionSchema = z.object({

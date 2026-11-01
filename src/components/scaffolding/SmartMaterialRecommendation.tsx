@@ -33,6 +33,7 @@ interface SmartMaterialRecommendationProps {
   initialDimensions?: {
     length?: number;
     width?: number;
+    depth?: number;
     height?: number;
     unit?: 'FEET' | 'METERS';
   };
@@ -495,8 +496,8 @@ export function SmartMaterialRecommendation({
             <div className="relative">
               <input
                 type="number"
-                min="1"
-                step="0.5"
+                min="0"
+                step="any"
                 value={length}
                 onChange={(e) => setLength(Number(e.target.value))}
                 className="w-full p-2.5 bg-white border border-[#d6c7b2] rounded-xl font-mono text-xs font-bold text-slate-900 focus:ring-2 focus:ring-[#8c5e39] focus:outline-hidden"
@@ -516,8 +517,8 @@ export function SmartMaterialRecommendation({
             <div className="relative">
               <input
                 type="number"
-                min="1"
-                step="0.5"
+                min="0"
+                step="any"
                 value={width}
                 onChange={(e) => setWidth(Number(e.target.value))}
                 className="w-full p-2.5 bg-white border border-[#d6c7b2] rounded-xl font-mono text-xs font-bold text-slate-900 focus:ring-2 focus:ring-[#8c5e39] focus:outline-hidden"
@@ -537,8 +538,8 @@ export function SmartMaterialRecommendation({
             <div className="relative">
               <input
                 type="number"
-                min="1"
-                step="0.5"
+                min="0"
+                step="any"
                 value={height}
                 onChange={(e) => setHeight(Number(e.target.value))}
                 className="w-full p-2.5 bg-white border border-[#d6c7b2] rounded-xl font-mono text-xs font-bold text-slate-900 focus:ring-2 focus:ring-[#8c5e39] focus:outline-hidden"

@@ -112,7 +112,7 @@ export default function DashboardOverviewPage() {
             {cards.activeRentalCount || 0}
           </div>
           <div className="text-xs text-[#574830] font-medium flex items-center gap-1.5">
-            <span className="font-semibold text-emerald-700">₹{formatINR(cards.monthlyRentalRunRate, false)}</span>
+            <span className="font-semibold text-emerald-700">{formatINR(cards.monthlyRentalRunRate, false)}</span>
             <span className="text-[#9c826e]">/mo revenue</span>
           </div>
         </Link>
@@ -169,44 +169,115 @@ export default function DashboardOverviewPage() {
         </Link>
       </div>
 
-      {/* Secondary Metrics Bar */}
+      {/* Secondary Metrics Bar - Clickable Inventory & Financial Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-        <div className="bg-white p-3 rounded-md border border-[#e8decb] shadow-2xs">
-          <div className="text-[10px] text-[#7d6553] uppercase font-semibold">Warehouse Usable</div>
-          <div className="text-sm font-bold text-[#24160c] font-mono mt-0.5">
+        {/* 1. Warehouse Usable */}
+        <Link
+          href="/inventory?filter=usable"
+          className="bg-white p-3 rounded-lg border border-[#e8decb] hover:border-[#8c5e39] hover:shadow-xs transition duration-150 cursor-pointer block group"
+          title="Click to view Usable Warehouse Inventory"
+        >
+          <div className="flex items-center justify-between text-[10px] text-[#7d6553] uppercase font-semibold group-hover:text-[#24160c]">
+            <span className="truncate">Warehouse Usable</span>
+            <ArrowUpRight className="w-3 h-3 text-[#9c826e] group-hover:text-[#8c5e39] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+          </div>
+          <div className="text-sm font-bold text-[#24160c] font-mono mt-0.5 truncate">
             {formatQuantity(cards.usableWarehouseQty, 'Nos')}
           </div>
-        </div>
-        <div className="bg-white p-3 rounded-md border border-[#e8decb] shadow-2xs">
-          <div className="text-[10px] text-[#7d6553] uppercase font-semibold">Reserved for Sites</div>
-          <div className="text-sm font-bold text-blue-700 font-mono mt-0.5">
+          <div className="text-[10px] text-[#8c7360] font-sans mt-0.5 truncate">
+            In yard storage
+          </div>
+        </Link>
+
+        {/* 2. Reserved for Sites */}
+        <Link
+          href="/inventory?filter=reserved"
+          className="bg-white p-3 rounded-lg border border-[#e8decb] hover:border-blue-500 hover:shadow-xs transition duration-150 cursor-pointer block group"
+          title="Click to view Reserved Stock for Confirmed Sites"
+        >
+          <div className="flex items-center justify-between text-[10px] text-[#7d6553] uppercase font-semibold group-hover:text-blue-800">
+            <span className="truncate">Reserved for Sites</span>
+            <ArrowUpRight className="w-3 h-3 text-[#9c826e] group-hover:text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+          </div>
+          <div className="text-sm font-bold text-blue-700 font-mono mt-0.5 truncate">
             {formatQuantity(cards.reservedQty, 'Nos')}
           </div>
-        </div>
-        <div className="bg-white p-3 rounded-md border border-[#e8decb] shadow-2xs">
-          <div className="text-[10px] text-[#7d6553] uppercase font-semibold">Allocated on Sites</div>
-          <div className="text-sm font-bold text-emerald-700 font-mono mt-0.5">
+          <div className="text-[10px] text-[#8c7360] font-sans mt-0.5 truncate">
+            Confirmed bookings
+          </div>
+        </Link>
+
+        {/* 3. Allocated on Sites */}
+        <Link
+          href="/inventory?filter=allocated"
+          className="bg-white p-3 rounded-lg border border-[#e8decb] hover:border-emerald-500 hover:shadow-xs transition duration-150 cursor-pointer block group"
+          title="Click to view Materials Allocated to Active Sites"
+        >
+          <div className="flex items-center justify-between text-[10px] text-[#7d6553] uppercase font-semibold group-hover:text-emerald-800">
+            <span className="truncate">Allocated on Sites</span>
+            <ArrowUpRight className="w-3 h-3 text-[#9c826e] group-hover:text-emerald-600 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+          </div>
+          <div className="text-sm font-bold text-emerald-700 font-mono mt-0.5 truncate">
             {formatQuantity(cards.siteAllocatedQty, 'Nos')}
           </div>
-        </div>
-        <div className="bg-white p-3 rounded-md border border-[#e8decb] shadow-2xs">
-          <div className="text-[10px] text-[#7d6553] uppercase font-semibold">Quarantine (Damaged)</div>
-          <div className="text-sm font-bold text-amber-700 font-mono mt-0.5">
+          <div className="text-[10px] text-[#8c7360] font-sans mt-0.5 truncate">
+            Active site rentals
+          </div>
+        </Link>
+
+        {/* 4. Damage Material (Previously Quarantine (Damaged)) */}
+        <Link
+          href="/inventory?filter=damaged"
+          className="bg-white p-3 rounded-lg border border-[#e8decb] hover:border-amber-500 hover:shadow-xs transition duration-150 cursor-pointer block group"
+          title="Click to view Damaged Material Records"
+        >
+          <div className="flex items-center justify-between text-[10px] text-[#7d6553] uppercase font-semibold group-hover:text-amber-800">
+            <span className="truncate">Damage Material</span>
+            <ArrowUpRight className="w-3 h-3 text-[#9c826e] group-hover:text-amber-600 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+          </div>
+          <div className="text-sm font-bold text-amber-700 font-mono mt-0.5 truncate">
             {formatQuantity(cards.damagedQty, 'Nos')}
           </div>
-        </div>
-        <div className="bg-white p-3 rounded-md border border-[#e8decb] shadow-2xs">
-          <div className="text-[10px] text-[#7d6553] uppercase font-semibold">Unreconciled Missing</div>
-          <div className="text-sm font-bold text-rose-700 font-mono mt-0.5">
+          <div className="text-[10px] text-[#8c7360] font-sans mt-0.5 truncate">
+            Under inspection/repair
+          </div>
+        </Link>
+
+        {/* 5. Missing Material (Previously Unreconciled Missing) */}
+        <Link
+          href="/inventory?filter=missing"
+          className="bg-white p-3 rounded-lg border border-[#e8decb] hover:border-rose-500 hover:shadow-xs transition duration-150 cursor-pointer block group"
+          title="Click to view Unreconciled Missing Material Records"
+        >
+          <div className="flex items-center justify-between text-[10px] text-[#7d6553] uppercase font-semibold group-hover:text-rose-800">
+            <span className="truncate">Missing Material</span>
+            <ArrowUpRight className="w-3 h-3 text-[#9c826e] group-hover:text-rose-600 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+          </div>
+          <div className="text-sm font-bold text-rose-700 font-mono mt-0.5 truncate">
             {formatQuantity(cards.missingQty, 'Nos')}
           </div>
-        </div>
-        <div className="bg-white p-3 rounded-md border border-[#e8decb] shadow-2xs">
-          <div className="text-[10px] text-[#7d6553] uppercase font-semibold">Outstanding Balance</div>
-          <div className="text-sm font-bold text-[#24160c] font-mono mt-0.5">
+          <div className="text-[10px] text-[#8c7360] font-sans mt-0.5 truncate">
+            Recovery pending
+          </div>
+        </Link>
+
+        {/* 6. Outstanding Balance */}
+        <Link
+          href="/billing/outstanding"
+          className="bg-white p-3 rounded-lg border border-[#e8decb] hover:border-[#8c5e39] hover:shadow-xs transition duration-150 cursor-pointer block group"
+          title="Click to view Outstanding Payments & Receivables"
+        >
+          <div className="flex items-center justify-between text-[10px] text-[#7d6553] uppercase font-semibold group-hover:text-[#24160c]">
+            <span className="truncate">Outstanding Balance</span>
+            <ArrowUpRight className="w-3 h-3 text-[#9c826e] group-hover:text-[#8c5e39] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+          </div>
+          <div className="text-sm font-bold text-[#24160c] font-mono mt-0.5 truncate">
             {formatINR(cards.outstandingReceivables, false)}
           </div>
-        </div>
+          <div className="text-[10px] text-[#8c7360] font-sans mt-0.5 truncate">
+            Pending collections
+          </div>
+        </Link>
       </div>
 
       {/* Visual Analytics */}

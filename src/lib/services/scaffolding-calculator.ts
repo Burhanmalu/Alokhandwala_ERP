@@ -512,7 +512,7 @@ export class ScaffoldingCalculatorService {
         `Stock Warning: ${shortageItemsCount} component line(s) have shortages (${totalShortagePieces} units deficit). Procurement/external hire required.`
       );
     } else {
-      safetyNotes.push('100% In-Stock: All materials verified available in Taloja Central Yard.');
+      safetyNotes.push('100% In-Stock: All materials verified available in Central Scaffolding Yard.');
     }
 
     return {

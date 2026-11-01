@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import 'leaflet/dist/leaflet.css';
 import { AuthProvider } from '@/lib/auth/auth-context';
 export const viewport: Viewport = {
   width: 'device-width',

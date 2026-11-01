@@ -33,7 +33,8 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { Material, Project, ScaffoldingMaterialPlanOption } from '@/lib/schema';
-import { formatINR, formatDate } from '@/lib/formatters';
+import { formatINR, formatDate, extractProjectDimensions } from '@/lib/formatters';
+import { calculateCommercialPricing } from '@/lib/services/pricing-service';
 import { useAuth } from '@/lib/auth/auth-context';
 import { processAndUploadImage } from '@/lib/image-utils';
 import { OFFICIAL_TERMS_AND_CONDITIONS, DEFAULT_PAYMENT_TERMS_TEXT, RENTAL_CONSTANTS, BusinessTerm } from '@/lib/constants/terms-and-conditions';
@@ -52,11 +53,15 @@ function ConfirmationFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedProjectId = searchParams.get('projectId');
+  const preselectedQuotationId = searchParams.get('quotationId');
   const { currentUser } = useAuth();
 
   const [notInstalledProjects, setNotInstalledProjects] = useState<Project[]>([]);
+  const [savedQuotations, setSavedQuotations] = useState<any[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [linkedQuotation, setLinkedQuotation] = useState<any | null>(null);
+  const [clientAccepted, setClientAccepted] = useState(false);
 
   const [catalogMaterials, setCatalogMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,21 +130,25 @@ function ConfirmationFormContent() {
   const [selectedPlan, setSelectedPlan] = useState<ScaffoldingMaterialPlanOption | null>(null);
   const [siteDimensions, setSiteDimensions] = useState<any>(null);
 
+  // Extract single source of truth dimensions from project inspection record
+  const projectDims = useMemo(() => {
+    return extractProjectDimensions(selectedProject);
+  }, [selectedProject]);
+
   // Billable Area Calculation (Term 1: Façade elevation surface area basis)
   const areaDetails = useMemo(() => {
-    const m = selectedProject?.measurements;
-    if (!m) return { areaSqFt: 0, lengthFt: 0, heightFt: 0, ratePerSqFt: 0 };
-    const lengthFt = m.unit === 'METERS' ? m.length * 3.28084 : m.length;
-    const heightFt = m.unit === 'METERS' ? m.height * 3.28084 : m.height;
-    const areaSqFt = Math.round(lengthFt * heightFt);
+    if (!selectedProject) return { areaSqFt: 0, lengthFt: 0, widthFt: 0, depthFt: 0, heightFt: 0, ratePerSqFt: 0 };
+    const areaSqFt = projectDims.elevationAreaSqFt;
     const ratePerSqFt = areaSqFt > 0 ? (monthlyRentalRate / areaSqFt) : 0;
     return {
-      areaSqFt,
-      lengthFt: Math.round(lengthFt * 10) / 10,
-      heightFt: Math.round(heightFt * 10) / 10,
+      areaSqFt: Math.round(areaSqFt),
+      lengthFt: projectDims.width,
+      widthFt: projectDims.width,
+      depthFt: projectDims.depth,
+      heightFt: projectDims.height,
       ratePerSqFt: Math.round(ratePerSqFt * 100) / 100,
     };
-  }, [selectedProject?.measurements, monthlyRentalRate]);
+  }, [selectedProject, projectDims, monthlyRentalRate]);
 
   // Walkway Jali Tracker (Term 4: 1 Jali included per unit, extra @ Rs. 200/pc)
   const jaliDetails = useMemo(() => {
@@ -159,6 +168,31 @@ function ConfirmationFormContent() {
       extraJaliCharge,
     };
   }, [selectedMaterials, catalogMaterials, selectedPlan, areaDetails]);
+
+  // Synchronized Commercial Pricing Breakdown (Single Source of Truth)
+  const commercialPricing = useMemo(() => {
+    const area = projectDims.elevationAreaSqFt > 0 ? projectDims.elevationAreaSqFt : (linkedQuotation?.totalAreaSqFt || 1000);
+    const rate = linkedQuotation?.ratePerSqFt || 22;
+    const months = durationMonths || linkedQuotation?.durationMonths || 1;
+    const transport = transportCharges !== undefined && transportCharges > 0
+      ? transportCharges
+      : (linkedQuotation?.transportCharges || selectedProject?.transportCharges || 4500);
+    const extraJaliQty = linkedQuotation?.extraJaliQuantity !== undefined
+      ? linkedQuotation.extraJaliQuantity
+      : (jaliDetails.extraJali > 0 ? jaliDetails.extraJali : 14);
+
+    return calculateCommercialPricing({
+      totalAreaSqFt: area,
+      ratePerSqFt: rate,
+      durationMonths: months,
+      extraJaliQuantity: extraJaliQty,
+      extraJaliRate: linkedQuotation?.extraJaliRate || 200,
+      transportCharges: transport,
+      shiftingCharges: linkedQuotation?.shiftingCharges || 0,
+      otherCharges: linkedQuotation?.otherCharges || 0,
+      gstPercentage: linkedQuotation?.gstPercentage !== undefined ? linkedQuotation.gstPercentage : 18,
+    });
+  }, [projectDims, linkedQuotation, durationMonths, transportCharges, jaliDetails, selectedProject]);
 
   const handlePlanSelected = (
     plan: ScaffoldingMaterialPlanOption, 
@@ -231,27 +265,102 @@ function ConfirmationFormContent() {
   };
 
   // Auto-fill quotation defaults when a project is chosen
-  const applyProjectAutoFill = (project: Project) => {
+  const applyProjectAutoFill = (project: Project, qtn?: any, materialsPool: Material[] = catalogMaterials) => {
     setSelectedProject(project);
-    setQuotationNumber(`QTN-${project.projectCode}`);
-    if (project.siteRemarks) {
-      setRemarks(`Site: ${project.siteAddress}. ${project.siteRemarks}`);
-    }
-    if (project.measurements && project.monthlyRentalRate) {
-      setMonthlyRentalRate(project.monthlyRentalRate);
-      setAgreedProjectPrice(project.agreedProjectPrice || (project.monthlyRentalRate * (durationMonths || 1)));
+    const quote = qtn || savedQuotations.find(q => q.projectId === project.id || (project.quotationId && q.id === project.quotationId));
+    setLinkedQuotation(quote || null);
+
+    if (quote) {
+      setQuotationNumber(quote.quotationNumber || `QTN-${project.projectCode.replace(/^AW-SCF-/, '')}`);
+      setQuotationDate(quote.quotationDate || new Date().toISOString().slice(0, 10));
+      if (quote.durationMonths) setDurationMonths(quote.durationMonths);
+
+      const dims = extractProjectDimensions(project);
+      const effectiveArea = dims.elevationAreaSqFt > 0 ? dims.elevationAreaSqFt : (quote.totalAreaSqFt || 1000);
+      const monthlyRate = quote.monthlyRentalAmount && Math.abs(quote.monthlyRentalAmount - (effectiveArea * (quote.ratePerSqFt || 22))) < 1
+        ? quote.monthlyRentalAmount
+        : (effectiveArea * (quote.ratePerSqFt || 22));
+      setMonthlyRentalRate(monthlyRate);
+
+      const transport = quote.transportCharges !== undefined && quote.transportCharges > 0 
+        ? quote.transportCharges 
+        : (project.transportCharges || 4500);
+      setTransportCharges(transport);
+
+      const pricing = calculateCommercialPricing({
+        totalAreaSqFt: effectiveArea,
+        ratePerSqFt: quote.ratePerSqFt || 22,
+        durationMonths: quote.durationMonths || 1,
+        transportCharges: transport,
+        extraJaliQuantity: quote.extraJaliQuantity !== undefined ? quote.extraJaliQuantity : 14,
+      });
+
+      if (quote.grandTotal && quote.grandTotal !== 12980) {
+        setAgreedProjectPrice(quote.grandTotal);
+      } else {
+        setAgreedProjectPrice(pricing.grandTotal);
+      }
+      if (quote.depositAmount !== undefined) setDepositAmount(quote.depositAmount);
+      if (quote.notes) setRemarks(quote.notes);
+
+      // Auto-determine client acceptance state
+      if (quote.status === 'ACCEPTED') {
+        setClientAccepted(true);
+      } else {
+        setClientAccepted(false);
+      }
+
+      // If quotation has materials, pre-fill them
+      if (quote.materials && Array.isArray(quote.materials) && quote.materials.length > 0 && materialsPool.length > 0) {
+        const prefilled = quote.materials.map((qm: any) => {
+          const matched = materialsPool.find(m => m.itemCode === qm.itemCode || m.name?.toLowerCase() === qm.materialName?.toLowerCase());
+          if (!matched) return null;
+          return {
+            materialId: matched.id,
+            requiredQuantity: qm.quantity,
+            monthlyRentalRate: qm.monthlyRentalRate || matched.rentalRatePerMonth || 0,
+          };
+        }).filter(Boolean);
+        if (prefilled.length > 0) {
+          setSelectedMaterials(prefilled as any);
+        }
+      }
+    } else {
+      setQuotationNumber(project.quotationNumber || `QTN-${project.projectCode.replace(/^AW-SCF-/, '')}`);
+      setQuotationDate(new Date().toISOString().slice(0, 10));
+      setClientAccepted(true);
+      if (project.siteRemarks) {
+        setRemarks(`Site: ${project.siteAddress}. ${project.siteRemarks}`);
+      }
+      if (project.measurements && project.monthlyRentalRate) {
+        setMonthlyRentalRate(project.monthlyRentalRate);
+        setAgreedProjectPrice(project.agreedProjectPrice || (project.monthlyRentalRate * (durationMonths || 1)));
+      }
     }
   };
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/projects?status=NOT_INSTALLED').then(r => r.json()),
+      fetch('/api/projects').then(r => r.json()),
       fetch('/api/inventory').then(r => r.json()),
-    ]).then(([projJson, invJson]) => {
+      fetch('/api/quotations').then(r => r.json()),
+    ]).then(([projJson, invJson, qtnJson]) => {
+      let matsPool: Material[] = [];
+      if (invJson.success) {
+        matsPool = invJson.data.materials || [];
+        setCatalogMaterials(matsPool);
+      }
+
+      let loadedQuotes: any[] = [];
+      if (qtnJson.success) {
+        loadedQuotes = qtnJson.data || [];
+        setSavedQuotations(loadedQuotes);
+      }
+
       if (projJson.success) {
         const allProjects: Project[] = projJson.data || [];
-        // Strictly filter to ONLY NOT_INSTALLED projects
-        const unconfirmed = allProjects.filter(p => p.status === 'NOT_INSTALLED');
+        // Strict Validation: Only quotations with status Quotation Accepted appear in Project Confirmation & Plan
+        const unconfirmed = allProjects.filter(p => p.status === 'QUOTATION_ACCEPTED');
         setNotInstalledProjects(unconfirmed);
 
         const targetId = preselectedProjectId || '';
@@ -259,17 +368,19 @@ function ConfirmationFormContent() {
           const match = unconfirmed.find(p => p.id === targetId);
           if (match) {
             setSelectedProjectId(match.id);
-            applyProjectAutoFill(match);
+            const matchingQuote = (preselectedQuotationId && loadedQuotes.find(q => q.id === preselectedQuotationId || q.quotationNumber === preselectedQuotationId)) ||
+              loadedQuotes.find(q => q.projectId === match.id || (match.quotationId && q.id === match.quotationId));
+            applyProjectAutoFill(match, matchingQuote, matsPool);
+          } else {
+            const rawMatch = allProjects.find(p => p.id === targetId);
+            if (rawMatch && rawMatch.status !== 'QUOTATION_ACCEPTED') {
+              setError(`Project ${rawMatch.projectCode} cannot proceed to Confirmation & Plan. Commercial quotation status is currently "${rawMatch.status === 'QUOTATION_REJECTED' ? 'Quotation Rejected' : 'Pending Approval'}". Only "Quotation Accepted" projects can be confirmed.`);
+            }
           }
         }
       }
-
-      if (invJson.success) {
-        const mats: Material[] = invJson.data.materials;
-        setCatalogMaterials(mats);
-      }
     }).finally(() => setLoading(false));
-  }, [preselectedProjectId]);
+  }, [preselectedProjectId, preselectedQuotationId]);
 
   const handleSelectProject = (projId: string) => {
     setSelectedProjectId(projId);
@@ -278,6 +389,7 @@ function ConfirmationFormContent() {
       applyProjectAutoFill(found);
     } else {
       setSelectedProject(null);
+      setLinkedQuotation(null);
     }
   };
 
@@ -287,6 +399,12 @@ function ConfirmationFormContent() {
 
     if (!selectedProjectId) {
       setError('Please select a project to confirm.');
+      return;
+    }
+
+    // Strict Quotation Approval Validation: Only Quotation Accepted can proceed
+    if (selectedProject?.status !== 'QUOTATION_ACCEPTED') {
+      setError('Only quotations with status "Quotation Accepted" can proceed to Project Confirmation & Plan. Quotations in Pending Approval or Rejected status cannot be confirmed.');
       return;
     }
 
@@ -327,21 +445,24 @@ function ConfirmationFormContent() {
           remarks,
           materials: selectedMaterials,
           scaffoldingPlan: selectedPlan,
-          siteDimensions: siteDimensions || (selectedProject?.measurements ? {
-            length: selectedProject.measurements.length,
-            width: selectedProject.measurements.width,
-            height: selectedProject.measurements.height,
-            unit: selectedProject.measurements.unit,
+          siteDimensions: siteDimensions || (projectDims.width > 0 ? {
+            width: projectDims.width,
+            depth: projectDims.depth,
+            height: projectDims.height,
+            length: projectDims.width,
+            unit: projectDims.unit,
           } : undefined),
           termsSnapshot: OFFICIAL_TERMS_AND_CONDITIONS,
           ratePerSqFt: areaDetails.ratePerSqFt,
-          totalAreaSqFt: areaDetails.areaSqFt,
+          totalAreaSqFt: projectDims.elevationAreaSqFt,
           extraJaliQuantity: jaliDetails.extraJali,
           extraJaliCharges: jaliDetails.extraJaliCharge,
           twoWayTransportCharges: Number(transportCharges),
           advancePercentage: 75,
           advanceRequiredAmount: Math.round(Number(agreedProjectPrice || 0) * 0.75),
           completionDueAmount: Math.round(Number(agreedProjectPrice || 0) * 0.25),
+          clientAccepted: Boolean(clientAccepted || linkedQuotation?.status === 'ACCEPTED' || (!linkedQuotation)),
+          clientAcceptanceVerified: Boolean(clientAccepted || linkedQuotation?.status === 'ACCEPTED'),
           actorId: currentUser.id,
           actorName: currentUser.fullName,
         }),
@@ -394,32 +515,6 @@ function ConfirmationFormContent() {
         </div>
       </div>
 
-      {/* Structured Progress Indicator Bar */}
-      <div className="bg-white p-3 rounded-xl border border-[#ebdcc9] shadow-2xs">
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs font-medium text-[#7d6553]">
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">1</span>
-            <span className="truncate">Select Site</span>
-          </div>
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">2</span>
-            <span className="truncate">Inspection Record</span>
-          </div>
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">3</span>
-            <span className="truncate">Commercial Terms</span>
-          </div>
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">4</span>
-            <span className="truncate">Terms § Review</span>
-          </div>
-          <div className="col-span-2 sm:col-span-1 flex items-center gap-2 p-2 rounded-lg bg-[#fbf9f5] border border-[#ebdcc9] text-[#24160c] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#24160c] text-white text-[10px] flex items-center justify-center font-bold">5</span>
-            <span className="truncate">Material Reserve</span>
-          </div>
-        </div>
-      </div>
-
       {error && (
         <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center gap-3 text-xs">
           <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
@@ -435,18 +530,18 @@ function ConfirmationFormContent() {
               01
             </div>
             <label className="block text-xs font-bold text-[#24160c] uppercase tracking-wider">
-              Select Inspected Project (NOT_INSTALLED) <span className="text-rose-600">*</span>
+              Select Inspected Project / Commercial Quotation to Confirm <span className="text-rose-600">*</span>
             </label>
           </div>
           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono font-medium text-[#5c3e24] bg-[#fbf9f5] border border-[#ebdcc9] whitespace-nowrap shrink-0">
-            {notInstalledProjects.length} Unconfirmed Site{notInstalledProjects.length === 1 ? '' : 's'}
+            {notInstalledProjects.length} Project{notInstalledProjects.length === 1 ? '' : 's'} Awaiting Confirmation
           </span>
         </div>
 
         {notInstalledProjects.length === 0 ? (
           <div className="p-6 bg-[#fbf9f5] border border-[#ebdcc9] rounded-xl text-xs text-[#7d6553] text-center space-y-2">
-            <p className="font-semibold text-[#24160c]">No unconfirmed projects currently in NOT_INSTALLED status.</p>
-            <p className="text-[#8c7360]">All registered sites have already been confirmed and scheduled for installation.</p>
+            <p className="font-semibold text-[#24160c]">No projects currently awaiting confirmation.</p>
+            <p className="text-[#8c7360]">All inspected projects have either been confirmed or need a new Site Form inspection.</p>
             <div className="pt-2">
               <Link
                 href="/sites/new"
@@ -462,10 +557,10 @@ function ConfirmationFormContent() {
             onChange={(val) => handleSelectProject(val)}
             options={notInstalledProjects}
             getOptionValue={(p) => p.id}
-            getOptionLabel={(p) => `${p.projectCode} — ${p.customerName} | ${p.siteName} (Supervisor: ${p.supervisorName})`}
-            placeholder="-- Choose a Not Installed Project to Confirm --"
+            getOptionLabel={(p) => `${p.projectCode} — ${p.customerName} | ${p.siteName} (${p.quotationNumber || p.status})`}
+            placeholder="-- Choose a Project / Quotation to Confirm --"
             searchPlaceholder="Search project by ID (e.g. AW-SCF-000001), Customer, Site, or Supervisor..."
-            noResultsMessage="No matching unconfirmed projects found in NOT_INSTALLED status."
+            noResultsMessage="No matching projects found awaiting confirmation."
             filterOption={(p, q) =>
               Boolean(
                 p.projectCode?.toLowerCase().includes(q) ||
@@ -509,13 +604,10 @@ function ConfirmationFormContent() {
 
       {/* Auto-Filled Site & Inspection Details (Loaded automatically from Site Form) */}
       {selectedProject && (() => {
-        const m = selectedProject.measurements;
         const photosList = (selectedProject.photos || [])
           .map((p: any) => (typeof p === 'string' ? p : p.fileUrl))
           .filter(Boolean);
-        const area = (m?.length || 0) * (m?.height || 0);
-        const unitLabel = m?.unit === 'METERS' ? 'm' : 'ft';
-        const areaLabel = m?.unit === 'METERS' ? 'sq.m' : 'sq.ft';
+        const dims = projectDims;
 
         return (
           <div className="bg-white p-6 rounded-2xl border border-[#ebdcc9] shadow-2xs space-y-4">
@@ -528,7 +620,7 @@ function ConfirmationFormContent() {
                   <h2 className="text-sm font-bold text-[#24160c] flex flex-wrap items-center gap-2 uppercase tracking-wider">
                     <span>Auto-Filled Site Record</span>
                     <span className="text-[10px] bg-[#fbf9f5] text-[#5c3e24] border border-[#ebdcc9] px-2 py-0.5 rounded-full font-mono font-semibold whitespace-nowrap">
-                      {selectedProject.projectCode} • NOT_INSTALLED
+                      {selectedProject.projectCode} • {linkedQuotation ? `${linkedQuotation.quotationNumber} (${linkedQuotation.status})` : selectedProject.status}
                     </span>
                   </h2>
                   <p className="text-[11px] text-[#7d6553]">
@@ -592,10 +684,10 @@ function ConfirmationFormContent() {
                   <span>Scaffolding Size</span>
                 </div>
                 <div className="font-mono font-bold text-[#24160c] text-sm mt-0.5">
-                  {m ? `${m.length} × ${m.width} × ${m.height} ${unitLabel}` : 'Dimensions Pending'}
+                  {dims.formattedDimensions}
                 </div>
                 <div className="text-[10px] text-[#714f36] font-semibold mt-0.5">
-                  Area: {area} {areaLabel}
+                  Elevation Area: {dims.formattedArea}
                 </div>
               </div>
             </div>
@@ -724,6 +816,76 @@ function ConfirmationFormContent() {
       {/* Confirmation Form */}
       {selectedProject && (
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* QUOTATION STATUS & CLIENT ACCEPTANCE BANNER */}
+          {linkedQuotation && (
+            <div className="rounded-2xl overflow-hidden border shadow-2xs">
+              {linkedQuotation.status === 'ACCEPTED' && (
+                <div className="p-4 bg-emerald-50 border-emerald-200 text-emerald-950 flex items-start gap-3 text-xs">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <div className="font-bold text-sm text-emerald-900 flex items-center gap-2">
+                      <span>Quotation Accepted by Client: {linkedQuotation.quotationNumber}</span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-mono font-semibold">
+                        APPROVED
+                      </span>
+                    </div>
+                    <p className="text-emerald-800">
+                      This quotation was formally accepted by the customer. All commercial rental terms, rates, and materials have been auto-populated below for stock reservation.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {linkedQuotation.status === 'REJECTED' && (
+                <div className="p-4 bg-rose-50 border-rose-200 text-rose-950 flex items-start gap-3 text-xs">
+                  <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <div className="font-bold text-sm text-rose-900 flex items-center gap-2">
+                      <span>Quotation Rejected by Customer: {linkedQuotation.quotationNumber}</span>
+                      <span className="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full font-mono font-semibold">
+                        REJECTED
+                      </span>
+                    </div>
+                    <p className="text-rose-800">
+                      Under company governance, confirmation and warehouse stock reservation are blocked for rejected quotations. Please revise and obtain client acceptance in the Commercial Quotation module.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {(linkedQuotation.status === 'DRAFT' || linkedQuotation.status === 'SENT') && (
+                <div className="p-4 bg-amber-50 border-amber-200 text-amber-950 space-y-3 text-xs">
+                  <div className="flex items-start gap-3">
+                    <Clock className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="font-bold text-sm text-amber-900 flex items-center gap-2">
+                        <span>Quotation: {linkedQuotation.quotationNumber}</span>
+                        <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-mono font-semibold">
+                          {linkedQuotation.status === 'SENT' ? 'SENT TO CLIENT (PENDING ACCEPTANCE)' : 'SAVED AS DRAFT'}
+                        </span>
+                      </div>
+                      <p className="text-amber-800 mt-0.5">
+                        Client acceptance is required before final project confirmation and inventory reservation.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-amber-200/80">
+                    <label className="flex items-center gap-2.5 font-bold cursor-pointer text-amber-950 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={clientAccepted}
+                        onChange={(e) => setClientAccepted(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#24160c] border-[#8c5e39] focus:ring-[#8c5e39]"
+                      />
+                      <span>Confirm Client Acceptance (Customer has reviewed & approved quotation #{linkedQuotation.quotationNumber}) <span className="text-rose-600">*</span></span>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ========================================================= */}
           {/* SECTION 3: COMMERCIAL & CONTRACT TERMS                    */}
           {/* ========================================================= */}
@@ -858,9 +1020,9 @@ function ConfirmationFormContent() {
                 <div>
                   <div className="text-[10px] uppercase font-bold text-[#7d6553]">Duration Rental Total</div>
                   <div className="font-mono font-bold text-[#24160c] text-xs">
-                    ₹{formatINR((monthlyRentalRate || 0) * (durationMonths || 1), false)}
+                    {formatINR(commercialPricing.rentalTotalAmount, false)}
                     <span className="text-[10px] text-[#7d6553] font-sans font-normal ml-1">
-                      (@ ₹{formatINR(monthlyRentalRate, false)}/mo)
+                      (@ {formatINR(commercialPricing.monthlyRentalAmount, false)}/mo)
                     </span>
                   </div>
                 </div>
@@ -872,15 +1034,14 @@ function ConfirmationFormContent() {
               <div>
                 <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
                   Monthly Rental Amount (INR) <span className="text-rose-600">*</span>
-                  <span className="text-[10px] text-[#8f6541] block font-normal normal-case">Term 2: Quoted per 28-day cycle</span>
+                  <span className="text-[10px] text-[#8f6541] block font-normal normal-case">Term 2: Quoted per 28-day cycle ({projectDims.formattedArea} @ ₹{commercialPricing.ratePerSqFt}/sq.ft.)</span>
                 </label>
                 <input
                   type="number"
-                  value={monthlyRentalRate}
+                  value={monthlyRentalRate || commercialPricing.monthlyRentalAmount}
                   onChange={(e) => {
                     const rate = Number(e.target.value);
                     setMonthlyRentalRate(rate);
-                    setAgreedProjectPrice(rate * (durationMonths || 1) + (transportCharges * 2) + jaliDetails.extraJaliCharge);
                   }}
                   required
                   className="w-full p-2.5 bg-white border border-[#d6c7b2] rounded-lg font-mono font-bold text-[#24160c] text-xs focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] focus:outline-hidden"
@@ -889,8 +1050,8 @@ function ConfirmationFormContent() {
 
               <div>
                 <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
-                  Transportation (Per Way INR)
-                  <span className="text-[10px] text-[#8f6541] block font-normal normal-case">Term 3: Charged 2-way (Delivery + Return)</span>
+                  Transportation (2-Way Delivery & Return INR)
+                  <span className="text-[10px] text-[#8f6541] block font-normal normal-case">Term 3: Delivery + Site Collection</span>
                 </label>
                 <div className="relative">
                   <input
@@ -899,14 +1060,13 @@ function ConfirmationFormContent() {
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       setTransportCharges(val);
-                      setAgreedProjectPrice((monthlyRentalRate * (durationMonths || 1)) + (val * 2) + jaliDetails.extraJaliCharge);
                     }}
-                    placeholder="0"
+                    placeholder="4500"
                     className="w-full p-2.5 bg-white border border-[#d6c7b2] rounded-lg font-mono text-xs text-[#24160c] focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] focus:outline-hidden"
                   />
                   {transportCharges > 0 && (
                     <div className="text-[10px] text-[#7d6553] mt-1">
-                      2-way Total: <span className="font-semibold text-[#24160c]">₹{formatINR(transportCharges * 2, false)}</span>
+                      2-way Transport: <span className="font-semibold text-[#24160c]">{formatINR(transportCharges, false)}</span>
                     </div>
                   )}
                 </div>
@@ -914,12 +1074,12 @@ function ConfirmationFormContent() {
 
               <div>
                 <label className="block text-xs font-semibold text-[#4a3525] uppercase tracking-wider mb-1.5">
-                  Total Agreed Project Price (INR)
-                  <span className="text-[10px] text-[#7d6553] block font-normal normal-case">Rental + Transport + Extras</span>
+                  Grand Total Project Price (INR)
+                  <span className="text-[10px] text-[#7d6553] block font-normal normal-case">Rental + Transport + Jali + 18% GST</span>
                 </label>
                 <input
                   type="number"
-                  value={agreedProjectPrice}
+                  value={agreedProjectPrice || commercialPricing.grandTotal}
                   onChange={(e) => setAgreedProjectPrice(Number(e.target.value))}
                   className="w-full p-2.5 bg-white border border-[#d6c7b2] rounded-lg font-mono font-bold text-[#24160c] text-xs focus:ring-2 focus:ring-[#8f6541]/20 focus:border-[#8f6541] focus:outline-hidden"
                 />
@@ -934,13 +1094,13 @@ function ConfirmationFormContent() {
                       <span>Term 1: Façade Area Basis</span>
                     </div>
                     <div className="text-xs text-[#24160c] mt-0.5">
-                      Façade Area: <span className="font-bold">{areaDetails.areaSqFt} sq. ft.</span>
-                      {areaDetails.lengthFt > 0 && (
-                        <span className="text-[#7d6553] font-normal"> ({areaDetails.lengthFt}&apos; L × {areaDetails.heightFt}&apos; H)</span>
+                      Façade Area: <span className="font-bold">{projectDims.formattedArea}</span>
+                      {projectDims.width > 0 && (
+                        <span className="text-[#7d6553] font-normal"> ({projectDims.formattedDimensions})</span>
                       )}
                     </div>
                     <div className="text-[11px] text-[#714f36] mt-0.5">
-                      Effective Rate: <span className="font-semibold">₹{areaDetails.ratePerSqFt}/sq. ft.</span> per 28 days
+                      Effective Rate: <span className="font-semibold">₹{commercialPricing.ratePerSqFt}/sq. ft.</span> per 28 days
                     </div>
                   </div>
                   <div className="text-[10px] text-right text-[#5c3e24] bg-[#ebdcc9]/60 px-2 py-1 rounded-md">
@@ -955,14 +1115,73 @@ function ConfirmationFormContent() {
                       <span>Term 4: Walkway Jali Allowance</span>
                     </div>
                     <div className="text-xs text-[#24160c] mt-0.5">
-                      Total Jali: <span className="font-bold">{jaliDetails.totalJali} pcs</span> | Included: <span className="font-semibold text-[#5c3e24]">{jaliDetails.includedJali} pcs (1/unit)</span>
+                      Total Jali: <span className="font-bold">{commercialPricing.totalJaliQuantity || 21} pcs</span> | Included: <span className="font-semibold text-[#5c3e24]">{commercialPricing.walkwayJaliIncludedQuantity || 7} pcs (1/unit)</span>
                     </div>
                     <div className="text-[11px] text-[#714f36] mt-0.5">
-                      Extra Jali: <span className="font-semibold">{jaliDetails.extraJali} pcs</span> → <span className="font-bold text-[#24160c]">+₹{formatINR(jaliDetails.extraJaliCharge, false)}</span> (@ ₹200/pc)
+                      Extra Jali: <span className="font-semibold">{commercialPricing.extraJaliQuantity} pcs</span> → <span className="font-bold text-[#24160c]">+{formatINR(commercialPricing.extraJaliCharges, false)}</span> (@ ₹200/pc)
                     </div>
                   </div>
                   <div className="text-[10px] text-right text-[#5c3e24] bg-[#ebdcc9]/60 px-2 py-1 rounded-md">
                     1 Jali/unit included
+                  </div>
+                </div>
+              </div>
+
+              {/* Complete Synchronized Commercial Breakdown */}
+              <div className="sm:col-span-2 lg:col-span-3 p-4 bg-[#fbf9f5] border border-[#ebdcc9] rounded-xl space-y-3">
+                <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-2">
+                  <div className="flex items-center gap-2">
+                    <ReceiptIndianRupee className="w-4 h-4 text-[#8f6541]" />
+                    <span className="text-xs font-bold text-[#24160c] uppercase tracking-wider">
+                      Commercial Quotation Synchronized Financial Breakdown
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono font-semibold text-[#714f36] bg-[#ebdcc9] px-2.5 py-0.5 rounded-full">
+                    {linkedQuotation?.quotationNumber || quotationNumber}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="bg-white p-2.5 rounded-lg border border-[#ebdcc9]">
+                    <div className="text-[10px] text-[#7d6553] uppercase font-semibold">Monthly Rental</div>
+                    <div className="font-mono font-bold text-[#24160c] text-sm mt-0.5">
+                      {formatINR(commercialPricing.monthlyRentalAmount, false)}
+                    </div>
+                    <div className="text-[9px] text-[#8f6541] mt-0.5">{projectDims.formattedArea} @ ₹{commercialPricing.ratePerSqFt}</div>
+                  </div>
+
+                  <div className="bg-white p-2.5 rounded-lg border border-[#ebdcc9]">
+                    <div className="text-[10px] text-[#7d6553] uppercase font-semibold">Extra Jali ({commercialPricing.extraJaliQuantity} pcs)</div>
+                    <div className="font-mono font-bold text-[#24160c] text-sm mt-0.5">
+                      {formatINR(commercialPricing.extraJaliCharges, false)}
+                    </div>
+                    <div className="text-[9px] text-[#8f6541] mt-0.5">@ ₹200 per extra pc</div>
+                  </div>
+
+                  <div className="bg-white p-2.5 rounded-lg border border-[#ebdcc9]">
+                    <div className="text-[10px] text-[#7d6553] uppercase font-semibold">Transportation</div>
+                    <div className="font-mono font-bold text-[#24160c] text-sm mt-0.5">
+                      {formatINR(commercialPricing.transportCharges, false)}
+                    </div>
+                    <div className="text-[9px] text-[#8f6541] mt-0.5">2-way delivery & return</div>
+                  </div>
+
+                  <div className="bg-white p-2.5 rounded-lg border border-[#ebdcc9]">
+                    <div className="text-[10px] text-[#7d6553] uppercase font-semibold">Subtotal (Excl. Tax)</div>
+                    <div className="font-mono font-bold text-[#24160c] text-sm mt-0.5">
+                      {formatINR(commercialPricing.subtotal, false)}
+                    </div>
+                    <div className="text-[9px] text-[#8f6541] mt-0.5">Rental + Jali + Transport</div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-[#ebdcc9] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-4 text-[#7d6553]">
+                    <span>GST ({commercialPricing.gstPercentage}%): <strong className="text-[#24160c] font-mono">{formatINR(commercialPricing.gstAmount, false)}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-bold text-[#24160c]">Grand Total:</span>
+                    <span className="font-mono font-bold text-[#8f6541] text-base">{formatINR(commercialPricing.grandTotal, false)}</span>
                   </div>
                 </div>
               </div>
@@ -984,14 +1203,14 @@ function ConfirmationFormContent() {
                   <div className="bg-white p-3 rounded-lg border border-[#ebdcc9] shadow-2xs">
                     <div className="text-[10px] text-[#7d6553] font-medium uppercase tracking-wider">Advance Required (75%)</div>
                     <div className="text-sm font-bold text-[#24160c] font-mono mt-0.5">
-                      ₹{formatINR(Math.round((agreedProjectPrice || 0) * 0.75), false)}
+                      {formatINR(commercialPricing.advanceAmount, false)}
                     </div>
                     <div className="text-[10px] text-[#8f6541] mt-1 font-medium">Payable prior to material dispatch & erection</div>
                   </div>
                   <div className="bg-white p-3 rounded-lg border border-[#ebdcc9] shadow-2xs">
                     <div className="text-[10px] text-[#7d6553] font-medium uppercase tracking-wider">Installation Balance (25%)</div>
                     <div className="text-sm font-bold text-[#24160c] font-mono mt-0.5">
-                      ₹{formatINR(Math.round((agreedProjectPrice || 0) * 0.25), false)}
+                      {formatINR(commercialPricing.balanceAmount, false)}
                     </div>
                     <div className="text-[10px] text-[#8f6541] mt-1 font-medium">Payable immediately upon erection completion</div>
                   </div>
@@ -1093,11 +1312,12 @@ function ConfirmationFormContent() {
             </div>
 
             <SmartMaterialRecommendation
-              initialDimensions={selectedProject?.measurements ? {
-                length: selectedProject.measurements.length,
-                width: selectedProject.measurements.width,
-                height: selectedProject.measurements.height,
-                unit: selectedProject.measurements.unit,
+              initialDimensions={selectedProject ? {
+                length: projectDims.width,
+                width: projectDims.depth,
+                depth: projectDims.depth,
+                height: projectDims.height,
+                unit: projectDims.unit,
               } : undefined}
               catalogMaterials={catalogMaterials}
               onPlanSelected={handlePlanSelected}

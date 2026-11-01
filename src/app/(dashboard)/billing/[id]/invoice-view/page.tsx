@@ -74,7 +74,7 @@ export default function InvoicePrintViewPage({
               <div>Office: 4th Floor, Office No. 401 Sapphire Square Tower, Square Indore, Madhya Pradesh (MP), India</div>
               <div>Phone: 8818852722 | Email: alokhandwala.sh@gmail.com</div>
               <div className="font-mono font-bold text-slate-800">
-                GSTIN: 23AABCA1234F1Z5 | PAN: AABCA1234F | State: Madhya Pradesh (23)
+                GSTIN: 23AABCA1234F1Z5 | State: Madhya Pradesh (23)
               </div>
             </div>
           </div>
