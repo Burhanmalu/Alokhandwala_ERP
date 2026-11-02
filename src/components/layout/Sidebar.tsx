@@ -23,7 +23,12 @@ import {
   Award,
   ArrowRightLeft,
   PackagePlus,
-  ChevronDown
+  ChevronDown,
+  Landmark,
+  UserCog,
+  BookOpen,
+  ClipboardList,
+  DollarSign
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 
@@ -31,13 +36,17 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
   const pathname = usePathname();
   const { currentUser, logout } = useAuth();
   const isInventoryRoute = pathname.startsWith('/inventory');
+  const isAccountsRoute = pathname.startsWith('/accounts');
+  const isHRRoute = pathname.startsWith('/hr');
   const [inventoryExpanded, setInventoryExpanded] = useState<boolean>(() => isInventoryRoute);
+  const [accountsExpanded, setAccountsExpanded] = useState<boolean>(() => isAccountsRoute);
+  const [hrExpanded, setHRExpanded] = useState<boolean>(() => isHRRoute);
 
   useEffect(() => {
-    if (isInventoryRoute) {
-      setInventoryExpanded(true);
-    }
-  }, [pathname, isInventoryRoute]);
+    if (isInventoryRoute) setInventoryExpanded(true);
+    if (isAccountsRoute) setAccountsExpanded(true);
+    if (isHRRoute) setHRExpanded(true);
+  }, [pathname, isInventoryRoute, isAccountsRoute, isHRRoute]);
 
   const isExact = (path: string) => pathname === path;
 
@@ -45,6 +54,8 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
     if (path === '/') return pathname === '/';
     if (path === '/reports') return pathname === '/reports';
     if (path === '/inventory') return isInventoryRoute;
+    if (path === '/accounts') return isAccountsRoute;
+    if (path === '/hr') return isHRRoute;
     return pathname.startsWith(path);
   };
   const navLinkClass = (path: string) => {
@@ -247,12 +258,87 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                   </div>
                 )}
               </div>
-              <Link href="/billing" onClick={onClose} className={navLinkClass('/billing')}>
-                <div className="flex items-center gap-2.5">
-                  <ReceiptIndianRupee className={iconClass('/billing')} />
-                  <span>Billing & Accounts</span>
-                </div>
-              </Link>
+
+              {/* Accounts & Finance Group (Merged with Billing & Commercial) */}
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setAccountsExpanded(prev => !prev)}
+                  className={`w-full ${navLinkClass('/accounts')} cursor-pointer text-left select-none`}
+                  aria-expanded={accountsExpanded}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Landmark className={iconClass('/accounts')} />
+                    <span>Accounts & Finance</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 shrink-0 ${accountsExpanded ? 'rotate-180 text-[#c79e7c]' : 'text-[#9c826e]'}`} />
+                </button>
+                {accountsExpanded && (
+                  <div className="pl-3 pr-1 py-0.5 space-y-0.5 border-l-2 border-[#382315] ml-4 mt-1 animate-in fade-in slide-in-from-top-1">
+                    <Link href="/accounts" onClick={onClose} className={subNavLinkClass('/accounts')}>
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/accounts') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                      <span>Overview & COA</span>
+                    </Link>
+                    <Link href="/accounts/ledger" onClick={onClose} className={subNavLinkClass('/accounts/ledger')}>
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/accounts/ledger') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                      <span>General Ledger</span>
+                    </Link>
+                    <Link href="/accounts/bills" onClick={onClose} className={subNavLinkClass('/accounts/bills')}>
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/accounts/bills') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                      <span>Vendor Bills (AP)</span>
+                    </Link>
+                    <Link href="/accounts/billing" onClick={onClose} className={subNavLinkClass('/accounts/billing')}>
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/accounts/billing') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                      <span>Billing & Invoices (AR)</span>
+                    </Link>
+                    <Link href="/accounts/reports" onClick={onClose} className={subNavLinkClass('/accounts/reports')}>
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/accounts/reports') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                      <span>Financial Statements</span>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* HR & Workforce Group */}
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setHRExpanded(prev => !prev)}
+                  className={`w-full ${navLinkClass('/hr')} cursor-pointer text-left select-none`}
+                  aria-expanded={hrExpanded}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <UserCog className={iconClass('/hr')} />
+                    <span>Human Resources</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 shrink-0 ${hrExpanded ? 'rotate-180 text-[#c79e7c]' : 'text-[#9c826e]'}`} />
+                </button>
+                {hrExpanded && (
+                  <div className="pl-3 pr-1 py-0.5 space-y-0.5 border-l-2 border-[#382315] ml-4 mt-1 animate-in fade-in slide-in-from-top-1">
+                    <Link href="/hr" onClick={onClose} className={subNavLinkClass('/hr')}>
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/hr') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
+                      <span>Overview</span>
+                    </Link>
+                    <Link href="/hr?tab=employees" onClick={onClose} className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-[#bfa38e] hover:bg-[#20140d] hover:text-white`}>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#5c3e24]" />
+                      <span>Employees</span>
+                    </Link>
+                    <Link href="/hr?tab=attendance" onClick={onClose} className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-[#bfa38e] hover:bg-[#20140d] hover:text-white`}>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#5c3e24]" />
+                      <span>Attendance</span>
+                    </Link>
+                    <Link href="/hr?tab=leaves" onClick={onClose} className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-[#bfa38e] hover:bg-[#20140d] hover:text-white`}>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#5c3e24]" />
+                      <span>Leave Requests</span>
+                    </Link>
+                    <Link href="/hr?tab=payroll" onClick={onClose} className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-[#bfa38e] hover:bg-[#20140d] hover:text-white`}>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#5c3e24]" />
+                      <span>Payroll & Pay Slips</span>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
             </div>
 
             {/* Section: Field Operations Workflow */}

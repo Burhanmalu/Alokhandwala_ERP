@@ -12,7 +12,17 @@ import {
   Invoice, 
   Payment, 
   InventoryTransaction, 
-  CompanySettings 
+  CompanySettings,
+  ChartOfAccount,
+  AccountingPeriod,
+  Department,
+  CostCenter,
+  Employee,
+  JournalEntry,
+  VendorBill,
+  AttendanceRecord,
+  LeaveRequest,
+  PaySlip
 } from '../schema';
 
 import { OFFICIAL_TERMS_AND_CONDITIONS } from '../constants/terms-and-conditions';
@@ -669,3 +679,92 @@ export const initialPayments: Payment[] = [];
 
 // ZERO mock transactions - starts completely clean for user input
 export const initialTransactions: InventoryTransaction[] = [];
+
+// ============================================================================
+// STANDARD CHART OF ACCOUNTS (CoA) MASTER SEED
+// Hierarchical 5-type tree: Assets, Liabilities, Equity, Revenue, Expense
+// ============================================================================
+export const initialChartOfAccounts: ChartOfAccount[] = [
+  // 1000 - ASSETS
+  { id: 'coa-1000', accountCode: '1000', accountName: 'Assets', accountType: 'ASSET', classification: 'CONTROL', isControlAccount: true, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-1010', accountCode: '1010', accountName: 'Cash on Hand', accountType: 'ASSET', classification: 'BANK_CASH', parentId: 'coa-1000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-1020', accountCode: '1020', accountName: 'HDFC Bank - Current Account', accountType: 'ASSET', classification: 'BANK_CASH', parentId: 'coa-1000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-1030', accountCode: '1030', accountName: 'Accounts Receivable (Trade Debtors)', accountType: 'ASSET', classification: 'CONTROL', parentId: 'coa-1000', isControlAccount: true, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-1040', accountCode: '1040', accountName: 'Scaffolding Rental Fleet Inventory', accountType: 'ASSET', classification: 'CONTROL', parentId: 'coa-1000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-1050', accountCode: '1050', accountName: 'Input GST / CGST / SGST Credit', accountType: 'ASSET', classification: 'STATUTORY', parentId: 'coa-1000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  
+  // 2000 - LIABILITIES
+  { id: 'coa-2000', accountCode: '2000', accountName: 'Liabilities', accountType: 'LIABILITY', classification: 'CONTROL', isControlAccount: true, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-2010', accountCode: '2010', accountName: 'Accounts Payable (Trade Creditors)', accountType: 'LIABILITY', classification: 'CONTROL', parentId: 'coa-2000', isControlAccount: true, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-2020', accountCode: '2020', accountName: 'Salaries & Wages Payable', accountType: 'LIABILITY', classification: 'CONTROL', parentId: 'coa-2000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-2030', accountCode: '2030', accountName: 'Output GST (18%) Payable', accountType: 'LIABILITY', classification: 'STATUTORY', parentId: 'coa-2000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-2040', accountCode: '2040', accountName: 'TDS & Statutory Deductions Payable', accountType: 'LIABILITY', classification: 'STATUTORY', parentId: 'coa-2000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-2050', accountCode: '2050', accountName: 'Provident Fund (PF) & ESI Payable', accountType: 'LIABILITY', classification: 'STATUTORY', parentId: 'coa-2000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+
+  // 3000 - EQUITY
+  { id: 'coa-3000', accountCode: '3000', accountName: 'Equity & Capital', accountType: 'EQUITY', classification: 'CONTROL', isControlAccount: true, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-3010', accountCode: '3010', accountName: "Owner's Capital", accountType: 'EQUITY', classification: 'GENERAL', parentId: 'coa-3000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-3020', accountCode: '3020', accountName: 'Retained Earnings', accountType: 'EQUITY', classification: 'GENERAL', parentId: 'coa-3000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+
+  // 4000 - REVENUE
+  { id: 'coa-4000', accountCode: '4000', accountName: 'Revenue & Income', accountType: 'REVENUE', classification: 'CONTROL', isControlAccount: true, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-4010', accountCode: '4010', accountName: 'Scaffolding Rental Income', accountType: 'REVENUE', classification: 'GENERAL', parentId: 'coa-4000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-4020', accountCode: '4020', accountName: 'Erection & Dismantling Service Fees', accountType: 'REVENUE', classification: 'GENERAL', parentId: 'coa-4000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-4030', accountCode: '4030', accountName: 'Transportation & Logistics Charges', accountType: 'REVENUE', classification: 'GENERAL', parentId: 'coa-4000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-4040', accountCode: '4040', accountName: 'Damage & Scrap Recovery Income', accountType: 'REVENUE', classification: 'GENERAL', parentId: 'coa-4000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+
+  // 5000 - EXPENSES
+  { id: 'coa-5000', accountCode: '5000', accountName: 'Expenses', accountType: 'EXPENSE', classification: 'CONTROL', isControlAccount: true, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-5010', accountCode: '5010', accountName: 'Employee Salaries & Wages Expense', accountType: 'EXPENSE', classification: 'COST_CENTER', parentId: 'coa-5000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-5020', accountCode: '5020', accountName: 'Direct Site Labor & Erection Costs', accountType: 'EXPENSE', classification: 'COST_CENTER', parentId: 'coa-5000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-5030', accountCode: '5030', accountName: 'Freight, Cartage & Logistics Outflow', accountType: 'EXPENSE', classification: 'COST_CENTER', parentId: 'coa-5000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-5040', accountCode: '5040', accountName: 'Warehouse Yard Maintenance & Rent', accountType: 'EXPENSE', classification: 'COST_CENTER', parentId: 'coa-5000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-5050', accountCode: '5050', accountName: 'Raw Material Procurement & Spares', accountType: 'EXPENSE', classification: 'COST_CENTER', parentId: 'coa-5000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: 'coa-5060', accountCode: '5060', accountName: 'Depreciation & Amortization', accountType: 'EXPENSE', classification: 'GENERAL', parentId: 'coa-5000', isControlAccount: false, currentBalance: 0, currency: 'INR', status: 'ACTIVE', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+];
+
+// ============================================================================
+// STANDARD ACCOUNTING PERIODS
+// ============================================================================
+export const initialAccountingPeriods: AccountingPeriod[] = [
+  { id: 'prd-2026-04', fiscalYear: '2026-2027', periodNumber: 1, periodName: 'April 2026', startDate: '2026-04-01', endDate: '2026-04-30', isLocked: false },
+  { id: 'prd-2026-05', fiscalYear: '2026-2027', periodNumber: 2, periodName: 'May 2026', startDate: '2026-05-01', endDate: '2026-05-31', isLocked: false },
+  { id: 'prd-2026-06', fiscalYear: '2026-2027', periodNumber: 3, periodName: 'June 2026', startDate: '2026-06-01', endDate: '2026-06-30', isLocked: false },
+  { id: 'prd-2026-07', fiscalYear: '2026-2027', periodNumber: 4, periodName: 'July 2026', startDate: '2026-07-01', endDate: '2026-07-31', isLocked: false },
+  { id: 'prd-2026-08', fiscalYear: '2026-2027', periodNumber: 5, periodName: 'August 2026', startDate: '2026-08-01', endDate: '2026-08-31', isLocked: false },
+  { id: 'prd-2026-09', fiscalYear: '2026-2027', periodNumber: 6, periodName: 'September 2026', startDate: '2026-09-01', endDate: '2026-09-30', isLocked: false },
+  { id: 'prd-2026-10', fiscalYear: '2026-2027', periodNumber: 7, periodName: 'October 2026', startDate: '2026-10-01', endDate: '2026-10-31', isLocked: false },
+  { id: 'prd-2026-11', fiscalYear: '2026-2027', periodNumber: 8, periodName: 'November 2026', startDate: '2026-11-01', endDate: '2026-11-30', isLocked: false },
+  { id: 'prd-2026-12', fiscalYear: '2026-2027', periodNumber: 9, periodName: 'December 2026', startDate: '2026-12-01', endDate: '2026-12-31', isLocked: false },
+  { id: 'prd-2027-01', fiscalYear: '2026-2027', periodNumber: 10, periodName: 'January 2027', startDate: '2027-01-01', endDate: '2027-01-31', isLocked: false },
+  { id: 'prd-2027-02', fiscalYear: '2026-2027', periodNumber: 11, periodName: 'February 2027', startDate: '2027-02-01', endDate: '2027-02-28', isLocked: false },
+  { id: 'prd-2027-03', fiscalYear: '2026-2027', periodNumber: 12, periodName: 'March 2027', startDate: '2027-03-01', endDate: '2027-03-31', isLocked: false },
+];
+
+// ============================================================================
+// STANDARD COST CENTERS
+// ============================================================================
+export const initialCostCenters: CostCenter[] = [
+  { id: 'cc-ops', code: 'CC-OPS', name: 'Field Operations & Scaffolding Site Services', budget: 5000000, spent: 0, isActive: true, createdAt: '2026-01-01T00:00:00Z' },
+  { id: 'cc-yard', code: 'CC-YARD', name: 'Warehouse Yard & Yard Maintenance', budget: 2000000, spent: 0, isActive: true, createdAt: '2026-01-01T00:00:00Z' },
+  { id: 'cc-admin', code: 'CC-ADMIN', name: 'General Administration & Overhead', budget: 1500000, spent: 0, isActive: true, createdAt: '2026-01-01T00:00:00Z' },
+  { id: 'cc-logistics', code: 'CC-LOG', name: 'Transport & Fleet Logistics', budget: 2500000, spent: 0, isActive: true, createdAt: '2026-01-01T00:00:00Z' },
+];
+
+// ============================================================================
+// STANDARD DEPARTMENTS (ORGANIZATIONAL STRUCTURE)
+// ============================================================================
+export const initialDepartments: Department[] = [
+  { id: 'dept-ops', code: 'OPS', name: 'Field Operations & Erection', costCenterId: 'cc-ops', description: 'On-site scaffolding erection, safety inspection, and dismantling', createdAt: '2026-01-01T00:00:00Z' },
+  { id: 'dept-yard', code: 'YARD', name: 'Yard & Inventory Logistics', costCenterId: 'cc-yard', description: 'Central yard sorting, repair, staging, and dispatching', createdAt: '2026-01-01T00:00:00Z' },
+  { id: 'dept-fin', code: 'FIN', name: 'Finance & Accounts', costCenterId: 'cc-admin', description: 'Billing, treasury, statutory filings, vendor reconciliations', createdAt: '2026-01-01T00:00:00Z' },
+  { id: 'dept-hr', code: 'HR', name: 'Human Resources & Safety', costCenterId: 'cc-admin', description: 'Workforce recruitment, compliance, attendance, and payroll', createdAt: '2026-01-01T00:00:00Z' },
+];
+
+// Initial transactional tables start clean
+export const initialJournalEntries: JournalEntry[] = [];
+export const initialVendorBills: VendorBill[] = [];
+export const initialEmployees: Employee[] = [];
+export const initialAttendanceRecords: AttendanceRecord[] = [];
+export const initialLeaveRequests: LeaveRequest[] = [];
+export const initialPaySlips: PaySlip[] = [];

@@ -97,60 +97,6 @@ export default function DashboardOverviewPage() {
 
   return (
     <div className="space-y-6">
-      {/* Executive Command Banner */}
-      <div className="bg-[#1e130c] rounded-xl border border-[#3b2416] p-5 sm:p-6 lg:p-7 text-[#fdfbf7] flex flex-col lg:flex-row lg:items-center justify-between gap-5 shadow-xs">
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="w-12 h-12 rounded-lg bg-[#2d1b11] border border-[#52331f] flex items-center justify-center p-2 shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-icon-accent.png" alt="Alokhandwala" className="w-full h-full object-contain" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#c79e7c]">
-              <span>Alokhandwala Enterprise</span>
-              <span>•</span>
-              <span className="font-mono text-[#e8decb]">{currentUser.role.replace('_', ' ')}</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[#fdfbf7] tracking-tight truncate mt-1">
-              Operations & Asset Control Dashboard
-            </h1>
-          </div>
-        </div>
-        {/* Action Shortcuts */}
-        <div className="flex items-center gap-2 flex-wrap shrink-0">
-          <Link
-            href="/sites/new"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#24160c] bg-[#fdfcf9] hover:bg-white rounded-lg transition shadow-2xs cursor-pointer border border-[#c79e7c]"
-          >
-            <MapPin className="w-4 h-4 text-[#6e482f]" />
-            <span>Site Form</span>
-          </Link>
-
-          <Link
-            href="/confirmation"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#fdfbf7] bg-[#2a1a11] hover:bg-[#382315] border border-[#4d301c] rounded-lg transition cursor-pointer"
-          >
-            <Boxes className="w-4 h-4 text-[#c79e7c]" />
-            <span>Confirmation</span>
-          </Link>
-
-          <Link
-            href="/installation"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#fdfbf7] bg-[#2a1a11] hover:bg-[#382315] border border-[#4d301c] rounded-lg transition cursor-pointer"
-          >
-            <Truck className="w-4 h-4 text-[#c79e7c]" />
-            <span>Installation</span>
-          </Link>
-
-          <Link
-            href="/projects"
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[#d6beaa] hover:text-white bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition cursor-pointer"
-          >
-            <span>Projects</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
-
       {/* Primary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {/* Active Rentals */}

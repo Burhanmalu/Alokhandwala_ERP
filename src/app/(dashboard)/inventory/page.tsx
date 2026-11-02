@@ -94,9 +94,14 @@ function InventoryOverviewContent() {
 
   if (loading) {
     return (
-      <div className="space-y-4 animate-pulse">
+      <div className="space-y-5 animate-pulse">
         <div className="h-10 bg-white border border-[#ebdcc9] rounded-lg"></div>
-        <div className="h-28 bg-[#1e130c] rounded-lg"></div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="h-24 bg-white border border-[#ebdcc9] rounded-xl"></div>
+          <div className="h-24 bg-white border border-[#ebdcc9] rounded-xl"></div>
+          <div className="h-24 bg-white border border-[#ebdcc9] rounded-xl"></div>
+          <div className="h-24 bg-white border border-[#ebdcc9] rounded-xl"></div>
+        </div>
         <div className="h-64 bg-white border border-[#ebdcc9] rounded-lg"></div>
       </div>
     );
@@ -225,19 +230,7 @@ function InventoryOverviewContent() {
           </h1>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <Link
-            href="/inventory/catalogue"
-            className="px-3.5 py-2 text-xs font-semibold text-[#4d301c] bg-white border border-[#d8c8b4] rounded-lg hover:bg-[#faf6ee] transition shadow-2xs"
-          >
-            Inventory Catalogue
-          </Link>
-          <Link
-            href="/inventory/movements"
-            className="px-3.5 py-2 text-xs font-semibold text-[#4d301c] bg-white border border-[#d8c8b4] rounded-lg hover:bg-[#faf6ee] transition shadow-2xs"
-          >
-            Inventory Ledger
-          </Link>
+        <div className="flex items-center gap-2.5">
           <Link
             href="/inventory/new"
             className="px-3.5 py-2 text-xs font-bold text-white bg-[#24150c] hover:bg-[#382315] border border-[#4d301c] rounded-lg shadow-2xs transition flex items-center gap-1.5"
@@ -247,36 +240,41 @@ function InventoryOverviewContent() {
         </div>
       </div>
 
-      {/* Stock Conservation Formulas Banner */}
-      <div className="p-4 bg-[#1e130c] text-[#fdfbf7] rounded-lg border border-[#3b2416] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs font-mono">
-        <div>
-          <div className="text-[10px] text-[#c79e7c] uppercase tracking-wider font-sans font-bold">
-            Asset Conservation Engine
+      {/* Numeric KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#e8decb] shadow-2xs">
+          <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[#7d6553]">
+            Yard Usable
           </div>
-          <div className="text-sm font-bold text-[#fdfbf7] mt-0.5 font-sans">
-            Available To Allocate = Usable Yard Stock − Active Reservations
-          </div>
-          <div className="text-[11px] text-[#debfa6] mt-0.5 font-sans">
-            Total Owned Fleet: <span className="font-bold text-white font-mono">{formatQuantity(summary.totalOwnedQty)} Nos</span> across all yards and sites.
+          <div className="text-2xl sm:text-3xl font-bold text-[#24160c] font-mono mt-1">
+            {formatQuantity(summary.usableWarehouseQty)} <span className="text-xs sm:text-sm font-sans font-normal text-[#7d6553]">Nos</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 self-stretch md:self-auto text-center">
-          <div className="bg-white/5 border border-white/10 p-2 rounded-md">
-            <div className="text-[10px] text-[#debfa6] font-sans">Yard Usable</div>
-            <div className="font-bold text-[#fdfbf7] text-xs mt-0.5">{formatQuantity(summary.usableWarehouseQty)}</div>
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#e8decb] shadow-2xs">
+          <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[#7d6553]">
+            Reserved
           </div>
-          <div className="bg-white/5 border border-white/10 p-2 rounded-md">
-            <div className="text-[10px] text-[#debfa6] font-sans">Reserved</div>
-            <div className="font-bold text-blue-300 text-xs mt-0.5">{formatQuantity(summary.reservedQty)}</div>
+          <div className="text-2xl sm:text-3xl font-bold text-blue-700 font-mono mt-1">
+            {formatQuantity(summary.reservedQty)} <span className="text-xs sm:text-sm font-sans font-normal text-[#7d6553]">Nos</span>
           </div>
-          <div className="bg-white/5 border border-white/10 p-2 rounded-md">
-            <div className="text-[10px] text-[#debfa6] font-sans">On Sites</div>
-            <div className="font-bold text-emerald-300 text-xs mt-0.5">{formatQuantity(summary.siteAllocatedQty)}</div>
+        </div>
+
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#e8decb] shadow-2xs">
+          <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[#7d6553]">
+            On Sites
           </div>
-          <div className="bg-white/5 border border-white/10 p-2 rounded-md">
-            <div className="text-[10px] text-[#debfa6] font-sans">Damage Material</div>
-            <div className="font-bold text-amber-300 text-xs mt-0.5">{formatQuantity(summary.damagedQty)}</div>
+          <div className="text-2xl sm:text-3xl font-bold text-emerald-700 font-mono mt-1">
+            {formatQuantity(summary.siteAllocatedQty)} <span className="text-xs sm:text-sm font-sans font-normal text-[#7d6553]">Nos</span>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#e8decb] shadow-2xs">
+          <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[#7d6553]">
+            Damaged
+          </div>
+          <div className="text-2xl sm:text-3xl font-bold text-amber-700 font-mono mt-1">
+            {formatQuantity(summary.damagedQty)} <span className="text-xs sm:text-sm font-sans font-normal text-[#7d6553]">Nos</span>
           </div>
         </div>
       </div>

@@ -5,7 +5,11 @@ import {
   initialUsers, 
   initialWarehouses, 
   initialCategories, 
-  initialMaterials 
+  initialMaterials,
+  initialChartOfAccounts,
+  initialAccountingPeriods,
+  initialCostCenters,
+  initialDepartments
 } from '../src/lib/db/seed-data';
 
 // Reset all materials so reservedQty = 0, siteAllocatedQty = 0, usableWarehouseQty = totalOwnedQty, availableToAllocate = totalOwnedQty
@@ -41,6 +45,16 @@ const cleanDatabase = {
   auditLogs: [],
   activityEvents: [],
   quotations: [],
+  chartOfAccounts: initialChartOfAccounts,
+  accountingPeriods: initialAccountingPeriods,
+  costCenters: initialCostCenters,
+  departments: initialDepartments,
+  journalEntries: [],
+  vendorBills: [],
+  employees: [],
+  attendanceRecords: [],
+  leaveRequests: [],
+  paySlips: [],
 };
 
 const dataDir = path.join(process.cwd(), '.data');

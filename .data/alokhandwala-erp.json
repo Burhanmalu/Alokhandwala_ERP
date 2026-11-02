@@ -39,15 +39,15 @@
         "id": 4,
         "title": "Walkway Jali",
         "category": "EQUIPMENT",
-        "shortSummary": "1 walkway Jali included per unit; additional Jali charged at ₹200 per piece.",
-        "fullText": "1 walkway Jali is included with each unit of scaffolding. Any additional walkway Jali will be charged at ₹200 per piece."
+        "shortSummary": "1 walkway Jali included per unit; additional Jali charged at \u20b9200 per piece.",
+        "fullText": "1 walkway Jali is included with each unit of scaffolding. Any additional walkway Jali will be charged at \u20b9200 per piece."
       },
       {
         "id": 5,
         "title": "Shifting Charges",
         "category": "LOGISTICS",
-        "shortSummary": "Extra customer-borne charges: ₹6 per sq. ft. or 60% of the per-unit amount.",
-        "fullText": "Shifting charges are extra and shall be borne by the customer. Charges will be ₹6 per sq. ft. or 60% of the per-unit amount, as applicable."
+        "shortSummary": "Extra customer-borne charges: \u20b96 per sq. ft. or 60% of the per-unit amount.",
+        "fullText": "Shifting charges are extra and shall be borne by the customer. Charges will be \u20b96 per sq. ft. or 60% of the per-unit amount, as applicable."
       },
       {
         "id": 6,
@@ -873,7 +873,7 @@
         "length": 20,
         "unit": "FEET",
         "elevationAreaSqFt": 8000,
-        "measurementType": "FAÇADE_SCAFFOLD",
+        "measurementType": "FA\u00c7ADE_SCAFFOLD",
         "description": "20 x 30 x 40 FEET",
         "measuredBy": "Burhan Malu (Admin)",
         "measuredAt": "2026-11-01T11:44:34.326Z",
@@ -973,7 +973,7 @@
         "length": 10,
         "unit": "FEET",
         "elevationAreaSqFt": 1000,
-        "measurementType": "FAÇADE_SCAFFOLD",
+        "measurementType": "FA\u00c7ADE_SCAFFOLD",
         "description": "10 x 15 x 20 FEET",
         "measuredBy": "Burhan Malu (Admin)",
         "measuredAt": "2026-11-01T09:59:06.553Z",
@@ -1033,7 +1033,7 @@
       "depth": 15,
       "height": 20,
       "elevationAreaSqFt": 1000,
-      "measurementType": "FAÇADE_SCAFFOLD",
+      "measurementType": "FA\u00c7ADE_SCAFFOLD",
       "unit": "FEET",
       "assignedSupervisorId": "usr-admin-01",
       "supervisorName": "Burhan Malu (Admin)",
@@ -1222,7 +1222,7 @@
             "totalMonthlyRent": 390
           }
         ],
-        "scaffoldingType": "FAÇADE_SCAFFOLD",
+        "scaffoldingType": "FA\u00c7ADE_SCAFFOLD",
         "ratePerSqFt": 22,
         "totalAreaSqFt": 500,
         "rentalDurationDays": 28,
@@ -1295,7 +1295,7 @@
           "length": 20,
           "unit": "FEET",
           "totalAreaSqFt": 8000,
-          "structureType": "FAÇADE_SCAFFOLD",
+          "structureType": "FA\u00c7ADE_SCAFFOLD",
           "description": "20 x 30 x 40 FEET"
         },
         "materials": [
@@ -1340,7 +1340,7 @@
             "totalMonthlyRent": 390
           }
         ],
-        "scaffoldingType": "FAÇADE_SCAFFOLD",
+        "scaffoldingType": "FA\u00c7ADE_SCAFFOLD",
         "ratePerSqFt": 22,
         "totalAreaSqFt": 8000,
         "rentalDurationDays": 28,
@@ -1428,7 +1428,7 @@
           "length": 20,
           "unit": "FEET",
           "elevationAreaSqFt": 8000,
-          "measurementType": "FAÇADE_SCAFFOLD",
+          "measurementType": "FA\u00c7ADE_SCAFFOLD",
           "description": "20 x 30 x 40 FEET",
           "measuredBy": "Burhan Malu (Admin)",
           "measuredAt": "2026-11-01T11:44:34.326Z"
@@ -1495,11 +1495,11 @@
           "length": 10,
           "unit": "FEET",
           "totalAreaSqFt": 1000,
-          "structureType": "FAÇADE_SCAFFOLD",
+          "structureType": "FA\u00c7ADE_SCAFFOLD",
           "description": "10 x 15 x 20 FEET"
         },
         "materials": [],
-        "scaffoldingType": "FAÇADE_SCAFFOLD",
+        "scaffoldingType": "FA\u00c7ADE_SCAFFOLD",
         "ratePerSqFt": 22,
         "totalAreaSqFt": 500,
         "rentalDurationDays": 28,
@@ -1570,11 +1570,11 @@
           "length": 10,
           "unit": "FEET",
           "totalAreaSqFt": 1000,
-          "structureType": "FAÇADE_SCAFFOLD",
+          "structureType": "FA\u00c7ADE_SCAFFOLD",
           "description": "10 x 15 x 20 FEET"
         },
         "materials": [],
-        "scaffoldingType": "FAÇADE_SCAFFOLD",
+        "scaffoldingType": "FA\u00c7ADE_SCAFFOLD",
         "ratePerSqFt": 22,
         "totalAreaSqFt": 500,
         "rentalDurationDays": 28,
@@ -1639,7 +1639,7 @@
           "length": 10,
           "unit": "FEET",
           "totalAreaSqFt": 1000,
-          "structureType": "FAÇADE_SCAFFOLD",
+          "structureType": "FA\u00c7ADE_SCAFFOLD",
           "description": "10 x 15 x 20 FEET"
         },
         "materials": [
@@ -1684,7 +1684,7 @@
             "totalMonthlyRent": 260
           }
         ],
-        "scaffoldingType": "FAÇADE_SCAFFOLD",
+        "scaffoldingType": "FA\u00c7ADE_SCAFFOLD",
         "ratePerSqFt": 22,
         "totalAreaSqFt": 1000,
         "rentalDurationDays": 28,
@@ -1750,7 +1750,7 @@
           "length": 10,
           "unit": "FEET",
           "totalAreaSqFt": 1000,
-          "structureType": "FAÇADE_SCAFFOLD",
+          "structureType": "FA\u00c7ADE_SCAFFOLD",
           "description": "10 x 15 x 20 FEET"
         },
         "materials": [
@@ -1795,7 +1795,7 @@
             "totalMonthlyRent": 260
           }
         ],
-        "scaffoldingType": "FAÇADE_SCAFFOLD",
+        "scaffoldingType": "FA\u00c7ADE_SCAFFOLD",
         "ratePerSqFt": 22,
         "totalAreaSqFt": 1000,
         "rentalDurationDays": 28,
@@ -1880,7 +1880,7 @@
           "length": 10,
           "unit": "FEET",
           "elevationAreaSqFt": 1000,
-          "measurementType": "FAÇADE_SCAFFOLD",
+          "measurementType": "FA\u00c7ADE_SCAFFOLD",
           "description": "10 x 15 x 20 FEET",
           "measuredBy": "Burhan Malu (Admin)",
           "measuredAt": "2026-11-01T09:59:06.553Z"
@@ -1969,7 +1969,7 @@
             "totalMonthlyRent": 390
           }
         ],
-        "scaffoldingType": "FAÇADE_SCAFFOLD",
+        "scaffoldingType": "FA\u00c7ADE_SCAFFOLD",
         "ratePerSqFt": 22,
         "totalAreaSqFt": 500,
         "rentalDurationDays": 28,
@@ -2070,7 +2070,7 @@
             "totalMonthlyRent": 390
           }
         ],
-        "scaffoldingType": "FAÇADE_SCAFFOLD",
+        "scaffoldingType": "FA\u00c7ADE_SCAFFOLD",
         "ratePerSqFt": 22,
         "totalAreaSqFt": 500,
         "rentalDurationDays": 28,
@@ -2170,7 +2170,7 @@
             "totalMonthlyRent": 390
           }
         ],
-        "scaffoldingType": "FAÇADE_SCAFFOLD",
+        "scaffoldingType": "FA\u00c7ADE_SCAFFOLD",
         "ratePerSqFt": 22,
         "totalAreaSqFt": 500,
         "rentalDurationDays": 28,
@@ -2270,7 +2270,7 @@
             "totalMonthlyRent": 390
           }
         ],
-        "scaffoldingType": "FAÇADE_SCAFFOLD",
+        "scaffoldingType": "FA\u00c7ADE_SCAFFOLD",
         "ratePerSqFt": 22,
         "totalAreaSqFt": 500,
         "rentalDurationDays": 28,
@@ -2370,7 +2370,7 @@
       "projectId": "proj-1793533474326",
       "eventType": "QUOTATION_DRAFT",
       "eventTitle": "Quotation DRAFT",
-      "eventDescription": "Commercial quotation QTN-000003 (DRAFT) saved for ₹2,12,990. By Burhan Malu (Admin).",
+      "eventDescription": "Commercial quotation QTN-000003 (DRAFT) saved for \u20b92,12,990. By Burhan Malu (Admin).",
       "actorId": "usr-admin-01",
       "actorName": "Burhan Malu (Admin)",
       "metadata": {
@@ -2396,7 +2396,7 @@
       "projectId": "proj-1793527146553",
       "eventType": "QUOTATION_DRAFT",
       "eventTitle": "Quotation DRAFT",
-      "eventDescription": "Commercial quotation QTN-000002 (DRAFT) saved for ₹12,980. By Burhan Malu.",
+      "eventDescription": "Commercial quotation QTN-000002 (DRAFT) saved for \u20b912,980. By Burhan Malu.",
       "actorId": "usr-admin-01",
       "actorName": "Burhan Malu",
       "metadata": {
@@ -2412,7 +2412,7 @@
       "projectId": "proj-1793527146553",
       "eventType": "QUOTATION_DRAFT",
       "eventTitle": "Quotation DRAFT",
-      "eventDescription": "Commercial quotation QTN-000002 (DRAFT) saved for ₹31,270. By Burhan Malu (Admin).",
+      "eventDescription": "Commercial quotation QTN-000002 (DRAFT) saved for \u20b931,270. By Burhan Malu (Admin).",
       "actorId": "usr-admin-01",
       "actorName": "Burhan Malu (Admin)",
       "metadata": {
@@ -2428,7 +2428,7 @@
       "projectId": "proj-1793527146553",
       "eventType": "QUOTATION_DRAFT",
       "eventTitle": "Quotation DRAFT",
-      "eventDescription": "Commercial quotation QTN-000002 (DRAFT) saved for ₹31,270. By Burhan Malu (Admin).",
+      "eventDescription": "Commercial quotation QTN-000002 (DRAFT) saved for \u20b931,270. By Burhan Malu (Admin).",
       "actorId": "usr-admin-01",
       "actorName": "Burhan Malu (Admin)",
       "metadata": {
@@ -2454,7 +2454,7 @@
       "projectId": "proj-1793475181445",
       "eventType": "QUOTATION_SENT",
       "eventTitle": "Quotation SENT",
-      "eventDescription": "Commercial quotation QTN-000001 (SENT) saved for ₹18,290. By Burhan Malu (Admin).",
+      "eventDescription": "Commercial quotation QTN-000001 (SENT) saved for \u20b918,290. By Burhan Malu (Admin).",
       "actorId": "usr-admin-01",
       "actorName": "Burhan Malu (Admin)",
       "metadata": {
@@ -2470,7 +2470,7 @@
       "projectId": "proj-1793475181445",
       "eventType": "QUOTATION_SENT",
       "eventTitle": "Quotation SENT",
-      "eventDescription": "Commercial quotation QTN-000001 (SENT) saved for ₹18,290. By Burhan Malu (Admin).",
+      "eventDescription": "Commercial quotation QTN-000001 (SENT) saved for \u20b918,290. By Burhan Malu (Admin).",
       "actorId": "usr-admin-01",
       "actorName": "Burhan Malu (Admin)",
       "metadata": {
@@ -2486,7 +2486,7 @@
       "projectId": "proj-1793475181445",
       "eventType": "QUOTATION_SENT",
       "eventTitle": "Quotation SENT",
-      "eventDescription": "Commercial quotation QTN-000001 (SENT) saved for ₹18,290. By Burhan Malu (Admin).",
+      "eventDescription": "Commercial quotation QTN-000001 (SENT) saved for \u20b918,290. By Burhan Malu (Admin).",
       "actorId": "usr-admin-01",
       "actorName": "Burhan Malu (Admin)",
       "metadata": {
@@ -2540,7 +2540,7 @@
         "length": 20,
         "unit": "FEET",
         "totalAreaSqFt": 8000,
-        "structureType": "FAÇADE_SCAFFOLD",
+        "structureType": "FA\u00c7ADE_SCAFFOLD",
         "description": "20 x 30 x 40 FEET"
       },
       "materials": [
@@ -2585,7 +2585,7 @@
           "totalMonthlyRent": 390
         }
       ],
-      "scaffoldingType": "FAÇADE_SCAFFOLD",
+      "scaffoldingType": "FA\u00c7ADE_SCAFFOLD",
       "ratePerSqFt": 22,
       "totalAreaSqFt": 8000,
       "rentalDurationDays": 28,
@@ -2647,11 +2647,11 @@
         "length": 10,
         "unit": "FEET",
         "totalAreaSqFt": 1000,
-        "structureType": "FAÇADE_SCAFFOLD",
-        "description": "10 (W) × 15 (D) × 20 (H) FEET"
+        "structureType": "FA\u00c7ADE_SCAFFOLD",
+        "description": "10 (W) \u00d7 15 (D) \u00d7 20 (H) FEET"
       },
       "materials": [],
-      "scaffoldingType": "FAÇADE_SCAFFOLD",
+      "scaffoldingType": "FA\u00c7ADE_SCAFFOLD",
       "ratePerSqFt": 22,
       "totalAreaSqFt": 1000,
       "rentalDurationDays": 28,
@@ -2748,7 +2748,7 @@
           "totalMonthlyRent": 390
         }
       ],
-      "scaffoldingType": "FAÇADE_SCAFFOLD",
+      "scaffoldingType": "FA\u00c7ADE_SCAFFOLD",
       "ratePerSqFt": 22,
       "totalAreaSqFt": 500,
       "rentalDurationDays": 28,
@@ -2791,5 +2791,568 @@
       "rejection_reason": "Not replay",
       "rejectionReason": "Not replay"
     }
-  ]
+  ],
+  "chartOfAccounts": [
+    {
+      "id": "coa-1000",
+      "accountCode": "1000",
+      "accountName": "Assets",
+      "accountType": "ASSET",
+      "classification": "CONTROL",
+      "isControlAccount": true,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-1010",
+      "accountCode": "1010",
+      "accountName": "Cash on Hand",
+      "accountType": "ASSET",
+      "classification": "BANK_CASH",
+      "parentId": "coa-1000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-1020",
+      "accountCode": "1020",
+      "accountName": "HDFC Bank - Current Account",
+      "accountType": "ASSET",
+      "classification": "BANK_CASH",
+      "parentId": "coa-1000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-1030",
+      "accountCode": "1030",
+      "accountName": "Accounts Receivable (Trade Debtors)",
+      "accountType": "ASSET",
+      "classification": "CONTROL",
+      "parentId": "coa-1000",
+      "isControlAccount": true,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-1040",
+      "accountCode": "1040",
+      "accountName": "Scaffolding Rental Fleet Inventory",
+      "accountType": "ASSET",
+      "classification": "CONTROL",
+      "parentId": "coa-1000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-1050",
+      "accountCode": "1050",
+      "accountName": "Input GST / CGST / SGST Credit",
+      "accountType": "ASSET",
+      "classification": "STATUTORY",
+      "parentId": "coa-1000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-2000",
+      "accountCode": "2000",
+      "accountName": "Liabilities",
+      "accountType": "LIABILITY",
+      "classification": "CONTROL",
+      "isControlAccount": true,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-2010",
+      "accountCode": "2010",
+      "accountName": "Accounts Payable (Trade Creditors)",
+      "accountType": "LIABILITY",
+      "classification": "CONTROL",
+      "parentId": "coa-2000",
+      "isControlAccount": true,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-2020",
+      "accountCode": "2020",
+      "accountName": "Salaries & Wages Payable",
+      "accountType": "LIABILITY",
+      "classification": "CONTROL",
+      "parentId": "coa-2000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-2030",
+      "accountCode": "2030",
+      "accountName": "Output GST (18%) Payable",
+      "accountType": "LIABILITY",
+      "classification": "STATUTORY",
+      "parentId": "coa-2000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-2040",
+      "accountCode": "2040",
+      "accountName": "TDS & Statutory Deductions Payable",
+      "accountType": "LIABILITY",
+      "classification": "STATUTORY",
+      "parentId": "coa-2000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-2050",
+      "accountCode": "2050",
+      "accountName": "Provident Fund (PF) & ESI Payable",
+      "accountType": "LIABILITY",
+      "classification": "STATUTORY",
+      "parentId": "coa-2000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-3000",
+      "accountCode": "3000",
+      "accountName": "Equity & Capital",
+      "accountType": "EQUITY",
+      "classification": "CONTROL",
+      "isControlAccount": true,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-3010",
+      "accountCode": "3010",
+      "accountName": "Owner's Capital",
+      "accountType": "EQUITY",
+      "classification": "GENERAL",
+      "parentId": "coa-3000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-3020",
+      "accountCode": "3020",
+      "accountName": "Retained Earnings",
+      "accountType": "EQUITY",
+      "classification": "GENERAL",
+      "parentId": "coa-3000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-4000",
+      "accountCode": "4000",
+      "accountName": "Revenue & Income",
+      "accountType": "REVENUE",
+      "classification": "CONTROL",
+      "isControlAccount": true,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-4010",
+      "accountCode": "4010",
+      "accountName": "Scaffolding Rental Income",
+      "accountType": "REVENUE",
+      "classification": "GENERAL",
+      "parentId": "coa-4000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-4020",
+      "accountCode": "4020",
+      "accountName": "Erection & Dismantling Service Fees",
+      "accountType": "REVENUE",
+      "classification": "GENERAL",
+      "parentId": "coa-4000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-4030",
+      "accountCode": "4030",
+      "accountName": "Transportation & Logistics Charges",
+      "accountType": "REVENUE",
+      "classification": "GENERAL",
+      "parentId": "coa-4000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-4040",
+      "accountCode": "4040",
+      "accountName": "Damage & Scrap Recovery Income",
+      "accountType": "REVENUE",
+      "classification": "GENERAL",
+      "parentId": "coa-4000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-5000",
+      "accountCode": "5000",
+      "accountName": "Expenses",
+      "accountType": "EXPENSE",
+      "classification": "CONTROL",
+      "isControlAccount": true,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-5010",
+      "accountCode": "5010",
+      "accountName": "Employee Salaries & Wages Expense",
+      "accountType": "EXPENSE",
+      "classification": "COST_CENTER",
+      "parentId": "coa-5000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-5020",
+      "accountCode": "5020",
+      "accountName": "Direct Site Labor & Erection Costs",
+      "accountType": "EXPENSE",
+      "classification": "COST_CENTER",
+      "parentId": "coa-5000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-5030",
+      "accountCode": "5030",
+      "accountName": "Freight, Cartage & Logistics Outflow",
+      "accountType": "EXPENSE",
+      "classification": "COST_CENTER",
+      "parentId": "coa-5000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-5040",
+      "accountCode": "5040",
+      "accountName": "Warehouse Yard Maintenance & Rent",
+      "accountType": "EXPENSE",
+      "classification": "COST_CENTER",
+      "parentId": "coa-5000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-5050",
+      "accountCode": "5050",
+      "accountName": "Raw Material Procurement & Spares",
+      "accountType": "EXPENSE",
+      "classification": "COST_CENTER",
+      "parentId": "coa-5000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "coa-5060",
+      "accountCode": "5060",
+      "accountName": "Depreciation & Amortization",
+      "accountType": "EXPENSE",
+      "classification": "GENERAL",
+      "parentId": "coa-5000",
+      "isControlAccount": false,
+      "currentBalance": 0,
+      "currency": "INR",
+      "status": "ACTIVE",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    }
+  ],
+  "accountingPeriods": [
+    {
+      "id": "prd-2026-04",
+      "fiscalYear": "2026-2027",
+      "periodNumber": 1,
+      "periodName": "April 2026",
+      "startDate": "2026-04-01",
+      "endDate": "2026-04-30",
+      "isLocked": false
+    },
+    {
+      "id": "prd-2026-05",
+      "fiscalYear": "2026-2027",
+      "periodNumber": 2,
+      "periodName": "May 2026",
+      "startDate": "2026-05-01",
+      "endDate": "2026-05-31",
+      "isLocked": false
+    },
+    {
+      "id": "prd-2026-06",
+      "fiscalYear": "2026-2027",
+      "periodNumber": 3,
+      "periodName": "June 2026",
+      "startDate": "2026-06-01",
+      "endDate": "2026-06-30",
+      "isLocked": false
+    },
+    {
+      "id": "prd-2026-07",
+      "fiscalYear": "2026-2027",
+      "periodNumber": 4,
+      "periodName": "July 2026",
+      "startDate": "2026-07-01",
+      "endDate": "2026-07-31",
+      "isLocked": false
+    },
+    {
+      "id": "prd-2026-08",
+      "fiscalYear": "2026-2027",
+      "periodNumber": 5,
+      "periodName": "August 2026",
+      "startDate": "2026-08-01",
+      "endDate": "2026-08-31",
+      "isLocked": false
+    },
+    {
+      "id": "prd-2026-09",
+      "fiscalYear": "2026-2027",
+      "periodNumber": 6,
+      "periodName": "September 2026",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-30",
+      "isLocked": false
+    },
+    {
+      "id": "prd-2026-10",
+      "fiscalYear": "2026-2027",
+      "periodNumber": 7,
+      "periodName": "October 2026",
+      "startDate": "2026-10-01",
+      "endDate": "2026-10-31",
+      "isLocked": false
+    },
+    {
+      "id": "prd-2026-11",
+      "fiscalYear": "2026-2027",
+      "periodNumber": 8,
+      "periodName": "November 2026",
+      "startDate": "2026-11-01",
+      "endDate": "2026-11-30",
+      "isLocked": false
+    },
+    {
+      "id": "prd-2026-12",
+      "fiscalYear": "2026-2027",
+      "periodNumber": 9,
+      "periodName": "December 2026",
+      "startDate": "2026-12-01",
+      "endDate": "2026-12-31",
+      "isLocked": false
+    },
+    {
+      "id": "prd-2027-01",
+      "fiscalYear": "2026-2027",
+      "periodNumber": 10,
+      "periodName": "January 2027",
+      "startDate": "2027-01-01",
+      "endDate": "2027-01-31",
+      "isLocked": false
+    },
+    {
+      "id": "prd-2027-02",
+      "fiscalYear": "2026-2027",
+      "periodNumber": 11,
+      "periodName": "February 2027",
+      "startDate": "2027-02-01",
+      "endDate": "2027-02-28",
+      "isLocked": false
+    },
+    {
+      "id": "prd-2027-03",
+      "fiscalYear": "2026-2027",
+      "periodNumber": 12,
+      "periodName": "March 2027",
+      "startDate": "2027-03-01",
+      "endDate": "2027-03-31",
+      "isLocked": false
+    }
+  ],
+  "costCenters": [
+    {
+      "id": "cc-ops",
+      "code": "CC-OPS",
+      "name": "Field Operations & Scaffolding Site Services",
+      "budget": 5000000,
+      "spent": 0,
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "cc-yard",
+      "code": "CC-YARD",
+      "name": "Warehouse Yard & Yard Maintenance",
+      "budget": 2000000,
+      "spent": 0,
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "cc-admin",
+      "code": "CC-ADMIN",
+      "name": "General Administration & Overhead",
+      "budget": 1500000,
+      "spent": 0,
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "cc-logistics",
+      "code": "CC-LOG",
+      "name": "Transport & Fleet Logistics",
+      "budget": 2500000,
+      "spent": 0,
+      "isActive": true,
+      "createdAt": "2026-01-01T00:00:00Z"
+    }
+  ],
+  "departments": [
+    {
+      "id": "dept-ops",
+      "code": "OPS",
+      "name": "Field Operations & Erection",
+      "costCenterId": "cc-ops",
+      "description": "On-site scaffolding erection, safety inspection, and dismantling",
+      "createdAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "dept-yard",
+      "code": "YARD",
+      "name": "Yard & Inventory Logistics",
+      "costCenterId": "cc-yard",
+      "description": "Central yard sorting, repair, staging, and dispatching",
+      "createdAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "dept-fin",
+      "code": "FIN",
+      "name": "Finance & Accounts",
+      "costCenterId": "cc-admin",
+      "description": "Billing, treasury, statutory filings, vendor reconciliations",
+      "createdAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "id": "dept-hr",
+      "code": "HR",
+      "name": "Human Resources & Safety",
+      "costCenterId": "cc-admin",
+      "description": "Workforce recruitment, compliance, attendance, and payroll",
+      "createdAt": "2026-01-01T00:00:00Z"
+    }
+  ],
+  "journalEntries": [],
+  "vendorBills": [],
+  "employees": [],
+  "attendanceRecords": [],
+  "leaveRequests": [],
+  "paySlips": []
 }

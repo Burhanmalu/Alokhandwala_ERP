@@ -784,3 +784,268 @@ export interface CompanySettings {
   rentalCurrency: string;
   termsAndConditions?: any[];
 }
+
+// ============================================================================
+// MODULE 1: ACCOUNTS & FINANCE DATA CONTRACTS
+// ============================================================================
+
+export type AccountType = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
+export type AccountClassification = 'CONTROL' | 'BANK_CASH' | 'COST_CENTER' | 'STATUTORY' | 'GENERAL';
+
+export interface ChartOfAccount {
+  id: string;
+  accountCode: string; // e.g. "1000", "2000"
+  accountName: string;
+  accountType: AccountType;
+  classification: AccountClassification;
+  parentId?: string;
+  isControlAccount: boolean;
+  currentBalance: number; // Positive debit balance for Asset/Expense, credit balance for Liab/Equity/Rev
+  currency: string;
+  status: 'ACTIVE' | 'ARCHIVED';
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountingPeriod {
+  id: string;
+  fiscalYear: string; // e.g. "2026-2027"
+  periodNumber: number; // 1 to 12
+  periodName: string; // e.g. "April 2026"
+  startDate: string;
+  endDate: string;
+  isLocked: boolean;
+  closedAt?: string;
+  closedBy?: string;
+}
+
+export type JournalEntryKind = 'GENERAL' | 'OPENING' | 'CONTRA' | 'ADJUSTMENT' | 'PAYROLL_AUTO' | 'AP_AUTO' | 'AR_AUTO' | 'INVENTORY_AUTO';
+export type JournalEntryStatus = 'DRAFT' | 'POSTED' | 'REVERSED';
+
+export interface JournalLine {
+  id: string;
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  costCenterId?: string;
+  debit: number;
+  credit: number;
+  memo?: string;
+  reconciled: boolean;
+}
+
+export interface JournalEntry {
+  id: string;
+  entryNumber: string; // e.g. "JRN-2026-000001"
+  postingDate: string;
+  accountingDate: string;
+  periodId?: string;
+  kind: JournalEntryKind;
+  referenceNumber?: string;
+  narration: string;
+  totalDebit: number;
+  totalCredit: number;
+  status: JournalEntryStatus;
+  lines: JournalLine[];
+  reversedEntryId?: string;
+  createdBy: string;
+  creatorName: string;
+  createdAt: string;
+  postedAt?: string;
+}
+
+export interface VendorBillLine {
+  id: string;
+  description: string;
+  hsnSacCode?: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  taxRate: number;
+  taxAmount: number;
+  totalAmount: number;
+  accountId: string; // Expense or asset account
+  costCenterId?: string;
+}
+
+export interface VendorBill {
+  id: string;
+  billNumber: string; // e.g. "BILL-2026-0001"
+  vendorInvoiceNumber: string;
+  supplierId: string;
+  supplierName: string;
+  supplierGstin?: string;
+  purchaseOrderId?: string;
+  poNumber?: string;
+  billDate: string;
+  dueDate: string;
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  paidAmount: number;
+  outstandingAmount: number;
+  status: 'DRAFT' | 'POSTED' | 'PARTIALLY_PAID' | 'PAID' | 'CANCELLED';
+  journalEntryId?: string;
+  lines: VendorBillLine[];
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CostCenter {
+  id: string;
+  code: string;
+  name: string;
+  departmentId?: string;
+  budget: number;
+  spent: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+// ============================================================================
+// MODULE 2: HUMAN RESOURCES (HR) & WORKFORCE DATA CONTRACTS
+// ============================================================================
+
+export type EmployeeStatus = 'PROBATION' | 'ACTIVE' | 'ON_LEAVE' | 'TERMINATED';
+export type EmploymentType = 'FULL_TIME' | 'CONTRACT' | 'DAILY_WAGE' | 'INTERN';
+
+export interface Department {
+  id: string;
+  code: string;
+  name: string;
+  headId?: string;
+  headName?: string;
+  costCenterId?: string;
+  description?: string;
+  employeeCount?: number;
+  createdAt: string;
+}
+
+export interface SalaryComponent {
+  id: string;
+  name: string;
+  type: 'EARNING' | 'DEDUCTION';
+  amount: number;
+  isPercentage: boolean;
+  percentageOf?: 'BASIC' | 'GROSS';
+  isStatutory: boolean; // PF, ESI, TDS, Professional Tax
+}
+
+export interface Employee {
+  id: string;
+  employeeCode: string; // e.g. "EMP-0001"
+  fullName: string;
+  email: string;
+  phone: string;
+  aadhaarNumber?: string;
+  panNumber?: string;
+  emergencyContact?: {
+    name: string;
+    relationship: string;
+    phone: string;
+  };
+  bankDetails?: {
+    bankName: string;
+    accountNumber: string;
+    ifscCode: string;
+    branchName: string;
+  };
+  departmentId: string;
+  departmentName: string;
+  designation: string;
+  employmentType: EmploymentType;
+  hierarchyLevel: number; // 1 (Exec/Worker), 2 (Supervisor), 3 (Manager/Admin)
+  managerId?: string;
+  managerName?: string;
+  shopFloorRole?: 'NONE' | 'FABRICATOR' | 'RIGGER' | 'SCAFFOLDER' | 'DRIVER' | 'YARD_SUPERVISOR';
+  hireDate: string;
+  exitDate?: string;
+  status: EmployeeStatus;
+  baseSalary: number; // Base monthly compensation in INR
+  salaryComponents: SalaryComponent[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'HALF_DAY' | 'LEAVE' | 'ON_DUTY';
+
+export interface AttendanceRecord {
+  id: string;
+  employeeId: string;
+  employeeCode: string;
+  employeeName: string;
+  departmentName: string;
+  workDate: string; // YYYY-MM-DD
+  checkIn?: string; // HH:mm or ISO
+  checkOut?: string;
+  status: AttendanceStatus;
+  overtimeMinutes: number;
+  regularised: boolean;
+  regularisationReason?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export type LeaveType = 'CASUAL' | 'SICK' | 'EARNED' | 'UNPAID';
+export type LeaveApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+export interface LeaveRequest {
+  id: string;
+  leaveNumber: string; // e.g. "LV-2026-0001"
+  employeeId: string;
+  employeeCode: string;
+  employeeName: string;
+  departmentName: string;
+  leaveType: LeaveType;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  reason: string;
+  status: LeaveApprovalStatus;
+  approverId?: string;
+  approverName?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  createdAt: string;
+}
+
+export type PaySlipStatus = 'DRAFT' | 'APPROVED' | 'DISBURSED' | 'CANCELLED';
+
+export interface PaySlipLineItem {
+  id: string;
+  name: string;
+  type: 'EARNING' | 'DEDUCTION';
+  amount: number;
+  isStatutory: boolean;
+}
+
+export interface PaySlip {
+  id: string;
+  slipNumber: string; // e.g. "PAY-2026-04-001"
+  employeeId: string;
+  employeeCode: string;
+  employeeName: string;
+  departmentName: string;
+  designation: string;
+  bankAccountNumber?: string;
+  ifscCode?: string;
+  periodMonth: string; // e.g. "2026-04"
+  workingDays: number;
+  presentDays: number;
+  leaveDays: number;
+  absentDays: number;
+  overtimeHours: number;
+  basicPay: number;
+  grossEarnings: number;
+  totalDeductions: number;
+  netSalary: number;
+  status: PaySlipStatus;
+  disbursedDate?: string;
+  journalEntryId?: string;
+  lineItems: PaySlipLineItem[];
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}

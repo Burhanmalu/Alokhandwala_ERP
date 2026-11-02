@@ -705,7 +705,7 @@ export default function ProjectInstallationPage({
             </div>
           ) : (
             <div className="p-4 border-2 border-dashed border-[#d6c7b2] rounded-xl text-center text-xs text-[#8c7360] bg-[#fbf9f5]">
-              No workers added yet. Type worker names above to add them to this project's erection crew.
+              No workers added yet. Type worker names above to add them to this project&apos;s erection crew.
             </div>
           )}
         </div>
