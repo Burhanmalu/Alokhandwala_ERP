@@ -40,8 +40,14 @@ async function runRolePersistenceTests() {
   // Test 2: Cold restart simulation - verify loadState does not revert to WORKER
   // Re-read file with a simulated store load logic
   const reloadedUsers = fileContent.users.map((u: any) => {
-    if (u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role === 'ADMIN_PM' || u.role === 'INVENTORY_MGR' || u.role === 'ACCOUNTANT') {
+    if (u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role === 'ADMIN_PM' || u.role === 'INVENTORY_MGR') {
       return { ...u, role: 'ADMIN' };
+    }
+    if (u.role === 'ACCOUNTANT') {
+      return { ...u, role: 'ACCOUNTANT' };
+    }
+    if (u.role === 'CLIENT') {
+      return { ...u, role: 'CLIENT' };
     }
     if (u.role === 'SUPERVISOR') {
       return { ...u, role: 'SUPERVISOR' };

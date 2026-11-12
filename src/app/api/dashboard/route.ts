@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
+import { getEffectiveRemovalDate, getRemainingDaysInfo } from '@/lib/formatters';
 
 export async function GET(req: NextRequest) {
   try {
@@ -80,10 +81,10 @@ export async function GET(req: NextRequest) {
 
     // Upcoming Deadlines
     const upcomingDeadlines = projects
-      .filter(p => p.rentalEndDate || p.bufferEndDate)
+      .filter(p => Boolean(getEffectiveRemovalDate(p)) && !['CLOSED', 'RETURNED_RECONCILIATION', 'CANCELLED'].includes(p.status))
       .map(p => {
-        const targetDate = p.bufferEndDate || p.rentalEndDate || '';
-        const daysLeft = Math.ceil((new Date(targetDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const targetDate = getEffectiveRemovalDate(p);
+        const rem = getRemainingDaysInfo(targetDate, p.status, now);
         return {
           id: p.id,
           projectCode: p.projectCode,
@@ -91,8 +92,8 @@ export async function GET(req: NextRequest) {
           siteName: p.siteName,
           status: p.status,
           targetDate,
-          daysLeft,
-          type: p.bufferEndDate ? 'BUFFER_DEADLINE' : 'RENTAL_EXPIRY',
+          daysLeft: rem.days ?? 999,
+          type: p.status === 'BUFFER_PERIOD' && p.bufferEndDate ? 'BUFFER_DEADLINE' : 'RENTAL_EXPIRY',
         };
       })
       .sort((a, b) => a.daysLeft - b.daysLeft)

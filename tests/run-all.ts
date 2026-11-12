@@ -21,6 +21,8 @@ import { runQuotationApprovalWorkflowTests } from './quotation-approval-workflow
 import { runScaffoldingDimensionsTests } from './scaffolding-dimensions-consistency.test';
 import { runQuotationPricingSyncTests } from './quotation-pricing-sync.test';
 import { runGlobalElevationAreaFormulaTests } from './global-elevation-area-formula.test';
+import { runAddProjectDirectoryTests } from './add-project-directory.test';
+import { runChallanManagementTests } from './challan-management.test';
 
 async function main() {
   // Clean up isolated test database before test execution to ensure fresh baseline
@@ -48,6 +50,8 @@ async function main() {
   await runScaffoldingDimensionsTests();
   await runQuotationPricingSyncTests();
   await runGlobalElevationAreaFormulaTests();
+  await runAddProjectDirectoryTests();
+  await runChallanManagementTests();
 
   // Clean up isolated test database after test execution
   try {

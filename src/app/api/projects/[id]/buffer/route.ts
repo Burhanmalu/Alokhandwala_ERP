@@ -19,6 +19,7 @@ export async function POST(
       projectId: id,
       requestedBufferDays: validated.requestedBufferDays,
       reason: validated.reason,
+      additionalCharges: validated.additionalCharges,
       actorId: body.actorId || 'system',
       actorName: body.actorName || 'Authorized User',
     });

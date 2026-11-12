@@ -48,6 +48,10 @@ export default function DashboardOverviewPage() {
       router.replace('/sites/new');
       return;
     }
+    if (currentUser?.role === 'CLIENT') {
+      router.replace('/projects');
+      return;
+    }
 
     fetch('/api/dashboard')
       .then(res => res.json())

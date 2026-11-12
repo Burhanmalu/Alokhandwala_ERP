@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       customers = customers.filter(c => 
         c.customerCode.toLowerCase().includes(search) ||
         c.companyName.toLowerCase().includes(search) ||
-        c.contactPerson.toLowerCase().includes(search) ||
+        (c.contactPerson && c.contactPerson.toLowerCase().includes(search)) ||
         c.phone.includes(search)
       );
     }
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         customerCode: nextCode,
         companyName: validated.companyName,
         referenceName: validated.referenceName,
-        contactPerson: validated.contactPerson,
+        contactPerson: (validated.contactPerson && validated.contactPerson.trim()) || validated.companyName,
         phone: validated.phone,
         email: validated.email || '',
         billingAddress: validated.billingAddress,

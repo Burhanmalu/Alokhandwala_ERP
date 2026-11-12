@@ -1,6 +1,6 @@
 // ALOKHANDWALA - TypeScript Data Types & Schema Definitions
 
-export type UserRole = 'ADMIN' | 'SUPERVISOR' | 'WORKER';
+export type UserRole = 'ADMIN' | 'SUPERVISOR' | 'WORKER' | 'ACCOUNTANT' | 'CLIENT';
 
 export interface UserProfile {
   id: string;
@@ -286,7 +286,10 @@ export interface Project {
   rentalStartDate?: string;
   rentalEndDate?: string;
   originalRentalEndDate?: string;
+  originalRemovalDate?: string;
   bufferEndDate?: string;
+  bufferDaysApplied?: number;
+  bufferActivatedAt?: string;
   actualDismantlingDate?: string;
   closureDate?: string;
   cancellationReason?: string;
@@ -350,6 +353,21 @@ export interface Project {
     role: string;
   }[];
   assignedWorkerIds?: string[];
+  customerPhone?: string;
+  customerEmail?: string;
+  staffIds?: string[];
+  staffNames?: string[];
+  installationDate?: string;
+  removalDate?: string;
+  rentalDurationMonths?: number;
+  rentalDurationDays?: number;
+  rentalDurationDisplay?: string;
+  totalAmount?: number;
+  paymentReceived?: number;
+  balanceAmount?: number;
+  remark?: string;
+  followUpDate?: string;
+  followUpNotes?: string;
   clientRepresentativeName?: string;
   clientSignOff?: boolean;
   hasClientGst?: boolean;
@@ -364,8 +382,25 @@ export interface Project {
     unit: 'FEET' | 'METERS';
     configurationType: ScaffoldingConfigurationType;
   };
+  rentalHistory?: RentalHistoryEntry[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RentalHistoryEntry {
+  id: string;
+  projectId: string;
+  projectCode: string;
+  actionType: 'BUFFER_PERIOD' | 'EXTEND_RENTAL' | 'MANUAL_DATE_UPDATE';
+  originalRemovalDate: string;
+  previousRemovalDate: string;
+  newRemovalDate: string;
+  addedValue: number;
+  addedUnit: 'DAYS' | 'MONTHS';
+  reason?: string;
+  changedAt: string;
+  changedById: string;
+  changedByName: string;
 }
 
 export type ScaffoldingConfigurationType = 
@@ -550,9 +585,12 @@ export interface RentalExtension {
   extensionNumber: string; // EXT-2026-000001
   projectId: string;
   projectCode: string;
+  originalRentalEndDate?: string;
   previousRentalEndDate: string;
   newRentalEndDate: string;
   durationMonths: number;
+  extensionUnit?: 'DAYS' | 'MONTHS';
+  extensionValue?: number;
   extensionReason: string;
   monthlyRentalRate: number;
   additionalCharges: number;
@@ -1046,6 +1084,105 @@ export interface PaySlip {
   journalEntryId?: string;
   lineItems: PaySlipLineItem[];
   notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================================================
+// MODULE 3: CHALLAN MANAGEMENT DATA CONTRACTS
+// ============================================================================
+
+export type ChallanStatus = 'UNCLOSED' | 'CLOSED';
+
+export interface ChallanMaterialEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  materialId: string;
+  materialName: string;
+  itemCode?: string;
+  unit?: string;
+  quantity: number;
+  remarks?: string;
+}
+
+export interface ChallanLostEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  materialId: string;
+  materialName: string;
+  itemCode?: string;
+  unit?: string;
+  quantity: number;
+  reason?: string;
+  approvedById?: string;
+  approvedByName?: string;
+  recordedAt: string;
+}
+
+export interface ChallanReconciliationLine {
+  materialId: string;
+  materialName: string;
+  itemCode: string;
+  unit: string;
+  issuedQuantity: number;
+  returnedQuantity: number;
+  pendingQuantity: number; // issued - returned
+  lostQuantity: number;
+  remainingAtSite: number; // issued - returned - lost
+}
+
+export interface ChallanHistoryEntry {
+  id: string;
+  actionType:
+    | 'CREATED'
+    | 'EDITED'
+    | 'OUTPUT_ADDED'
+    | 'RETURN_RECORDED'
+    | 'LOSS_RECORDED'
+    | 'CLOSED'
+    | 'REOPENED';
+  description: string;
+  actorId: string;
+  actorName: string;
+  timestamp: string;
+  metadata?: any;
+}
+
+export interface Challan {
+  id: string;
+  challanNumber: string; // e.g. CHL-2026-000001
+  customerId: string;
+  customerName: string;
+  customerPhone?: string;
+  siteId: string;
+  siteName: string;
+  siteAddress?: string;
+  projectId?: string;
+  projectCode?: string;
+  size: string;
+  issueDate: string; // YYYY-MM-DD
+  outputEntries: ChallanMaterialEntry[];
+  inputEntries: ChallanMaterialEntry[];
+  lostEntries: ChallanLostEntry[];
+  totalOutputQuantity: number;
+  totalReturnedQuantity: number;
+  totalLostQuantity: number;
+  pendingQuantity: number; // totalOutputQuantity - totalReturnedQuantity
+  remainingAtSiteQuantity: number; // totalOutputQuantity - totalReturnedQuantity - totalLostQuantity
+  reconciliation: ChallanReconciliationLine[];
+  status: ChallanStatus;
+  hasLostMaterials: boolean;
+  lossApproved?: boolean;
+  lossApprovedBy?: string;
+  lossApprovedAt?: string;
+  notes?: string;
+  history: ChallanHistoryEntry[];
+  clientRequestId?: string;
+  createdBy: string;
+  createdByName: string;
+  closedBy?: string;
+  closedByName?: string;
+  closedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

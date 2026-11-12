@@ -17,9 +17,12 @@ export async function POST(
 
     const result = await RentalService.extendRental({
       projectId: id,
+      extensionType: validated.extensionType,
+      extensionValue: validated.extensionValue,
       durationMonths: validated.durationMonths,
       extensionReason: validated.extensionReason,
       monthlyRentalRate: validated.monthlyRentalRate,
+      additionalCharges: validated.additionalCharges,
       actorId: body.actorId || 'system',
       actorName: body.actorName || 'Authorized User',
     });

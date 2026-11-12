@@ -4,18 +4,18 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { 
-  FolderKanban, 
-  Search, 
-  Filter, 
-  PlusCircle, 
-  Download, 
-  ChevronRight, 
+import {
+  FolderKanban,
+  Search,
+  Filter,
+  PlusCircle,
+  Download,
+  ChevronRight,
   ChevronDown,
   Check,
-  Calendar, 
-  Building2, 
-  User, 
+  Calendar,
+  Building2,
+  User,
   Eye,
   CheckCircle2,
   Clock,
@@ -33,11 +33,15 @@ import {
   ArrowRight,
   XCircle,
   Edit3,
-  Loader2
+  Loader2,
+  Trash2,
+  Bell,
+  Plus
 } from 'lucide-react';
 import { Project, ProjectStatus } from '@/lib/schema';
-import { formatINR, formatDate, getStatusBadgeConfig, getDaysDifference, extractProjectDimensions } from '@/lib/formatters';
+import { formatINR, formatDate, getStatusBadgeConfig, getDaysDifference, extractProjectDimensions, calculateRentalDurationBreakdown, getRemainingDaysInfo, getFollowUpStatus, getEffectiveRemovalDate, getProjectInstallDateStr } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
+import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
 
 const STATUS_TABS: { key: string; label: string }[] = [
   { key: 'ALL', label: 'All Active Projects' },
@@ -117,8 +121,22 @@ function ProjectsListContent() {
   const [loading, setLoading] = useState(true);
   const [currentTab, setCurrentTab] = useState(initialStatus);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [customerFilter, setCustomerFilter] = useState('ALL');
+  const [siteFilter, setSiteFilter] = useState('ALL');
+  const [supervisorFilter, setSupervisorFilter] = useState('ALL');
+  const [installDateFilter, setInstallDateFilter] = useState('');
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const filterRef = React.useRef<HTMLDivElement>(null);
+
+  // Add / Edit Project Form Modal State
+  const [projectFormOpen, setProjectFormOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+
+  // Delete Confirmation Modal State
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const [restrictionModal, setRestrictionModal] = useState<{
     open: boolean;
     title: string;
@@ -255,15 +273,80 @@ function ProjectsListContent() {
     }
   }, [searchParams, currentUser, router]);
 
-  const handleRegisterClick = () => {
-    if (currentUser?.role === 'WORKER') {
+  const handleAddProjectClick = () => {
+    if (currentUser?.role === 'WORKER' || currentUser?.role === 'CLIENT') {
       setRestrictionModal({
         open: true,
-        title: 'Site Registration Restricted',
-        message: `As a Worker (${currentUser.fullName}), your account permissions allow viewing sites and scaffolding installations you have worked on.\n\nOnly Supervisors and Administrators can register new sites and submit installation forms.`,
+        title: 'Project Creation Restricted',
+        message: `Your account permissions (${currentUser.role}) do not allow creating projects.\n\nOnly Supervisors and Administrators can add or modify projects.`,
       });
     } else {
-      router.push('/sites/new');
+      setEditingProject(null);
+      setProjectFormOpen(true);
+    }
+  };
+
+  const handleOpenEditModal = (project: Project) => {
+    if (currentUser?.role === 'WORKER' || currentUser?.role === 'CLIENT') {
+      setRestrictionModal({
+        open: true,
+        title: 'Edit Project Restricted',
+        message: 'Only Supervisors and Administrators can edit project details.',
+      });
+      return;
+    }
+    setEditingProject(project);
+    setProjectFormOpen(true);
+  };
+
+  const handleProjectSaved = (savedProject: Project, mode: 'create' | 'edit', addAnother: boolean) => {
+    if (mode === 'create') {
+      setProjects(prev => [savedProject, ...prev]);
+      setSuccessBanner(`✓ Project ${savedProject.projectCode} (${savedProject.customerName}) added successfully.`);
+    } else {
+      setProjects(prev => prev.map(p => (p.id === savedProject.id ? savedProject : p)));
+      setSuccessBanner(`✓ Project ${savedProject.projectCode} updated successfully.`);
+    }
+
+    if (!addAnother) {
+      setProjectFormOpen(false);
+      setEditingProject(null);
+    }
+
+    setTimeout(() => setSuccessBanner(null), 8000);
+  };
+
+  const openDeleteModal = (p: Project) => {
+    setProjectToDelete(p);
+    setDeleteError(null);
+  };
+
+  const handleExecuteDelete = async () => {
+    if (!projectToDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/projects/${projectToDelete.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actorId: currentUser?.id || 'usr-admin-01',
+          actorName: currentUser?.fullName || 'Admin',
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to delete project');
+      }
+
+      setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+      setSuccessBanner(`Project ${projectToDelete.projectCode} (${projectToDelete.customerName}) has been deleted.`);
+      setProjectToDelete(null);
+      setTimeout(() => setSuccessBanner(null), 8000);
+    } catch (err: any) {
+      setDeleteError(err.message || 'An error occurred while deleting the project.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -339,11 +422,10 @@ function ProjectsListContent() {
 
       // Update local state
       setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
-      
-      const successMsg = `Project ${updatedProject.projectCode} cancelled successfully.${
-        releasedCount > 0 ? ` Released ${releasedCount} reserved items back to warehouse stock.` : ''
-      } Moved to Cancelled Projects folder.`;
-      
+
+      const successMsg = `Project ${updatedProject.projectCode} cancelled successfully.${releasedCount > 0 ? ` Released ${releasedCount} reserved items back to warehouse stock.` : ''
+        } Moved to Cancelled Projects folder.`;
+
       setSuccessBanner(successMsg);
       setProjectToCancel(null);
 
@@ -463,13 +545,59 @@ function ProjectsListContent() {
     router.push(`/quotation?projectId=${p.id}`);
   };
 
+  // Shared field extractors for consistent display across filters, table, mobile cards, and CSV
+  const getProjectInstallDate = (p: Project) => getProjectInstallDateStr(p);
+
+  const getProjectRemovalDate = (p: Project) => getEffectiveRemovalDate(p);
+
+  const getProjectFinancials = (p: Project) => {
+    const total = Number(p.totalAmount ?? p.agreedProjectPrice ?? p.quotationAmount ?? 0);
+    const received = Number(p.paymentReceived ?? p.advancePaidAmount ?? 0);
+    const balance =
+      p.balanceAmount !== undefined
+        ? Number(p.balanceAmount)
+        : Math.max(0, Math.round((total - received) * 100) / 100);
+    return { total, received, balance };
+  };
+
+  // Distinct dropdown filter lists
+  const uniqueCustomers = useMemo(
+    () => Array.from(new Set(projects.map(p => p.customerName).filter(Boolean))).sort(),
+    [projects]
+  );
+  const uniqueSites = useMemo(
+    () => Array.from(new Set(projects.map(p => p.siteName).filter(Boolean))).sort(),
+    [projects]
+  );
+  const uniqueSupervisors = useMemo(
+    () => Array.from(new Set(projects.map(p => p.supervisorName).filter(Boolean))).sort(),
+    [projects]
+  );
+
+  const hasActiveFilters =
+    currentTab !== 'ALL' ||
+    Boolean(searchQuery.trim()) ||
+    customerFilter !== 'ALL' ||
+    siteFilter !== 'ALL' ||
+    supervisorFilter !== 'ALL' ||
+    Boolean(installDateFilter);
+
+  const clearAllFilters = () => {
+    setCurrentTab('ALL');
+    setSearchQuery('');
+    setCustomerFilter('ALL');
+    setSiteFilter('ALL');
+    setSupervisorFilter('ALL');
+    setInstallDateFilter('');
+  };
+
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
       if (currentUser?.role === 'WORKER') {
         const hasWorked = (
           p.assignedWorkerIds?.includes(currentUser.id) ||
-          p.installationWorkers?.some(w => 
-            w.id === currentUser.id || 
+          p.installationWorkers?.some(w =>
+            w.id === currentUser.id ||
             (w.name && currentUser.fullName && (
               w.name.toLowerCase().trim() === currentUser.fullName.toLowerCase().trim() ||
               currentUser.fullName.toLowerCase().includes(w.name.toLowerCase().trim()) ||
@@ -487,9 +615,9 @@ function ProjectsListContent() {
       } else if (currentTab === 'QUOTED') {
         // Quoted filter: displays projects with quotations saved (draft, sent, accepted, rejected)
         const quotedStatuses: ProjectStatus[] = [
-          'QUOTATION_DRAFT', 
-          'QUOTATION_SENT', 
-          'QUOTATION_ACCEPTED', 
+          'QUOTATION_DRAFT',
+          'QUOTATION_SENT',
+          'QUOTATION_ACCEPTED',
           'QUOTATION_REJECTED'
         ];
         if (!quotedStatuses.includes(p.status)) return false;
@@ -501,6 +629,15 @@ function ProjectsListContent() {
         }
       } else {
         if (p.status !== currentTab) return false;
+      }
+
+      if (customerFilter !== 'ALL' && p.customerName !== customerFilter) return false;
+      if (siteFilter !== 'ALL' && p.siteName !== siteFilter) return false;
+      if (supervisorFilter !== 'ALL' && p.supervisorName !== supervisorFilter) return false;
+
+      if (installDateFilter) {
+        const pInstall = getProjectInstallDate(p).slice(0, 10);
+        if (pInstall !== installDateFilter) return false;
       }
 
       if (searchQuery.trim()) {
@@ -515,11 +652,11 @@ function ProjectsListContent() {
 
       return true;
     });
-  }, [projects, currentTab, searchQuery, currentUser]);
+  }, [projects, currentTab, searchQuery, customerFilter, siteFilter, supervisorFilter, installDateFilter, currentUser]);
 
   const statusCounts = useMemo(() => {
     const activeProjects = projects.filter(p => p.status !== 'CANCELLED');
-    const counts: Record<string, number> = { 
+    const counts: Record<string, number> = {
       ALL: activeProjects.length,
       QUOTED: projects.filter(p => ['QUOTATION_DRAFT', 'QUOTATION_SENT', 'QUOTATION_ACCEPTED', 'QUOTATION_REJECTED'].includes(p.status)).length,
       CANCELLED: projects.filter(p => p.status === 'CANCELLED').length,
@@ -541,7 +678,7 @@ function ProjectsListContent() {
   const exportToCSV = () => {
     const headers = isCancelledView
       ? ['Project Code', 'Customer', 'Site', 'Supervisor', 'Status', 'Cancellation Date', 'Cancellation Reason', 'Cancelled By']
-      : ['Project Code', 'Customer', 'Site', 'Supervisor', 'Status', 'Rental Start', 'Rental End', 'Monthly Rate (INR)'];
+      : ['Project ID', 'Customer Name', 'Site Name', 'Supervisor', 'Installation Date', 'Removal Date', 'Remaining Days', 'Status', 'Total Amount (INR)', 'Payment Received (INR)', 'Balance Amount (INR)', 'Follow-up Date'];
 
     const rows = filteredProjects.map(p => {
       if (isCancelledView) {
@@ -556,15 +693,22 @@ function ProjectsListContent() {
           `"${p.cancelledByName || ''}"`,
         ];
       }
+      const fin = getProjectFinancials(p);
+      const removalDateStr = getProjectRemovalDate(p);
+      const remInfo = getRemainingDaysInfo(p.bufferEndDate || removalDateStr, p.status);
       return [
         p.projectCode,
         `"${p.customerName}"`,
         `"${p.siteName}"`,
         `"${p.supervisorName || ''}"`,
+        getProjectInstallDate(p),
+        removalDateStr,
+        `"${remInfo.label}"`,
         p.status,
-        p.rentalStartDate || '',
-        p.rentalEndDate || '',
-        p.monthlyRentalRate || 0,
+        fin.total,
+        fin.received,
+        fin.balance,
+        p.followUpDate || '',
       ];
     });
 
@@ -625,11 +769,11 @@ function ProjectsListContent() {
 
           {can('PROJECT_CREATE_INSPECTION') && (
             <button
-              onClick={handleRegisterClick}
+              onClick={handleAddProjectClick}
               className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-[#1c120c] bg-[#c79e7c] hover:bg-[#dfcbab] rounded-md shadow-xs transition cursor-pointer"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>Register Site</span>
+              <Plus className="w-4 h-4" />
+              <span>Add Project</span>
             </button>
           )}
         </div>
@@ -640,17 +784,15 @@ function ProjectsListContent() {
         <button
           type="button"
           onClick={() => setCurrentTab('ALL')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition -mb-[5px] cursor-pointer ${
-            !isCancelledView
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition -mb-[5px] cursor-pointer ${!isCancelledView
               ? 'border-[#8f6541] text-[#24160c] bg-white rounded-t-lg'
               : 'border-transparent text-stone-600 hover:text-[#24160c] hover:bg-[#fbf9f5] rounded-t-lg'
-          }`}
+            }`}
         >
           <FolderKanban className={`w-4 h-4 ${!isCancelledView ? 'text-[#8f6541]' : 'text-stone-400'}`} />
           <span>Active Projects Directory</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-            !isCancelledView ? 'bg-[#24160c] text-white' : 'bg-[#ebdcc9] text-[#24160c]'
-          }`}>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${!isCancelledView ? 'bg-[#24160c] text-white' : 'bg-[#ebdcc9] text-[#24160c]'
+            }`}>
             {statusCounts.ALL || 0}
           </span>
         </button>
@@ -658,17 +800,15 @@ function ProjectsListContent() {
         <button
           type="button"
           onClick={() => setCurrentTab('CANCELLED')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition -mb-[5px] cursor-pointer ${
-            isCancelledView
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition -mb-[5px] cursor-pointer ${isCancelledView
               ? 'border-rose-600 text-rose-900 bg-white rounded-t-lg'
               : 'border-transparent text-stone-600 hover:text-rose-900 hover:bg-rose-50/50 rounded-t-lg'
-          }`}
+            }`}
         >
           <Ban className={`w-4 h-4 ${isCancelledView ? 'text-rose-600' : 'text-stone-400'}`} />
           <span>Cancelled Projects Folder</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-            isCancelledView ? 'bg-rose-700 text-white' : 'bg-stone-200 text-stone-700'
-          }`}>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${isCancelledView ? 'bg-rose-700 text-white' : 'bg-stone-200 text-stone-700'
+            }`}>
             {statusCounts.CANCELLED || 0}
           </span>
         </button>
@@ -688,140 +828,201 @@ function ProjectsListContent() {
       )}
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-3 rounded-lg border border-[#e8decb] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-2xs">
-        <div className="flex flex-1 items-center gap-2">
-          {/* Search Box */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder={isCancelledView ? "Search cancelled projects by code, customer, or reason..." : "Search projects by code, customer name, site, or supervisor..."}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-1.5 text-xs bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none text-stone-800 transition"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5"
-                title="Clear search"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+      <div className="bg-white p-3.5 rounded-lg border border-[#e8decb] space-y-3 shadow-2xs">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex flex-1 items-center gap-2">
+            {/* Search Box */}
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder={isCancelledView ? "Search cancelled projects by code, customer, or reason..." : "Search projects by code, customer name, site, or supervisor..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-1.5 text-xs bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none text-stone-800 transition"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Filter Dropdown (in active directory) */}
+            {!isCancelledView && (
+              <div className="relative" ref={filterRef}>
+                <button
+                  type="button"
+                  onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md border transition shrink-0 cursor-pointer ${currentTab !== 'ALL'
+                      ? 'bg-[#f7f2eb] text-[#24160c] border-[#8f6541] ring-1 ring-[#8f6541]/20'
+                      : 'bg-white text-stone-700 border-[#d6c7b2] hover:bg-[#fbf9f5]'
+                    }`}
+                >
+                  <Filter className={`w-3.5 h-3.5 ${currentTab !== 'ALL' ? 'text-[#8f6541]' : 'text-stone-500'}`} />
+                  <span>{currentTab === 'ALL' ? 'Filter by Status' : activeTabObj.label}</span>
+                  {currentTab !== 'ALL' && (
+                    <span className="w-4 h-4 rounded-full bg-[#24160c] text-white text-[10px] font-bold flex items-center justify-center">
+                      {filteredProjects.length}
+                    </span>
+                  )}
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${filterDropdownOpen ? 'rotate-180 text-[#8f6541]' : 'text-stone-400'}`} />
+                </button>
+
+                {filterDropdownOpen && (
+                  <div className="absolute right-0 sm:left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-[#d6c7b2] py-1 z-40">
+                    <div className="px-3 py-2 border-b border-[#f0e8db] flex items-center justify-between text-[11px] font-bold text-stone-500 uppercase tracking-wider">
+                      <span>Status Filter</span>
+                      {currentTab !== 'ALL' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCurrentTab('ALL');
+                            setFilterDropdownOpen(false);
+                          }}
+                          className="text-[#8f6541] hover:underline font-semibold cursor-pointer"
+                        >
+                          Reset Status
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="max-h-80 overflow-y-auto py-1 text-xs divide-y divide-[#faf6ee]">
+                      {STATUS_TABS.filter(t => t.key !== 'CANCELLED').map((tab) => {
+                        const isSelected = currentTab === tab.key;
+                        const count = statusCounts[tab.key] || 0;
+                        return (
+                          <button
+                            key={tab.key}
+                            type="button"
+                            onClick={() => {
+                              setCurrentTab(tab.key);
+                              setFilterDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-3.5 py-2 flex items-center justify-between transition cursor-pointer ${isSelected
+                                ? 'bg-[#fbf7f0] text-[#24160c] font-bold'
+                                : 'text-stone-700 hover:bg-[#faf6ee]'
+                              }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${tab.key === 'ALL' ? 'bg-stone-400' :
+                                  tab.key === 'NOT_INSTALLED' ? 'bg-stone-400' :
+                                    tab.key === 'QUOTED' ? 'bg-blue-600' :
+                                      tab.key === 'CONFIRMED_PROJECT' ? 'bg-amber-600' :
+                                        tab.key === 'ACTIVE_RENTAL' ? 'bg-emerald-600' :
+                                          tab.key === 'BUFFER_PERIOD' ? 'bg-orange-500' :
+                                            tab.key === 'EXTENDED' ? 'bg-teal-600' :
+                                              tab.key === 'SHIFTING_IN_PROGRESS' ? 'bg-indigo-600' :
+                                                tab.key === 'REMOVAL_PENDING' ? 'bg-rose-600' :
+                                                  'bg-stone-400'
+                                }`} />
+                              <span>{tab.label}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${isSelected ? 'bg-[#ebdcc9] text-[#24160c] font-bold' : 'bg-stone-100 text-stone-500'
+                                }`}>
+                                {count}
+                              </span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-[#8f6541]" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Filter Dropdown (in active directory) */}
-          {!isCancelledView && (
-            <div className="relative" ref={filterRef}>
+          {/* Status Count and Clear All Pill */}
+          <div className="flex items-center gap-2 text-xs text-stone-500 font-medium self-end sm:self-center whitespace-nowrap">
+            {hasActiveFilters && (
               <button
                 type="button"
-                onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
-                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md border transition shrink-0 cursor-pointer ${
-                  currentTab !== 'ALL'
-                    ? 'bg-[#f7f2eb] text-[#24160c] border-[#8f6541] ring-1 ring-[#8f6541]/20'
-                    : 'bg-white text-stone-700 border-[#d6c7b2] hover:bg-[#fbf9f5]'
-                }`}
-              >
-                <Filter className={`w-3.5 h-3.5 ${currentTab !== 'ALL' ? 'text-[#8f6541]' : 'text-stone-500'}`} />
-                <span>{currentTab === 'ALL' ? 'Filter by Status' : activeTabObj.label}</span>
-                {currentTab !== 'ALL' && (
-                  <span className="w-4 h-4 rounded-full bg-[#24160c] text-white text-[10px] font-bold flex items-center justify-center">
-                    {filteredProjects.length}
-                  </span>
-                )}
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${filterDropdownOpen ? 'rotate-180 text-[#8f6541]' : 'text-stone-400'}`} />
-              </button>
-
-              {filterDropdownOpen && (
-                <div className="absolute right-0 sm:left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-[#d6c7b2] py-1 z-40">
-                  <div className="px-3 py-2 border-b border-[#f0e8db] flex items-center justify-between text-[11px] font-bold text-stone-500 uppercase tracking-wider">
-                    <span>Status Filter</span>
-                    {currentTab !== 'ALL' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCurrentTab('ALL');
-                          setFilterDropdownOpen(false);
-                        }}
-                        className="text-[#8f6541] hover:underline font-semibold cursor-pointer"
-                      >
-                        Reset All
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="max-h-80 overflow-y-auto py-1 text-xs divide-y divide-[#faf6ee]">
-                    {STATUS_TABS.filter(t => t.key !== 'CANCELLED').map((tab) => {
-                      const isSelected = currentTab === tab.key;
-                      const count = statusCounts[tab.key] || 0;
-                      return (
-                        <button
-                          key={tab.key}
-                          type="button"
-                          onClick={() => {
-                            setCurrentTab(tab.key);
-                            setFilterDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-3.5 py-2 flex items-center justify-between transition cursor-pointer ${
-                            isSelected
-                              ? 'bg-[#fbf7f0] text-[#24160c] font-bold'
-                              : 'text-stone-700 hover:bg-[#faf6ee]'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${
-                              tab.key === 'ALL' ? 'bg-stone-400' :
-                              tab.key === 'NOT_INSTALLED' ? 'bg-stone-400' :
-                              tab.key === 'QUOTED' ? 'bg-blue-600' :
-                              tab.key === 'CONFIRMED_PROJECT' ? 'bg-amber-600' :
-                              tab.key === 'ACTIVE_RENTAL' ? 'bg-emerald-600' :
-                              tab.key === 'BUFFER_PERIOD' ? 'bg-orange-500' :
-                              tab.key === 'EXTENDED' ? 'bg-teal-600' :
-                              tab.key === 'SHIFTING_IN_PROGRESS' ? 'bg-indigo-600' :
-                              tab.key === 'REMOVAL_PENDING' ? 'bg-rose-600' :
-                              'bg-stone-400'
-                            }`} />
-                            <span>{tab.label}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                              isSelected ? 'bg-[#ebdcc9] text-[#24160c] font-bold' : 'bg-stone-100 text-stone-500'
-                            }`}>
-                              {count}
-                            </span>
-                            {isSelected && <Check className="w-3.5 h-3.5 text-[#8f6541]" />}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Status Count and Active Filter Pill */}
-        <div className="flex items-center gap-2 text-xs text-stone-500 font-medium self-end sm:self-center whitespace-nowrap">
-          {currentTab !== 'ALL' && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#fbf7f0] text-[#714f36] border border-[#ebdcc9] rounded-md text-[11px] font-semibold">
-              <span>{activeTabObj.label}</span>
-              <button
-                type="button"
-                onClick={() => setCurrentTab('ALL')}
-                className="hover:text-black p-0.5 rounded-full cursor-pointer"
-                title="Clear filter"
+                onClick={clearAllFilters}
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#fbf7f0] text-[#714f36] hover:text-[#24160c] border border-[#ebdcc9] rounded-md text-[11px] font-semibold cursor-pointer"
+                title="Reset all filters"
               >
                 <X className="w-3 h-3" />
+                <span>Clear Filters</span>
               </button>
+            )}
+            <span>
+              {isCancelledView ? 'Cancelled Projects:' : 'Projects Found:'}{' '}
+              <span className="font-bold text-[#24160c]">{filteredProjects.length}</span>
             </span>
-          )}
-          <span>
-            {isCancelledView ? 'Cancelled Projects:' : 'Active Projects:'}{' '}
-            <span className="font-bold text-[#24160c]">{filteredProjects.length}</span>
-          </span>
+          </div>
+        </div>
+
+        {/* Dedicated Attribute Filters: Customer, Site, Supervisor, Installation Date */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2.5 border-t border-[#f0e8db] text-xs">
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#9c826e] mb-1">
+              Customer
+            </label>
+            <select
+              value={customerFilter}
+              onChange={(e) => setCustomerFilter(e.target.value)}
+              className="w-full px-2.5 py-1.5 text-xs bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] focus:bg-white focus:border-[#8f6541] focus:outline-none"
+            >
+              <option value="ALL">All Customers</option>
+              {uniqueCustomers.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#9c826e] mb-1">
+              Site
+            </label>
+            <select
+              value={siteFilter}
+              onChange={(e) => setSiteFilter(e.target.value)}
+              className="w-full px-2.5 py-1.5 text-xs bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] focus:bg-white focus:border-[#8f6541] focus:outline-none"
+            >
+              <option value="ALL">All Sites</option>
+              {uniqueSites.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#9c826e] mb-1">
+              Supervisor
+            </label>
+            <select
+              value={supervisorFilter}
+              onChange={(e) => setSupervisorFilter(e.target.value)}
+              className="w-full px-2.5 py-1.5 text-xs bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] focus:bg-white focus:border-[#8f6541] focus:outline-none"
+            >
+              <option value="ALL">All Supervisors</option>
+              {uniqueSupervisors.map(sup => (
+                <option key={sup} value={sup}>{sup}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#9c826e] mb-1">
+              Installation Date
+            </label>
+            <div className="relative">
+              <input
+                type="date"
+                value={installDateFilter}
+                onChange={(e) => setInstallDateFilter(e.target.value)}
+                className="w-full px-2.5 py-1.5 text-xs bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] font-mono focus:bg-white focus:border-[#8f6541] focus:outline-none"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -842,24 +1043,26 @@ function ProjectsListContent() {
                   ? 'Projects cancelled during pre-installation will be archived here.'
                   : currentUser?.role === 'WORKER'
                     ? 'You have not been assigned to any scaffolding sites yet.'
-                    : 'Register a customer site to initialize a project.'}
+                    : 'Click "+ Add Project" to initialize a new project record.'}
               </p>
               {!isCancelledView && can('PROJECT_CREATE_INSPECTION') && (
                 <button
                   type="button"
-                  onClick={handleRegisterClick}
+                  onClick={handleAddProjectClick}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#24160c] text-white rounded-md text-xs font-semibold hover:bg-[#382315] transition cursor-pointer"
                 >
-                  <PlusCircle className="w-3.5 h-3.5 text-[#c79e7c]" />
-                  <span>Register Site</span>
+                  <Plus className="w-3.5 h-3.5 text-[#c79e7c]" />
+                  <span>Add Project</span>
                 </button>
               )}
             </div>
           ) : (
             filteredProjects.map((p) => {
               const badge = getStatusBadgeConfig(p.status);
-              const daysLeft = getDaysDifference(p.bufferEndDate || p.rentalEndDate);
               const preInstall = isPreInstallation(p.status, p.actualInstallationDate);
+              const installDate = getProjectInstallDate(p);
+              const removalDate = getProjectRemovalDate(p);
+              const fin = getProjectFinancials(p);
 
               return (
                 <div key={p.id} className="p-4 space-y-3 text-xs">
@@ -914,47 +1117,100 @@ function ProjectsListContent() {
                     <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#f0e8db] text-[11px]">
                       <div>
                         <span className="text-stone-400 block">Supervisor:</span>
-                        <span className="font-medium text-stone-700">{p.supervisorName || '-'}</span>
+                        <span className="font-medium text-stone-700">{p.supervisorName || '—'}</span>
                       </div>
                       <div>
-                        <span className="text-stone-400 block">Monthly Rate:</span>
-                        <span className="font-mono font-bold text-stone-900">
-                          {p.monthlyRentalRate > 0 ? formatINR(p.monthlyRentalRate, false) : '-'}
-                        </span>
-                      </div>
-                      <div className="col-span-2 flex items-center justify-between pt-1">
-                        <span className="text-stone-400">Rental Deadline:</span>
-                        <span className="font-mono font-semibold">
-                          {daysLeft !== null ? (
-                            <span className={daysLeft < 0 ? 'text-rose-700' : daysLeft <= 3 ? 'text-amber-700' : 'text-stone-700'}>
-                              {daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft} days remaining`}
+                        <span className="text-stone-400 block">Follow-up Date:</span>
+                        {(() => {
+                          if (!p.followUpDate) return <span className="font-mono font-medium text-stone-400">—</span>;
+                          const fStatus = getFollowUpStatus(p.followUpDate, removalDate, p.status);
+                          return (
+                            <span
+                              className={`font-mono font-semibold inline-flex items-center gap-1 ${fStatus.isOverdue || fStatus.isDueToday ? 'text-rose-700' : 'text-stone-800'
+                                }`}
+                            >
+                              {formatDate(p.followUpDate)}
+                              {fStatus.isOverdue && (
+                                <span className="px-1 py-0.2 rounded bg-rose-100 text-rose-800 text-[9px] font-sans font-bold uppercase">
+                                  Overdue
+                                </span>
+                              )}
+                              {fStatus.isDueToday && (
+                                <span className="px-1 py-0.2 rounded bg-amber-100 text-amber-800 text-[9px] font-sans font-bold uppercase">
+                                  Today
+                                </span>
+                              )}
                             </span>
-                          ) : (
-                            <span className="text-stone-400 italic">Pre-installation</span>
-                          )}
-                        </span>
+                          );
+                        })()}
+                      </div>
+                      <div>
+                        <span className="text-stone-400 block">Installation Date:</span>
+                        <span className="font-mono text-stone-800">{installDate ? formatDate(installDate) : '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-stone-400 block">Removal Date:</span>
+                        <span className="font-mono text-stone-800">{removalDate ? formatDate(removalDate) : '—'}</span>
+                      </div>
+                      {(() => {
+                        const remInfo = getRemainingDaysInfo(p.bufferEndDate || removalDate, p.status);
+                        return (
+                          <div className="col-span-2 flex items-center justify-between pt-1">
+                            <span className="text-stone-400">Remaining Days:</span>
+                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold border ${remInfo.badgeClass}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${remInfo.dotClass}`} />
+                              <span>{remInfo.label}</span>
+                            </span>
+                          </div>
+                        );
+                      })()}
+                      <div className="col-span-2 grid grid-cols-3 gap-2 pt-1.5 border-t border-[#f7f2eb]">
+                        <div>
+                          <span className="text-stone-400 block text-[10px]">Total</span>
+                          <span className="font-mono font-bold text-[#24160c]">{formatINR(fin.total, false)}</span>
+                        </div>
+                        <div>
+                          <span className="text-stone-400 block text-[10px]">Received</span>
+                          <span className="font-mono font-semibold text-emerald-700">{formatINR(fin.received, false)}</span>
+                        </div>
+                        <div>
+                          <span className="text-stone-400 block text-[10px]">Balance</span>
+                          <span className={`font-mono font-bold ${fin.balance > 0 ? 'text-amber-800' : 'text-emerald-700'}`}>
+                            {formatINR(fin.balance, false)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  <div className="pt-1 flex items-center gap-2">
+                  <div className="pt-1 flex items-center gap-2 flex-wrap">
                     <Link
                       href={`/projects/${p.id}`}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-[#f7f2eb] hover:bg-[#ebdcc9] text-[#24160c] font-semibold rounded-md transition text-xs border border-[#d6c7b2]"
+                      className="flex-1 flex items-center justify-center gap-1 py-2 px-3 bg-[#f7f2eb] hover:bg-[#ebdcc9] text-[#24160c] font-semibold rounded-md transition text-xs border border-[#d6c7b2]"
                     >
-                      <span>{isCancelledView ? 'View History' : 'Open Workspace'}</span>
-                      <ChevronRight className="w-4 h-4 text-[#8f6541]" />
+                      <Eye className="w-3.5 h-3.5 text-[#8f6541]" />
+                      <span>View</span>
                     </Link>
 
-                    {!isCancelledView && preInstall && can('PROJECT_CLOSE') && (
+                    {!isCancelledView && can('PROJECT_CREATE_INSPECTION') && (
                       <button
                         type="button"
-                        onClick={() => openCancelModal(p)}
-                        className="px-3 py-2 text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
-                        title="Cancel Pre-installation Project"
+                        onClick={() => handleOpenEditModal(p)}
+                        className="px-3 py-2 text-[#24160c] bg-white hover:bg-[#faf6ee] border border-[#d6c7b2] rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
                       >
-                        <Ban className="w-3.5 h-3.5" />
-                        <span>Cancel</span>
+                        <Edit3 className="w-3.5 h-3.5 text-[#8f6541]" />
+                        <span>Edit</span>
+                      </button>
+                    )}
+
+                    {can('PROJECT_CLOSE') && (
+                      <button
+                        type="button"
+                        onClick={() => openDeleteModal(p)}
+                        className="px-3 py-2 text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete</span>
                       </button>
                     )}
                   </div>
@@ -980,27 +1236,32 @@ function ProjectsListContent() {
                 </tr>
               ) : (
                 <tr>
-                  <th className="px-4 py-3">Project ID</th>
-                  <th className="px-4 py-3">Customer & Site</th>
-                  <th className="px-4 py-3">Supervisor</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Rental Window</th>
-                  <th className="px-4 py-3">Days Left</th>
-                  <th className="px-4 py-3">Monthly Rent</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Project ID</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Customer Name</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Site Name</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Supervisor</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Installation Date</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Removal Date</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Remaining Days</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Status</th>
+                  <th className="px-3 py-3 whitespace-nowrap text-right">Total Amount</th>
+                  <th className="px-3 py-3 whitespace-nowrap text-right">Payment Received</th>
+                  <th className="px-3 py-3 whitespace-nowrap text-right">Balance Amount</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Follow-up Date</th>
+                  <th className="px-3 py-3 whitespace-nowrap text-right">Actions</th>
                 </tr>
               )}
             </thead>
             <tbody className="divide-y divide-[#f0e8db]">
               {loading ? (
                 <tr>
-                  <td colSpan={isCancelledView ? 7 : 8} className="px-4 py-12 text-center text-stone-400">
+                  <td colSpan={isCancelledView ? 7 : 13} className="px-4 py-12 text-center text-stone-400">
                     Loading project records...
                   </td>
                 </tr>
               ) : filteredProjects.length === 0 ? (
                 <tr>
-                  <td colSpan={isCancelledView ? 7 : 8} className="px-4 py-12 text-center">
+                  <td colSpan={isCancelledView ? 7 : 13} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center justify-center text-stone-400 gap-2 max-w-sm mx-auto">
                       {isCancelledView ? (
                         <>
@@ -1017,16 +1278,16 @@ function ProjectsListContent() {
                           <p className="text-xs text-stone-500 mb-2">
                             {currentUser?.role === 'WORKER'
                               ? 'You have not worked on any registered sites yet.'
-                              : 'Register a customer site to initialize a project.'}
+                              : 'Click "+ Add Project" to add a new project record.'}
                           </p>
                           {can('PROJECT_CREATE_INSPECTION') && (
                             <button
                               type="button"
-                              onClick={handleRegisterClick}
+                              onClick={handleAddProjectClick}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#24160c] text-white rounded-md text-xs font-semibold hover:bg-[#382315] transition cursor-pointer"
                             >
-                              <PlusCircle className="w-3.5 h-3.5 text-[#c79e7c]" />
-                              <span>Register Site</span>
+                              <Plus className="w-3.5 h-3.5 text-[#c79e7c]" />
+                              <span>Add Project</span>
                             </button>
                           )}
                         </>
@@ -1037,8 +1298,10 @@ function ProjectsListContent() {
               ) : (
                 filteredProjects.map((p) => {
                   const badge = getStatusBadgeConfig(p.status);
-                  const daysLeft = getDaysDifference(p.bufferEndDate || p.rentalEndDate);
                   const preInstall = isPreInstallation(p.status, p.actualInstallationDate);
+                  const installDate = getProjectInstallDate(p);
+                  const removalDate = getProjectRemovalDate(p);
+                  const fin = getProjectFinancials(p);
 
                   if (isCancelledView) {
                     return (
@@ -1067,13 +1330,25 @@ function ProjectsListContent() {
                           {p.cancelledByName || 'Burhan Malu (Admin)'}
                         </td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">
-                          <Link
-                            href={`/projects/${p.id}`}
-                            className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-stone-800 bg-[#f7f2eb] hover:bg-[#ebdcc9] border border-[#d6c7b2] rounded-md transition"
-                          >
-                            <span>Open History</span>
-                            <ChevronRight className="w-3.5 h-3.5 text-[#8f6541]" />
-                          </Link>
+                          <div className="inline-flex items-center gap-1.5">
+                            <Link
+                              href={`/projects/${p.id}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-stone-800 bg-[#f7f2eb] hover:bg-[#ebdcc9] border border-[#d6c7b2] rounded-md transition"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-[#8f6541]" />
+                              <span>View</span>
+                            </Link>
+                            {can('PROJECT_CLOSE') && (
+                              <button
+                                type="button"
+                                onClick={() => openDeleteModal(p)}
+                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-md transition cursor-pointer"
+                                title="Delete Project"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1081,19 +1356,77 @@ function ProjectsListContent() {
 
                   return (
                     <tr key={p.id} className="hover:bg-[#fcfbf9] transition">
-                      <td className="px-4 py-3 font-mono font-bold text-[#24160c] whitespace-nowrap">
+                      <td className="px-3 py-3 font-mono font-bold text-[#24160c] whitespace-nowrap">
                         <Link href={`/projects/${p.id}`} className="hover:underline hover:text-[#8f6541]">
                           {p.projectCode}
                         </Link>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="font-semibold text-stone-900">{p.customerName}</div>
-                        <div className="text-stone-500 text-[11px] truncate max-w-xs">{p.siteName}</div>
+                      <td className="px-3 py-3">
+                        <div className="font-semibold text-stone-900 whitespace-nowrap">{p.customerName}</div>
+                        {p.customerPhone && (
+                          <div className="text-[10px] text-stone-400 font-mono">{p.customerPhone}</div>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-stone-700 whitespace-nowrap">
-                        {p.supervisorName || '—'}
+                      <td className="px-3 py-3">
+                        <div className="font-medium text-stone-800 max-w-[180px] truncate" title={p.siteName}>
+                          {p.siteName}
+                        </div>
+                        {p.siteAddress && (
+                          <div className="text-[10px] text-stone-400 max-w-[180px] truncate" title={p.siteAddress}>
+                            {p.siteAddress}
+                          </div>
+                        )}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-3 py-3 text-stone-700 whitespace-nowrap">
+                        <div>{p.supervisorName || '—'}</div>
+                        {(p.staffNames && p.staffNames.length > 0) && (
+                          <div className="text-[10px] text-[#8f6541]">
+                            +{p.staffNames.length} staff
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-stone-700 whitespace-nowrap font-mono">
+                        {installDate ? formatDate(installDate) : <span className="text-stone-400">—</span>}
+                      </td>
+                      <td className="px-3 py-3 text-stone-700 whitespace-nowrap font-mono">
+                        <div>{removalDate ? formatDate(removalDate) : <span className="text-stone-400">—</span>}</div>
+                        {p.status === 'BUFFER_PERIOD' && p.bufferEndDate && (
+                          <div className="text-[10px] font-sans font-semibold text-amber-800">
+                            {p.bufferDaysApplied ? `Buffer Period Active (+${p.bufferDaysApplied}d)` : 'Buffer Period Active'}
+                          </div>
+                        )}
+                        {installDate && (() => {
+                          const dur = calculateRentalDurationBreakdown(installDate, removalDate);
+                          if (!dur.display || dur.isInvalid) return null;
+                          return (
+                            <div className={`text-[10px] font-sans ${dur.isOngoing ? 'text-emerald-700 font-semibold' : 'text-[#8f6541]'}`}>
+                              {dur.display}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        {(() => {
+                          const remInfo = getRemainingDaysInfo(p.bufferEndDate || removalDate, p.status);
+                          return (
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] border ${remInfo.severity === 'danger' || remInfo.severity === 'overdue'
+                                  ? 'font-bold shadow-2xs'
+                                  : 'font-semibold'
+                                } ${remInfo.badgeClass}`}
+                              title={
+                                remInfo.isAlert
+                                  ? '7-Day Removal Expiry Alert: Removal date is approaching or overdue'
+                                  : undefined
+                              }
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${remInfo.dotClass}`} />
+                              <span>{remInfo.label}</span>
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap">
                         {['QUOTATION_DRAFT', 'QUOTATION_SENT', 'QUOTATION_ACCEPTED', 'QUOTATION_REJECTED'].includes(p.status) || p.quotationId ? (
                           <div className="relative inline-block">
                             <button
@@ -1114,55 +1447,95 @@ function ProjectsListContent() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-stone-600 whitespace-nowrap font-mono">
-                        {p.rentalStartDate ? (
-                          <div>
-                            <div>{formatDate(p.rentalStartDate)}</div>
-                            <div className="text-[10px] text-stone-400">to {formatDate(p.rentalEndDate)}</div>
-                          </div>
-                        ) : (
-                          <span className="text-stone-400 italic">Pre-installation</span>
+                      <td className="px-3 py-3 font-mono font-bold text-[#24160c] whitespace-nowrap text-right">
+                        {formatINR(fin.total, false)}
+                      </td>
+                      <td className="px-3 py-3 font-mono font-semibold text-emerald-700 whitespace-nowrap text-right">
+                        {formatINR(fin.received, false)}
+                      </td>
+                      <td className={`px-3 py-3 font-mono font-bold whitespace-nowrap text-right ${fin.balance > 0 ? 'text-amber-800' : 'text-emerald-700'}`}>
+                        {formatINR(fin.balance, false)}
+                      </td>
+                      <td className="px-3 py-3 text-stone-700 whitespace-nowrap font-mono">
+                        {p.followUpDate ? (() => {
+                          const fStatus = getFollowUpStatus(p.followUpDate, removalDate, p.status);
+                          return (
+                            <div title={p.followUpNotes || ''}>
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className={`inline-flex items-center gap-1 font-semibold ${fStatus.isOverdue || fStatus.isDueToday
+                                      ? 'text-rose-700'
+                                      : 'text-[#714f36]'
+                                    }`}
+                                >
+                                  <Bell className={`w-3 h-3 shrink-0 ${fStatus.isOverdue || fStatus.isDueToday ? 'text-rose-600' : ''}`} />
+                                  <span>{formatDate(p.followUpDate)}</span>
+                                </span>
+                                {fStatus.isOverdue && (
+                                  <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 text-[9px] font-sans font-bold uppercase tracking-wide">
+                                    Overdue
+                                  </span>
+                                )}
+                                {fStatus.isDueToday && (
+                                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 text-[9px] font-sans font-bold uppercase tracking-wide">
+                                    Today
+                                  </span>
+                                )}
+                              </div>
+                              {p.followUpNotes && (
+                                <div className="text-[10px] text-stone-400 font-sans max-w-[140px] truncate mt-0.5">
+                                  {p.followUpNotes}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })() : (
+                          <span className="text-stone-400">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap font-mono">
-                        {daysLeft !== null ? (
-                          <span className={`font-semibold ${
-                            daysLeft < 0 ? 'text-rose-700' : daysLeft <= 3 ? 'text-amber-700' : 'text-stone-700'
-                          }`}>
-                            {daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft} days`}
-                          </span>
-                        ) : (
-                          <span className="text-stone-400">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 font-mono font-medium text-stone-900 whitespace-nowrap">
-                        {(() => {
-                          const pDims = extractProjectDimensions(p);
-                          const rent = (p.monthlyRentalRate === 11000 && pDims.elevationAreaSqFt === 1000)
-                            ? 22000
-                            : (p.monthlyRentalRate || (pDims.elevationAreaSqFt > 0 ? pDims.elevationAreaSqFt * (p.ratePerSqFt || 22) : 0));
-                          return rent > 0 ? formatINR(rent, false) : '-';
-                        })()}
-                      </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1.5">
+                      <td className="px-3 py-3 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1">
                           <Link
                             href={`/projects/${p.id}`}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#24160c] bg-[#f7f2eb] hover:bg-[#ebdcc9] border border-[#d6c7b2] rounded-md transition"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-[#24160c] bg-[#f7f2eb] hover:bg-[#ebdcc9] border border-[#d6c7b2] rounded transition"
+                            title="View Project Details"
                           >
-                            <span>Workspace</span>
-                            <ChevronRight className="w-3.5 h-3.5 text-[#8f6541]" />
+                            <Eye className="w-3 h-3 text-[#8f6541]" />
+                            <span>View</span>
                           </Link>
+
+                          {can('PROJECT_CREATE_INSPECTION') && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditModal(p)}
+                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-[#4d301c] bg-white hover:bg-[#faf6ee] border border-[#d6c7b2] rounded transition cursor-pointer"
+                              title="Edit Project"
+                            >
+                              <Edit3 className="w-3 h-3 text-[#8f6541]" />
+                              <span>Edit</span>
+                            </button>
+                          )}
+
+                          {can('PROJECT_CLOSE') && (
+                            <button
+                              type="button"
+                              onClick={() => openDeleteModal(p)}
+                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded transition cursor-pointer"
+                              title="Delete Project"
+                            >
+                              <Trash2 className="w-3 h-3 text-rose-700" />
+                              <span>Delete</span>
+                            </button>
+                          )}
 
                           {preInstall && can('PROJECT_CLOSE') && (
                             <button
                               type="button"
                               onClick={() => openCancelModal(p)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-md transition cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded transition cursor-pointer"
                               title="Cancel Pre-installation Project"
                             >
-                              <Ban className="w-3.5 h-3.5 text-rose-700" />
-                              <span>Cancel</span>
+                              <Ban className="w-3 h-3" />
                             </button>
                           )}
                         </div>
@@ -1643,6 +2016,101 @@ function ProjectsListContent() {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* ADD / EDIT PROJECT FORM MODAL */}
+      <ProjectFormModal
+        isOpen={projectFormOpen}
+        editingProject={editingProject}
+        currentUser={currentUser}
+        onClose={() => {
+          setProjectFormOpen(false);
+          setEditingProject(null);
+        }}
+        onSaved={handleProjectSaved}
+      />
+
+      {/* DELETE PROJECT CONFIRMATION DIALOG */}
+      {projectToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#140b06]/70 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="fixed inset-0" onClick={() => !deleting && setProjectToDelete(null)} />
+          <div className="relative z-10 w-full max-w-md bg-white rounded-xl shadow-2xl border border-[#d6c7b2] p-6 text-stone-800 space-y-4">
+            <div className="flex items-start justify-between border-b border-[#f0e8db] pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-rose-100 text-rose-800 flex items-center justify-center shrink-0 border border-rose-200">
+                  <Trash2 className="w-5 h-5 text-rose-700" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#24160c]">
+                    Delete Project: {projectToDelete.projectCode}
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Permanent removal from Project Directory
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setProjectToDelete(null)}
+                className="text-stone-400 hover:text-stone-600 p-1 rounded-md cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {deleteError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-800 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            <div className="bg-[#fbf9f5] rounded-lg p-3.5 border border-[#ede3d4] text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Customer:</span>
+                <span className="font-bold text-[#24160c]">{projectToDelete.customerName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Site:</span>
+                <span className="font-semibold text-stone-800 truncate max-w-[230px]">{projectToDelete.siteName}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-stone-600 leading-relaxed">
+              Are you sure you want to permanently delete this project? Any reserved warehouse materials will be released automatically, and this action will be recorded in the audit log.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#f0e8db]">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setProjectToDelete(null)}
+                className="px-4 py-2 text-xs font-semibold text-stone-700 bg-white hover:bg-[#faf6ee] border border-[#d8c8b4] rounded-md transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={handleExecuteDelete}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-700 hover:bg-rose-800 rounded-md transition cursor-pointer disabled:opacity-50"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Project</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

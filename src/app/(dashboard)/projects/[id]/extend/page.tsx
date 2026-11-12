@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Repeat, CheckCircle2, AlertTriangle, Calendar, ReceiptIndianRupee } from 'lucide-react';
 import { Project } from '@/lib/schema';
-import { formatDate, formatINR, addDays } from '@/lib/formatters';
+import { formatDate, formatINR, addDays, calculateExtendedRemovalDate, getEffectiveRemovalDate, toDateOnlyString } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
 import { RENTAL_CONSTANTS } from '@/lib/constants/terms-and-conditions';
 
@@ -23,7 +23,8 @@ export default function ProjectExtensionPage({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [durationMonths, setDurationMonths] = useState<number>(1);
+  const [extensionType, setExtensionType] = useState<'DAYS' | 'MONTHS'>('MONTHS');
+  const [durationValue, setDurationValue] = useState<number>(1);
   const [extensionReason, setExtensionReason] = useState('');
   const [monthlyRentalRate, setMonthlyRentalRate] = useState<number>(0);
   const [additionalCharges, setAdditionalCharges] = useState<number>(0);
@@ -40,11 +41,9 @@ export default function ProjectExtensionPage({
       .finally(() => setLoading(false));
   }, [id]);
 
-  const currentEndDate = project?.rentalEndDate ? new Date(project.rentalEndDate) : new Date();
-  // Term 2: 28 days = 1 month
-  const newEndDate = addDays(currentEndDate, durationMonths * RENTAL_CONSTANTS.RENTAL_DAYS_PER_MONTH);
-  // Term 8: Payment due next day after cycle ends
-  const nextPaymentDueDate = addDays(currentEndDate, 1);
+  const currentEndDateStr = toDateOnlyString(getEffectiveRemovalDate(project)) || toDateOnlyString(new Date());
+  const newEndDate = calculateExtendedRemovalDate(currentEndDateStr, durationValue, extensionType);
+  const nextPaymentDueDate = addDays(currentEndDateStr, 1);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,8 +55,9 @@ export default function ProjectExtensionPage({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          durationMonths: Number(durationMonths),
-          extensionReason,
+          extensionType,
+          extensionValue: Number(durationValue),
+          extensionReason: extensionReason.trim() || undefined,
           monthlyRentalRate: Number(monthlyRentalRate),
           additionalCharges: Number(additionalCharges),
           actorId: currentUser.id,
@@ -138,11 +138,13 @@ export default function ProjectExtensionPage({
         {/* Existing vs Proposed Dates & Payment Due Date */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-teal-50/50 rounded-xl border border-teal-200 text-xs">
           <div>
-            <span className="text-slate-500">Current Cycle Expiry:</span>
-            <div className="font-mono font-bold text-slate-800 mt-0.5">{formatDate(project.rentalEndDate)}</div>
+            <span className="text-slate-500">Current Removal Date:</span>
+            <div className="font-mono font-bold text-slate-800 mt-0.5">{formatDate(currentEndDateStr)}</div>
           </div>
           <div>
-            <span className="text-teal-800 font-semibold">New Expiry (+{durationMonths * 28}d):</span>
+            <span className="text-teal-800 font-semibold">
+              New Removal Date (+{durationValue} {extensionType === 'DAYS' ? 'Day(s)' : 'Month(s)'}):
+            </span>
             <div className="font-mono font-bold text-teal-900 mt-0.5">{formatDate(newEndDate)}</div>
           </div>
           <div className="bg-white/80 p-2 rounded-lg border border-teal-200 sm:col-span-1">
@@ -152,25 +154,39 @@ export default function ProjectExtensionPage({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">
-              Extension Duration (28-Day Monthly Cycles) *
-            </label>
-            <div className="flex gap-3">
-              {[1, 2, 3, 6].map((m) => (
-                <button
-                  type="button"
-                  key={m}
-                  onClick={() => setDurationMonths(m)}
-                  className={`flex-1 py-2 rounded-lg font-bold border transition cursor-pointer ${
-                    durationMonths === m
-                      ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  +{m} Month{m > 1 ? 's' : ''} ({m * 28}d)
-                </button>
-              ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Extension Type *</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['DAYS', 'MONTHS'] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setExtensionType(t)}
+                    className={`py-2 rounded-lg font-bold border transition cursor-pointer ${
+                      extensionType === t
+                        ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {t === 'DAYS' ? 'Days' : 'Months'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Extension Duration ({extensionType === 'DAYS' ? 'Days' : 'Months'}) *
+              </label>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                required
+                value={durationValue}
+                onChange={(e) => setDurationValue(Math.max(1, Number(e.target.value)))}
+                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-slate-900"
+              />
             </div>
           </div>
 

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 import { ProjectService } from '@/lib/services/project-service';
-import { calculateScaffoldingArea } from '@/lib/formatters';
+import {
+  calculateScaffoldingArea,
+  calculateRentalDurationBreakdown,
+  getEffectiveRemovalDate,
+  toDateOnlyString,
+} from '@/lib/formatters';
 
 export async function GET(
   req: NextRequest,
@@ -24,11 +29,13 @@ export async function GET(
 
     const customer = dbStore.getCustomers().find(c => c.id === project.customerId);
     const site = dbStore.getSites().find(s => s.id === project.siteId);
+    const companySettings = dbStore.getCompanySettings();
 
     return NextResponse.json({
       success: true,
       data: {
         ...project,
+        configuredBufferDays: companySettings?.bufferDaysDefault || 3,
         customer,
         site,
         activity,
@@ -221,8 +228,232 @@ export async function PATCH(
       return NextResponse.json({ success: true, data: updated });
     }
 
+    if (body.updateProjectDetails) {
+      const totalAmount = Number(body.totalAmount ?? 0);
+      const paymentReceived = Number(body.paymentReceived ?? 0);
+      if (totalAmount < 0 || paymentReceived < 0) {
+        return NextResponse.json({ success: false, error: 'Financial amounts cannot be negative.' }, { status: 400 });
+      }
+      if (paymentReceived > totalAmount) {
+        return NextResponse.json({ success: false, error: 'Payment Received cannot exceed Total Amount.' }, { status: 400 });
+      }
+      const balanceAmount = Math.round((totalAmount - paymentReceived) * 100) / 100;
+      const rentalDuration = calculateRentalDurationBreakdown(body.installationDate, body.removalDate);
+      if (rentalDuration.isInvalid) {
+        return NextResponse.json(
+          { success: false, error: 'Date of Removal cannot be earlier than Date of Installation.' },
+          { status: 400 }
+        );
+      }
+
+      const updated = await dbStore.transaction((state) => {
+        const proj = state.projects.find(p => p.id === id || p.projectCode === id);
+        if (!proj) throw new Error('Project not found');
+
+        const oldStatus = proj.status;
+        if (body.customerId) proj.customerId = body.customerId;
+        if (body.customerName) proj.customerName = body.customerName.trim();
+        if (body.customerPhone !== undefined) proj.customerPhone = body.customerPhone ? body.customerPhone.trim() : undefined;
+        if (body.customerEmail !== undefined) proj.customerEmail = body.customerEmail ? body.customerEmail.trim() : undefined;
+
+        if (body.siteId) proj.siteId = body.siteId;
+        if (body.siteName) proj.siteName = body.siteName.trim();
+        if (body.siteAddress) proj.siteAddress = body.siteAddress.trim();
+
+        if (body.assignedSupervisorId) {
+          proj.assignedSupervisorId = body.assignedSupervisorId;
+          const sup = state.users.find(u => u.id === body.assignedSupervisorId);
+          proj.supervisorName = body.supervisorName?.trim() || sup?.fullName || proj.supervisorName;
+        } else if (body.supervisorName) {
+          proj.supervisorName = body.supervisorName.trim();
+        }
+
+        if (Array.isArray(body.staffIds)) {
+          proj.staffIds = body.staffIds;
+          proj.assignedWorkerIds = body.staffIds;
+          const resolvedStaff = body.staffIds.map((sid: string, idx: number) => {
+            const u = state.users.find(user => user.id === sid);
+            return {
+              id: sid,
+              name: u?.fullName || body.staffNames?.[idx] || sid,
+              role: u?.role || 'Staff',
+            };
+          });
+          proj.staffNames = resolvedStaff.map((s: any) => s.name);
+          proj.installationWorkers = resolvedStaff.length > 0 ? resolvedStaff : undefined;
+        }
+
+        if (body.status) proj.status = body.status;
+
+        proj.installationDate = body.installationDate || undefined;
+        proj.plannedInstallationDate = body.installationDate || proj.plannedInstallationDate;
+        proj.rentalStartDate = body.installationDate || proj.rentalStartDate;
+        if (['INSTALLED', 'ACTIVE_RENTAL', 'EXTENDED', 'BUFFER_PERIOD', 'REMOVAL_PENDING', 'CLOSED'].includes(proj.status) && body.installationDate) {
+          proj.actualInstallationDate = body.installationDate;
+        }
+
+        const previousEffectiveRemoval = toDateOnlyString(getEffectiveRemovalDate(proj));
+        const nextRemovalStr = toDateOnlyString(body.removalDate);
+        if (nextRemovalStr && nextRemovalStr !== previousEffectiveRemoval) {
+          if (!proj.originalRemovalDate && previousEffectiveRemoval) {
+            proj.originalRemovalDate = proj.originalRentalEndDate || previousEffectiveRemoval;
+          }
+          if (!proj.originalRentalEndDate && proj.originalRemovalDate) {
+            proj.originalRentalEndDate = proj.originalRemovalDate;
+          }
+          // Manual removal date edit supersedes any prior buffer expiry
+          if (proj.bufferEndDate && nextRemovalStr !== toDateOnlyString(proj.bufferEndDate)) {
+            proj.bufferEndDate = undefined;
+            proj.bufferDaysApplied = undefined;
+            proj.bufferActivatedAt = undefined;
+          }
+          if (!proj.rentalHistory) proj.rentalHistory = [];
+          proj.rentalHistory.unshift({
+            id: `rh-man-${Date.now()}`,
+            projectId: proj.id,
+            projectCode: proj.projectCode,
+            actionType: 'MANUAL_DATE_UPDATE',
+            originalRemovalDate: proj.originalRemovalDate || previousEffectiveRemoval || nextRemovalStr,
+            previousRemovalDate: previousEffectiveRemoval || nextRemovalStr,
+            newRemovalDate: nextRemovalStr,
+            addedValue: 0,
+            addedUnit: 'DAYS',
+            reason: 'Removal date updated via Project Details Edit Form',
+            changedAt: new Date().toISOString(),
+            changedById: body.actorId || 'usr-admin-01',
+            changedByName: body.actorName || 'Admin',
+          });
+        } else if (!nextRemovalStr) {
+          proj.bufferEndDate = undefined;
+        }
+
+        proj.removalDate = body.removalDate || undefined;
+        proj.rentalEndDate = body.removalDate || undefined;
+        proj.durationMonths = body.installationDate ? Math.max(1, rentalDuration.months || 0) : proj.durationMonths;
+        proj.rentalDurationMonths = body.installationDate ? rentalDuration.months : undefined;
+        proj.rentalDurationDays = body.installationDate ? rentalDuration.days : undefined;
+        proj.rentalDurationDisplay = rentalDuration.display || undefined;
+
+        // Update Site Dimensions if provided
+        if (body.width !== undefined || body.depth !== undefined || body.height !== undefined || body.unit !== undefined) {
+          const dimW = Math.max(0, Number(body.width ?? proj.measurements?.width ?? 0));
+          const dimD = Math.max(0, Number(body.depth ?? proj.measurements?.depth ?? 0));
+          const dimH = Math.max(0, Number(body.height ?? proj.measurements?.height ?? 0));
+          const dimUnit: 'FEET' | 'METERS' = (body.unit || proj.measurements?.unit) === 'METERS' ? 'METERS' : 'FEET';
+          const area = (dimW > 0 && dimH > 0 && dimD > 0)
+            ? calculateScaffoldingArea(dimW, dimD, dimH, dimUnit)
+            : 0;
+
+          if (!proj.measurements) {
+            proj.measurements = {
+              id: `meas-${Date.now()}`,
+              siteId: proj.siteId,
+              projectId: proj.id,
+              width: dimW,
+              depth: dimD || 3,
+              height: dimH,
+              length: dimW,
+              unit: dimUnit,
+              elevationAreaSqFt: area,
+              measurementType: 'FAÇADE_SCAFFOLD',
+              description: `${dimW} (W) × ${dimD} (D) × ${dimH} (H) ${dimUnit}`,
+              measuredBy: proj.supervisorName,
+              measuredAt: new Date().toISOString(),
+            };
+          } else {
+            proj.measurements.width = dimW;
+            proj.measurements.depth = dimD;
+            proj.measurements.height = dimH;
+            proj.measurements.length = dimW;
+            proj.measurements.unit = dimUnit;
+            proj.measurements.elevationAreaSqFt = area;
+            proj.measurements.description = `${dimW} (W) × ${dimD} (D) × ${dimH} (H) ${dimUnit}`;
+          }
+          proj.totalAreaSqFt = area;
+          proj.elevationAreaSqFt = area;
+          proj.siteDimensions = {
+            length: dimW,
+            width: dimW,
+            height: dimH,
+            unit: dimUnit,
+            configurationType: proj.siteDimensions?.configurationType || 'PERIMETER_FACADE',
+          };
+        }
+
+        proj.totalAmount = totalAmount;
+        proj.agreedProjectPrice = totalAmount;
+        proj.paymentReceived = paymentReceived;
+        proj.advancePaidAmount = paymentReceived;
+        proj.balanceAmount = balanceAmount;
+        proj.completionDueAmount = balanceAmount;
+
+        proj.remark = body.remark !== undefined ? (body.remark ? body.remark.trim() : undefined) : proj.remark;
+        proj.siteRemarks = proj.remark;
+        proj.followUpDate = body.followUpDate || undefined;
+        proj.followUpNotes = body.followUpNotes !== undefined ? (body.followUpNotes ? body.followUpNotes.trim() : undefined) : proj.followUpNotes;
+
+        // Sync linked customer & site details
+        const customer = state.customers.find(c => c.id === proj.customerId);
+        if (customer) {
+          if (body.customerName) customer.companyName = body.customerName.trim();
+          if (body.customerPhone) customer.phone = body.customerPhone.trim();
+          if (body.customerEmail !== undefined) customer.email = body.customerEmail.trim();
+          customer.updatedAt = new Date().toISOString();
+        }
+        const site = state.sites.find(s => s.id === proj.siteId);
+        if (site) {
+          if (body.siteName) site.siteName = body.siteName.trim();
+          if (body.siteAddress) site.siteAddress = body.siteAddress.trim();
+          if (proj.assignedSupervisorId) site.assignedSupervisorId = proj.assignedSupervisorId;
+          if (proj.supervisorName) site.supervisorName = proj.supervisorName;
+        }
+
+        proj.updatedAt = new Date().toISOString();
+
+        state.auditLogs.unshift({
+          id: `aud-${Date.now()}`,
+          actorId: body.actorId || 'usr-admin-01',
+          actorEmail: body.actorName || 'Admin',
+          action: 'PROJECT_UPDATED',
+          entityTable: 'projects',
+          entityId: proj.id,
+          oldState: { status: oldStatus },
+          newState: { status: proj.status, totalAmount, paymentReceived, balanceAmount },
+          createdAt: proj.updatedAt,
+        });
+
+        return proj;
+      });
+
+      return NextResponse.json({ success: true, data: updated });
+    }
+
     return NextResponse.json({ success: false, error: 'No valid action specified' }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    let actorId = 'usr-admin-01';
+    let actorName = 'Administrator';
+    try {
+      const body = await req.json();
+      if (body?.actorId) actorId = body.actorId;
+      if (body?.actorName) actorName = body.actorName;
+    } catch {
+      // Optional DELETE body
+    }
+
+    const result = await ProjectService.deleteProject(id, actorId, actorName);
+    return NextResponse.json({ success: true, data: result });
+  } catch (error: any) {
+    const status = error.message === 'Project not found' ? 404 : 400;
+    return NextResponse.json({ success: false, error: error.message }, { status });
   }
 }

@@ -33,7 +33,8 @@ import {
   Employee,
   AttendanceRecord,
   LeaveRequest,
-  PaySlip
+  PaySlip,
+  Challan
 } from '../schema';
 import { 
   initialCompanySettings, 
@@ -89,6 +90,7 @@ export interface DatabaseState {
   attendanceRecords: AttendanceRecord[];
   leaveRequests: LeaveRequest[];
   paySlips: PaySlip[];
+  challans: Challan[];
 }
 
 const DATA_DIR = path.join(process.cwd(), '.data');
@@ -148,11 +150,17 @@ class ERPDataStore {
         // Ensure users are strictly mapped to the 3 roles: ADMIN, SUPERVISOR, WORKER
         if (parsed.users) {
           parsed.users = parsed.users.map((u: any) => {
-            if (u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role === 'ADMIN_PM' || u.role === 'INVENTORY_MGR' || u.role === 'ACCOUNTANT') {
+            if (u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role === 'ADMIN_PM' || u.role === 'INVENTORY_MGR') {
               return { ...u, role: 'ADMIN' };
             }
             if (u.role === 'SUPERVISOR') {
               return { ...u, role: 'SUPERVISOR' };
+            }
+            if (u.role === 'ACCOUNTANT') {
+              return { ...u, role: 'ACCOUNTANT' };
+            }
+            if (u.role === 'CLIENT') {
+              return { ...u, role: 'CLIENT' };
             }
             return { ...u, role: 'WORKER' };
           });
@@ -193,6 +201,7 @@ class ERPDataStore {
         if (!parsed.attendanceRecords) parsed.attendanceRecords = [];
         if (!parsed.leaveRequests) parsed.leaveRequests = [];
         if (!parsed.paySlips) parsed.paySlips = [];
+        if (!parsed.challans) parsed.challans = [];
 
         return parsed;
       }
@@ -230,6 +239,7 @@ class ERPDataStore {
       attendanceRecords: [],
       leaveRequests: [],
       paySlips: [],
+      challans: [],
     };
   }
 
@@ -341,6 +351,7 @@ class ERPDataStore {
   public getAttendanceRecords() { return this.getState().attendanceRecords || []; }
   public getLeaveRequests() { return this.getState().leaveRequests || []; }
   public getPaySlips() { return this.getState().paySlips || []; }
+  public getChallans() { return this.getState().challans || []; }
 
   // Reset to seed data
   public resetToSeed() {
@@ -374,6 +385,7 @@ class ERPDataStore {
       attendanceRecords: [],
       leaveRequests: [],
       paySlips: [],
+      challans: [],
     };
     this.saveState();
   }

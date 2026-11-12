@@ -109,12 +109,12 @@ export function extractProjectDimensions(source: any): ExtractedDimensions {
   const elevationAreaSqFt = calculatedArea > 0
     ? calculatedArea
     : Number(
-        meas.elevationAreaSqFt ||
-          source.elevationAreaSqFt ||
-          meas.totalAreaSqFt ||
-          source.totalAreaSqFt ||
-          0
-      );
+      meas.elevationAreaSqFt ||
+      source.elevationAreaSqFt ||
+      meas.totalAreaSqFt ||
+      source.totalAreaSqFt ||
+      0
+    );
 
   const formattedDimensions = (width > 0 && height > 0)
     ? `${width} (W) × ${depth} (D) × ${height} (H) ${unit}`
@@ -140,7 +140,7 @@ export function formatINR(amount: number | undefined | null, includeDecimals = t
 
   const isNegative = amount < 0;
   const absAmount = Math.abs(amount);
-  
+
   const formatted = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -166,7 +166,7 @@ export function formatDate(dateString?: string | Date | null): string {
   if (!dateString) return '-';
   const d = new Date(dateString);
   if (isNaN(d.getTime())) return '-';
-  
+
   return d.toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
@@ -209,7 +209,10 @@ export function getDaysDifference(targetDate?: string | Date | null, baseDate = 
  * Accurately handles variable month lengths (28, 30, 31 days)
  */
 export function addCalendarMonths(startDate: string | Date, monthsToAdd: number): Date {
-  const start = new Date(startDate);
+  const start =
+    typeof startDate === 'string'
+      ? toUtcMidnightFromDateOnly(startDate) || new Date(startDate)
+      : new Date(startDate);
   // Use UTC methods to prevent local timezone offsets from shifting dates across midnight
   const targetYear = start.getUTCFullYear();
   const targetMonth = start.getUTCMonth() + monthsToAdd;
@@ -218,17 +221,91 @@ export function addCalendarMonths(startDate: string | Date, monthsToAdd: number)
   const result = new Date(Date.UTC(targetYear, targetMonth, 1));
   const maxDaysInTargetMonth = new Date(Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0)).getUTCDate();
   result.setUTCDate(Math.min(originalDay, maxDaysInTargetMonth));
-  
+
   return result;
 }
 
 /**
- * Add buffer days (typically 2-3 days)
+ * Add days in UTC-safe calendar arithmetic (typically buffer or daily extensions)
  */
 export function addDays(startDate: string | Date, daysToAdd: number): Date {
-  const result = new Date(startDate);
-  result.setDate(result.getDate() + daysToAdd);
-  return result;
+  const start =
+    typeof startDate === 'string'
+      ? toUtcMidnightFromDateOnly(startDate) || new Date(startDate)
+      : new Date(startDate);
+  return new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() + daysToAdd));
+}
+
+/**
+ * Extract clean YYYY-MM-DD string from any date input
+ */
+export function toDateOnlyString(dateInput?: string | Date | null): string {
+  if (!dateInput) return '';
+  if (typeof dateInput === 'string') {
+    const clean = dateInput.trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(clean)) {
+      return clean.slice(0, 10);
+    }
+    const d = new Date(clean);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().slice(0, 10);
+  }
+  if (isNaN(dateInput.getTime())) return '';
+  return dateInput.toISOString().slice(0, 10);
+}
+
+/**
+ * Calculate New Removal Date = Current Effective Removal Date + Extension Duration (Days or Calendar Months)
+ */
+export function calculateExtendedRemovalDate(
+  baseDate: string | Date,
+  amount: number,
+  unit: 'DAYS' | 'MONTHS'
+): string {
+  const safeAmount = Math.max(0, Math.trunc(Number(amount) || 0));
+  const resultDate =
+    unit === 'DAYS'
+      ? addDays(baseDate, safeAmount)
+      : addCalendarMonths(baseDate, safeAmount);
+  return toDateOnlyString(resultDate);
+}
+
+/**
+ * Single source of truth for Effective Removal Date across Directory, Project Details, Edit Form, & Dashboard
+ */
+export function getEffectiveRemovalDate(project: {
+  bufferEndDate?: string | null;
+  removalDate?: string | null;
+  rentalEndDate?: string | null;
+  actualDismantlingDate?: string | null;
+} | null | undefined): string {
+  if (!project) return '';
+  return (
+    project.bufferEndDate ||
+    project.removalDate ||
+    project.rentalEndDate ||
+    project.actualDismantlingDate ||
+    ''
+  );
+}
+
+/**
+ * Single source of truth for Project Installation Date
+ */
+export function getProjectInstallDateStr(project: {
+  installationDate?: string | null;
+  actualInstallationDate?: string | null;
+  plannedInstallationDate?: string | null;
+  rentalStartDate?: string | null;
+} | null | undefined): string {
+  if (!project) return '';
+  return (
+    project.installationDate ||
+    project.actualInstallationDate ||
+    project.plannedInstallationDate ||
+    project.rentalStartDate ||
+    ''
+  );
 }
 
 /**
@@ -383,4 +460,301 @@ export function getStatusBadgeConfig(status: string) {
         dotColor: 'bg-slate-500',
       };
   }
+}
+
+export interface RentalDurationBreakdown {
+  months: number;
+  days: number;
+  totalDays: number;
+  isOngoing: boolean;
+  isInvalid: boolean;
+  isScheduled: boolean;
+  display: string; // e.g. "2 Months, 15 Days" or "Ongoing – 3 Months, 5 Days"
+}
+
+/**
+ * Calculate Rental Duration automatically from Installation Date & Removal Date
+ * Formula: Rental Duration = Date of Removal - Date of Installation
+ * If Removal Date is absent, calculates ongoing duration up to the current date.
+ */
+export function calculateRentalDurationBreakdown(
+  installationDate?: string | null,
+  removalDate?: string | null,
+  referenceDate?: Date
+): RentalDurationBreakdown {
+  if (!installationDate || !installationDate.trim()) {
+    return {
+      months: 0,
+      days: 0,
+      totalDays: 0,
+      isOngoing: false,
+      isInvalid: false,
+      isScheduled: false,
+      display: '',
+    };
+  }
+
+  const parseUtcDate = (isoDate: string): Date | null => {
+    const clean = isoDate.slice(0, 10);
+    const parts = clean.split('-').map(Number);
+    if (parts.length !== 3 || parts.some(isNaN)) return null;
+    return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+  };
+
+  const start = parseUtcDate(installationDate);
+  if (!start) {
+    return {
+      months: 0,
+      days: 0,
+      totalDays: 0,
+      isOngoing: false,
+      isInvalid: false,
+      isScheduled: false,
+      display: '',
+    };
+  }
+
+  const hasRemoval = Boolean(removalDate && removalDate.trim());
+  const now = referenceDate || new Date();
+  const end = hasRemoval
+    ? parseUtcDate(removalDate!)
+    : new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+
+  if (!end) {
+    return {
+      months: 0,
+      days: 0,
+      totalDays: 0,
+      isOngoing: false,
+      isInvalid: false,
+      isScheduled: false,
+      display: '',
+    };
+  }
+
+  if (hasRemoval && end.getTime() < start.getTime()) {
+    return {
+      months: 0,
+      days: 0,
+      totalDays: -1,
+      isOngoing: false,
+      isInvalid: true,
+      isScheduled: false,
+      display: 'Removal date cannot be earlier than installation date',
+    };
+  }
+
+  if (!hasRemoval && end.getTime() < start.getTime()) {
+    return {
+      months: 0,
+      days: 0,
+      totalDays: 0,
+      isOngoing: true,
+      isInvalid: false,
+      isScheduled: true,
+      display: 'Scheduled (Not Started)',
+    };
+  }
+
+  const sy = start.getUTCFullYear();
+  const sm = start.getUTCMonth() + 1;
+  const sd = start.getUTCDate();
+  const ey = end.getUTCFullYear();
+  const em = end.getUTCMonth() + 1;
+  const ed = end.getUTCDate();
+
+  let months = (ey - sy) * 12 + (em - sm);
+  let days = ed - sd;
+
+  if (days < 0) {
+    months -= 1;
+    const daysInPrevMonth = new Date(Date.UTC(ey, em - 1, 0)).getUTCDate();
+    days = Math.max(0, daysInPrevMonth - sd) + ed;
+  }
+
+  const totalDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  const monthLabel = `${months} ${months === 1 ? 'Month' : 'Months'}`;
+  const dayLabel = `${days} ${days === 1 ? 'Day' : 'Days'}`;
+
+  let durationText = '';
+  if (months > 0 && days > 0) {
+    durationText = `${monthLabel}, ${dayLabel}`;
+  } else if (months > 0 && days === 0) {
+    durationText = monthLabel;
+  } else {
+    durationText = `${monthLabel}, ${dayLabel}`;
+  }
+
+  const display = !hasRemoval ? `Ongoing – ${durationText}` : durationText;
+
+  return {
+    months,
+    days,
+    totalDays,
+    isOngoing: !hasRemoval,
+    isInvalid: false,
+    isScheduled: false,
+    display,
+  };
+}
+
+export type RemainingDaysSeverity = 'success' | 'warning' | 'danger' | 'overdue' | 'neutral';
+
+export interface RemainingDaysInfo {
+  days: number | null;
+  label: string;
+  severity: RemainingDaysSeverity;
+  badgeClass: string;
+  dotClass: string;
+  isAlert: boolean; // true when <= 7 days or overdue
+}
+
+function toUtcMidnightFromDateOnly(dateInput?: string | Date | null): Date | null {
+  if (!dateInput) return null;
+  if (typeof dateInput === 'string') {
+    const clean = dateInput.trim().slice(0, 10);
+    const parts = clean.split('-').map(Number);
+    if (parts.length === 3 && !parts.some(isNaN)) {
+      return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+    }
+    const parsed = new Date(dateInput);
+    if (isNaN(parsed.getTime())) return null;
+    return new Date(Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()));
+  }
+  if (isNaN(dateInput.getTime())) return null;
+  return new Date(Date.UTC(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate()));
+}
+
+/**
+ * Dynamic Remaining Rental Days Calculation & Expiry Alert Classification
+ * Formula: Remaining Days = Date of Removal - Current Date (local calendar days)
+ * Color Rules:
+ *   > 15 days  -> Green (success)
+ *   8–15 days  -> Orange (warning)
+ *   0–7 days   -> Red Alert (danger)
+ *   < 0 days   -> Red Overdue (overdue)
+ */
+export function getRemainingDaysInfo(
+  removalDate?: string | null,
+  status?: string,
+  referenceDate?: Date
+): RemainingDaysInfo {
+  if (status === 'CLOSED' || status === 'RETURNED_RECONCILIATION' || status === 'CANCELLED') {
+    return {
+      days: null,
+      label: status === 'CANCELLED' ? 'Cancelled' : 'Removed',
+      severity: 'neutral',
+      badgeClass: 'bg-stone-100 text-stone-700 border-stone-300',
+      dotClass: 'bg-stone-500',
+      isAlert: false,
+    };
+  }
+
+  const target = toUtcMidnightFromDateOnly(removalDate);
+  if (!target) {
+    return {
+      days: null,
+      label: 'Not Scheduled',
+      severity: 'neutral',
+      badgeClass: 'bg-stone-100 text-stone-600 border-stone-200',
+      dotClass: 'bg-stone-400',
+      isAlert: false,
+    };
+  }
+
+  const now = referenceDate || new Date();
+  const todayUtc = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const diffDays = Math.round((target.getTime() - todayUtc.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays > 15) {
+    return {
+      days: diffDays,
+      label: `${diffDays} Days Left`,
+      severity: 'success',
+      badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-300',
+      dotClass: 'bg-emerald-600',
+      isAlert: false,
+    };
+  }
+
+  if (diffDays >= 8) {
+    return {
+      days: diffDays,
+      label: `${diffDays} Days Left`,
+      severity: 'warning',
+      badgeClass: 'bg-amber-50 text-amber-800 border-amber-300',
+      dotClass: 'bg-amber-500',
+      isAlert: false,
+    };
+  }
+
+  if (diffDays >= 1) {
+    return {
+      days: diffDays,
+      label: diffDays === 1 ? '1 Day Left' : `${diffDays} Days Left`,
+      severity: 'danger',
+      badgeClass: 'bg-rose-50 text-rose-700 border-rose-400 font-bold',
+      dotClass: 'bg-rose-600',
+      isAlert: true,
+    };
+  }
+
+  if (diffDays === 0) {
+    return {
+      days: 0,
+      label: 'Due Today',
+      severity: 'danger',
+      badgeClass: 'bg-rose-100 text-rose-800 border-rose-500 font-bold',
+      dotClass: 'bg-rose-600 animate-pulse',
+      isAlert: true,
+    };
+  }
+
+  const overdueDays = Math.abs(diffDays);
+  return {
+    days: diffDays,
+    label: `Overdue by ${overdueDays} ${overdueDays === 1 ? 'Day' : 'Days'}`,
+    severity: 'overdue',
+    badgeClass: 'bg-rose-600 text-white border-rose-700 font-bold shadow-2xs',
+    dotClass: 'bg-white animate-pulse',
+    isAlert: true,
+  };
+}
+
+export interface FollowUpStatusInfo {
+  isOverdue: boolean;
+  isDueToday: boolean;
+  isAfterRemoval: boolean;
+  daysDiff: number | null;
+}
+
+/**
+ * Evaluate Follow-Up Date status (overdue, due today, or scheduled after removal date)
+ */
+export function getFollowUpStatus(
+  followUpDate?: string | null,
+  removalDate?: string | null,
+  status?: string,
+  referenceDate?: Date
+): FollowUpStatusInfo {
+  if (!followUpDate || status === 'CLOSED' || status === 'CANCELLED') {
+    return { isOverdue: false, isDueToday: false, isAfterRemoval: false, daysDiff: null };
+  }
+
+  const followUtc = toUtcMidnightFromDateOnly(followUpDate);
+  if (!followUtc) {
+    return { isOverdue: false, isDueToday: false, isAfterRemoval: false, daysDiff: null };
+  }
+
+  const now = referenceDate || new Date();
+  const todayUtc = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const daysDiff = Math.round((followUtc.getTime() - todayUtc.getTime()) / (1000 * 60 * 60 * 24));
+  const removalUtc = toUtcMidnightFromDateOnly(removalDate);
+
+  return {
+    isOverdue: daysDiff < 0,
+    isDueToday: daysDiff === 0,
+    isAfterRemoval: Boolean(removalUtc && followUtc.getTime() > removalUtc.getTime()),
+    daysDiff,
+  };
 }

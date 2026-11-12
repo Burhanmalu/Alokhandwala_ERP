@@ -33,7 +33,6 @@ export default function NewCustomerPage() {
 
   const [companyName, setCompanyName] = useState('');
   const [referenceName, setReferenceName] = useState('');
-  const [contactPerson, setContactPerson] = useState('');
   const [phone, setPhone] = useState('');
   const [billingAddress, setBillingAddress] = useState('');
   const [hasGst, setHasGst] = useState(false);
@@ -60,7 +59,7 @@ export default function NewCustomerPage() {
     e.preventDefault();
     setError(null);
 
-    if (!companyName.trim() || !contactPerson.trim() || !phone.trim() || !billingAddress.trim()) {
+    if (!companyName.trim() || !phone.trim() || !billingAddress.trim()) {
       setError('Please fill all mandatory fields marked with an asterisk (*).');
       return;
     }
@@ -84,7 +83,6 @@ export default function NewCustomerPage() {
         body: JSON.stringify({
           companyName: companyName.trim(),
           referenceName: referenceName.trim() || undefined,
-          contactPerson: contactPerson.trim(),
           phone: phone.trim(),
           email: '',
           billingAddress: billingAddress.trim(),
@@ -169,11 +167,11 @@ export default function NewCustomerPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="sm:col-span-2">
               <label className="block font-semibold text-stone-700 mb-1">
-                Company / Contractor Legal Name <span className="text-rose-600">*</span>
+                Customer Name <span className="text-rose-600">*</span>
               </label>
               <input
                 type="text"
-                placeholder="e.g. Godrej Properties Ltd. / L&T Construction"
+                placeholder="e.g. Hasan Malubhaiwala"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 required
@@ -183,11 +181,11 @@ export default function NewCustomerPage() {
 
             <div>
               <label className="block font-semibold text-stone-700 mb-1">
-                Internal Reference / Division Tag
+                Reference Name
               </label>
               <input
                 type="text"
-                placeholder="e.g. Western Region Commercial Hub"
+                placeholder="e.g. Burhanuddin Dewas"
                 value={referenceName}
                 onChange={(e) => setReferenceName(e.target.value)}
                 className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none"
@@ -219,20 +217,6 @@ export default function NewCustomerPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label className="block font-semibold text-stone-700 mb-1">
-                Primary Contact Person <span className="text-rose-600">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Sanjay Deshmukh (Project Director)"
-                value={contactPerson}
-                onChange={(e) => setContactPerson(e.target.value)}
-                required
-                className="w-full p-2.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md focus:bg-white focus:border-[#8f6541] focus:outline-none"
-              />
-            </div>
-
             <div className="sm:col-span-2">
               <label className="block font-semibold text-stone-700 mb-1">
                 Direct Contact Phone / Mobile <span className="text-rose-600">*</span>
@@ -254,7 +238,7 @@ export default function NewCustomerPage() {
           <div className="flex items-center justify-between border-b border-[#f0e8db] pb-3">
             <h2 className="text-sm font-bold text-[#24160c] flex items-center gap-2">
               <MapPin className="w-4 h-4 text-[#8f6541]" />
-              <span>3. Registered Tax Billing Address & GSTIN</span>
+              <span>3. Address & GSTIN</span>
             </h2>
             <span className="text-[11px] text-stone-400 font-mono">STEP 3 OF 3</span>
           </div>
@@ -262,7 +246,7 @@ export default function NewCustomerPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="sm:col-span-2">
               <label className="block font-semibold text-stone-700 mb-1">
-                Registered Corporate Billing Address <span className="text-rose-600">*</span>
+                Address <span className="text-rose-600">*</span>
               </label>
               <textarea
                 rows={2}

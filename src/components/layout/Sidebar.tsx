@@ -28,7 +28,8 @@ import {
   UserCog,
   BookOpen,
   ClipboardList,
-  DollarSign
+  DollarSign,
+  ScrollText
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 
@@ -176,6 +177,88 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                   <span>Assigned Sites</span>
                 </div>
               </Link>
+              <Link href="/challans" onClick={onClose} className={navLinkClass('/challans')}>
+                <div className="flex items-center gap-2.5">
+                  <ScrollText className={iconClass('/challans')} />
+                  <span>Challan</span>
+                </div>
+              </Link>
+            </div>
+          </div>
+        )}
+
+                {/* ACCOUNTANT VIEW */}
+        {currentUser.role === 'ACCOUNTANT' && (
+          <div className="space-y-5">
+            <div className="space-y-1.5">
+              <div className="px-3.5 py-1 text-2xs font-semibold uppercase tracking-wider text-[#8a705e]">
+                Financial Operations
+              </div>
+              <Link href="/" onClick={onClose} className={navLinkClass('/')}>
+                <div className="flex items-center gap-2.5">
+                  <LayoutDashboard className={iconClass('/')} />
+                  <span>Dashboard</span>
+                </div>
+              </Link>
+              <Link href="/accounts/billing" onClick={onClose} className={navLinkClass('/accounts/billing')}>
+                <div className="flex items-center gap-2.5">
+                  <ReceiptIndianRupee className={iconClass('/accounts/billing')} />
+                  <span>Billing & Invoices</span>
+                </div>
+              </Link>
+              <Link href="/billing/outstanding" onClick={onClose} className={navLinkClass('/billing/outstanding')}>
+                <div className="flex items-center gap-2.5">
+                  <DollarSign className={iconClass('/billing/outstanding')} />
+                  <span>Outstanding Balances</span>
+                </div>
+              </Link>
+              <Link href="/accounts" onClick={onClose} className={navLinkClass('/accounts')}>
+                <div className="flex items-center gap-2.5">
+                  <Landmark className={iconClass('/accounts')} />
+                  <span>Chart of Accounts</span>
+                </div>
+              </Link>
+              <Link href="/accounts/ledger" onClick={onClose} className={navLinkClass('/accounts/ledger')}>
+                <div className="flex items-center gap-2.5">
+                  <BookOpen className={iconClass('/accounts/ledger')} />
+                  <span>General Ledger</span>
+                </div>
+              </Link>
+              <Link href="/accounts/bills" onClick={onClose} className={navLinkClass('/accounts/bills')}>
+                <div className="flex items-center gap-2.5">
+                  <ClipboardList className={iconClass('/accounts/bills')} />
+                  <span>Vendor Bills</span>
+                </div>
+              </Link>
+              <Link href="/accounts/reports" onClick={onClose} className={navLinkClass('/accounts/reports')}>
+                <div className="flex items-center gap-2.5">
+                  <BarChart3 className={iconClass('/accounts/reports')} />
+                  <span>Financial Statements</span>
+                </div>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* CLIENT VIEW */}
+        {currentUser.role === 'CLIENT' && (
+          <div className="space-y-5">
+            <div className="space-y-1.5">
+              <div className="px-3.5 py-1 text-2xs font-semibold uppercase tracking-wider text-[#8a705e]">
+                Client Portal
+              </div>
+              <Link href="/projects" onClick={onClose} className={navLinkClass('/projects')}>
+                <div className="flex items-center gap-2.5">
+                  <FolderKanban className={iconClass('/projects')} />
+                  <span>My Scaffolding Projects</span>
+                </div>
+              </Link>
+              <Link href="/quotation" onClick={onClose} className={navLinkClass('/quotation')}>
+                <div className="flex items-center gap-2.5">
+                  <FileText className={iconClass('/quotation')} />
+                  <span>My Quotations</span>
+                </div>
+              </Link>
             </div>
           </div>
         )}
@@ -207,6 +290,13 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                 <div className="flex items-center gap-2.5">
                   <Users className={iconClass('/customers')} />
                   <span>Customers</span>
+                </div>
+              </Link>
+
+              <Link href="/challans" onClick={onClose} className={navLinkClass('/challans')}>
+                <div className="flex items-center gap-2.5">
+                  <ScrollText className={iconClass('/challans')} />
+                  <span>Challan</span>
                 </div>
               </Link>
 

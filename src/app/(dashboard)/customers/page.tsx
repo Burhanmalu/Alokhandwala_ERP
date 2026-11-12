@@ -27,7 +27,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   ArrowUpDown,
-  FileSpreadsheet,
   BadgeCheck,
   Eye,
   FileText
@@ -57,7 +56,6 @@ export default function CustomersPage() {
   // Quick Register Form State
   const [companyName, setCompanyName] = useState('');
   const [referenceName, setReferenceName] = useState('');
-  const [contactPerson, setContactPerson] = useState('');
   const [phone, setPhone] = useState('');
   const [hasGst, setHasGst] = useState(false);
   const [gstin, setGstin] = useState('');
@@ -109,7 +107,7 @@ export default function CustomersPage() {
     e.preventDefault();
     setFormError(null);
 
-    if (!companyName.trim() || !contactPerson.trim() || !phone.trim() || !billingAddress.trim()) {
+    if (!companyName.trim() || !phone.trim() || !billingAddress.trim()) {
       setFormError('Please fill in all mandatory fields.');
       return;
     }
@@ -133,7 +131,6 @@ export default function CustomersPage() {
         body: JSON.stringify({
           companyName: companyName.trim(),
           referenceName: referenceName.trim() || undefined,
-          contactPerson: contactPerson.trim(),
           phone: phone.trim(),
           email: '',
           billingAddress: billingAddress.trim(),
@@ -151,7 +148,6 @@ export default function CustomersPage() {
         // Reset form
         setCompanyName('');
         setReferenceName('');
-        setContactPerson('');
         setPhone('');
         setBillingAddress('');
         setHasGst(false);
@@ -308,13 +304,6 @@ export default function CustomersPage() {
             <Download className="w-3.5 h-3.5 text-[#8c5e39]" />
             <span>Export CSV</span>
           </button>
-          <Link
-            href="/customers/new"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#4d301c] bg-white border border-[#d8c8b4] rounded-md hover:bg-[#faf6ee] transition shadow-2xs"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-[#8c5e39]" />
-            <span>Full Form</span>
-          </Link>
           <button
             onClick={() => setModalOpen(true)}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#24150c] hover:bg-[#382315] border border-[#4d301c] rounded-md shadow-2xs transition cursor-pointer"
@@ -846,8 +835,8 @@ export default function CustomersPage() {
                   </div>
                   <div className="space-y-1.5 text-[#574830]">
                     <div>
-                      <span className="text-[#9c826e] block text-[10px]">Contact Person:</span>
-                      <span className="font-semibold text-[#24160c]">{selectedCustomer.contactPerson}</span>
+                      <span className="text-[#9c826e] block text-[10px]">Customer Name:</span>
+                      <span className="font-semibold text-[#24160c]">{selectedCustomer.companyName}</span>
                     </div>
                     <div>
                       <span className="text-[#9c826e] block text-[10px]">Direct Phone:</span>
@@ -857,7 +846,7 @@ export default function CustomersPage() {
                     </div>
                     {selectedCustomer.referenceName && (
                       <div>
-                        <span className="text-[#9c826e] block text-[10px]">Internal Reference / Division:</span>
+                        <span className="text-[#9c826e] block text-[10px]">Reference Name:</span>
                         <span className="font-medium text-[#24160c]">{selectedCustomer.referenceName}</span>
                       </div>
                     )}
@@ -882,7 +871,7 @@ export default function CustomersPage() {
                       )}
                     </div>
                     <div>
-                      <span className="text-[#9c826e] block text-[10px]">Registered Billing Address:</span>
+                      <span className="text-[#9c826e] block text-[10px]">Address:</span>
                       <p className="text-[#574830] leading-relaxed bg-[#fbf9f5] p-2 rounded border border-[#ebdcc9]/60">
                         {selectedCustomer.billingAddress || 'No detailed address registered.'}
                       </p>
@@ -951,11 +940,11 @@ export default function CustomersPage() {
             <form onSubmit={handleCreateCustomer} className="space-y-3 text-xs">
               <div>
                 <label className="block font-semibold text-[#24160c] mb-1">
-                  Company / Contractor Legal Name <span className="text-rose-600">*</span>
+                  Customer Name <span className="text-rose-600">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Shapoorji Pallonji Real Estate"
+                  placeholder="e.g. Hasan Malubhaiwala"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   required
@@ -965,44 +954,29 @@ export default function CustomersPage() {
 
               <div>
                 <label className="block font-semibold text-[#24160c] mb-1">
-                  Internal Reference / Division Tag
+                  Reference Name
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Commercial Division"
+                  placeholder="e.g. Burhanuddin Dewas"
                   value={referenceName}
                   onChange={(e) => setReferenceName(e.target.value)}
                   className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-[#24160c] mb-1">
-                    Key Contact Person <span className="text-rose-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Vikram Malhotra"
-                    value={contactPerson}
-                    onChange={(e) => setContactPerson(e.target.value)}
-                    required
-                    className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-[#24160c] mb-1">
-                    Phone / Mobile Number <span className="text-rose-600">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="e.g. +91 98200 45678"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                    className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
-                  />
-                </div>
+              <div>
+                <label className="block font-semibold text-[#24160c] mb-1">
+                  Phone / Mobile Number <span className="text-rose-600">*</span>
+                </label>
+                <input
+                  type="tel"
+                  placeholder="e.g. +91 98200 45678"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
+                />
               </div>
 
               {/* GST Number Checkbox & Conditional Input */}
@@ -1058,11 +1032,11 @@ export default function CustomersPage() {
 
               <div>
                 <label className="block font-semibold text-[#24160c] mb-1">
-                  Registered Billing Address <span className="text-rose-600">*</span>
+                  Address <span className="text-rose-600">*</span>
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Complete registered corporate billing address..."
+                  placeholder="Complete address..."
                   value={billingAddress}
                   onChange={(e) => setBillingAddress(e.target.value)}
                   required

@@ -75,6 +75,26 @@ export const initialUsers: UserProfile[] = [
     isActive: true,
     createdAt: '2026-01-03T09:00:00Z',
   },
+  {
+    id: 'usr-acc-01',
+    email: 'accountant@alokhandwala.com',
+    fullName: 'Farhan Malu (Accountant)',
+    phone: '+91 98200 55555',
+    role: 'ACCOUNTANT',
+    password: 'demo2026',
+    isActive: true,
+    createdAt: '2026-01-04T09:00:00Z',
+  },
+  {
+    id: 'usr-cli-01',
+    email: 'client@alokhandwala.com',
+    fullName: 'Aman Jain (Client)',
+    phone: '+91 98200 66666',
+    role: 'CLIENT',
+    password: 'demo2026',
+    isActive: true,
+    createdAt: '2026-01-05T09:00:00Z',
+  },
 ];
 
 export const initialWarehouses: Warehouse[] = [

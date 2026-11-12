@@ -2,7 +2,7 @@
 
 import { dbStore } from '../db/store';
 import { Project, ProjectStatus, SiteMeasurement, FileAttachment, InventoryTransaction } from '../schema';
-import { calculateScaffoldingArea } from '../formatters';
+import { calculateScaffoldingArea, calculateRentalDurationBreakdown } from '../formatters';
 
 export const VALID_STATUS_TRANSITIONS: Record<ProjectStatus, ProjectStatus[]> = {
   SITE_CREATED: ['QUOTATION_DRAFT', 'QUOTATION_SENT', 'NOT_INSTALLED', 'CONFIRMED_PROJECT', 'CANCELLED'],
@@ -511,6 +511,313 @@ export class ProjectService {
       });
 
       return { project, releasedMaterialsCount: releasedCount, transaction };
+    });
+  }
+
+  /**
+   * Create a new project directly from Project Directory (+ Add Project form)
+   */
+  public static async createDirectProject(data: {
+    customerId?: string;
+    customerName: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    siteId?: string;
+    siteName: string;
+    siteAddress: string;
+    assignedSupervisorId: string;
+    supervisorName?: string;
+    staffIds?: string[];
+    staffNames?: string[];
+    width?: number;
+    depth?: number;
+    height?: number;
+    unit?: 'FEET' | 'METERS';
+    status: ProjectStatus;
+    installationDate?: string;
+    removalDate?: string;
+    totalAmount: number;
+    paymentReceived: number;
+    remark?: string;
+    followUpDate?: string;
+    followUpNotes?: string;
+    actorId: string;
+    actorName: string;
+  }): Promise<Project> {
+    return await dbStore.transaction(async (state) => {
+      const totalAmount = Math.max(0, Number(data.totalAmount) || 0);
+      const paymentReceived = Math.max(0, Number(data.paymentReceived) || 0);
+      if (paymentReceived > totalAmount) {
+        throw new Error('Payment Received cannot exceed Total Amount.');
+      }
+      const balanceAmount = Math.round((totalAmount - paymentReceived) * 100) / 100;
+
+      // Compute Rental Duration automatically from Installation & Removal dates
+      const rentalDuration = calculateRentalDurationBreakdown(data.installationDate, data.removalDate);
+      if (rentalDuration.isInvalid) {
+        throw new Error('Date of Removal cannot be earlier than Date of Installation.');
+      }
+
+      // Compute Site Dimensions & Elevation Area via single source of truth formula
+      const dimWidth = Math.max(0, Number(data.width) || 0);
+      const dimDepth = Math.max(0, Number(data.depth) || 0);
+      const dimHeight = Math.max(0, Number(data.height) || 0);
+      const dimUnit: 'FEET' | 'METERS' = data.unit === 'METERS' ? 'METERS' : 'FEET';
+      const elevationAreaSqFt = (dimWidth > 0 && dimHeight > 0 && dimDepth > 0)
+        ? calculateScaffoldingArea(dimWidth, dimDepth, dimHeight, dimUnit)
+        : 0;
+
+      // Resolve or create Customer without duplicating existing records
+      let customer = data.customerId ? state.customers.find(c => c.id === data.customerId) : undefined;
+      if (!customer) {
+        customer = state.customers.find(
+          c => c.companyName.toLowerCase().trim() === data.customerName.toLowerCase().trim()
+        );
+      }
+      const now = new Date().toISOString();
+      if (!customer) {
+        const nextCustNum = state.customers.length + 1;
+        customer = {
+          id: `cust-${Date.now()}`,
+          customerCode: `CUST-${nextCustNum.toString().padStart(4, '0')}`,
+          companyName: data.customerName.trim(),
+          contactPerson: data.customerName.trim(),
+          phone: data.customerPhone?.trim() || '9820000000',
+          email: data.customerEmail?.trim() || '',
+          billingAddress: data.siteAddress.trim(),
+          city: 'Indore',
+          state: 'Madhya Pradesh',
+          status: 'ACTIVE',
+          creditLimit: 500000,
+          outstandingBalance: balanceAmount,
+          sitesCount: 0,
+          projectsCount: 0,
+          activeRentalsCount: 0,
+          createdAt: now,
+          updatedAt: now,
+        };
+        state.customers.push(customer);
+      } else {
+        if (data.customerPhone && !customer.phone) customer.phone = data.customerPhone.trim();
+        if (data.customerEmail && !customer.email) customer.email = data.customerEmail.trim();
+        customer.outstandingBalance = Math.round(((customer.outstandingBalance || 0) + balanceAmount) * 100) / 100;
+        customer.updatedAt = now;
+      }
+
+      // Resolve or create Site
+      let site = data.siteId ? state.sites.find(s => s.id === data.siteId) : undefined;
+      const supervisor =
+        state.users.find(u => u.id === data.assignedSupervisorId) ||
+        state.users.find(u => u.role === 'SUPERVISOR') ||
+        state.users[0];
+
+      if (!site) {
+        site = state.sites.find(
+          s => s.customerId === customer!.id && s.siteName.toLowerCase().trim() === data.siteName.toLowerCase().trim()
+        );
+      }
+      if (!site) {
+        const nextSiteNum = state.sites.length + 1;
+        site = {
+          id: `site-${Date.now()}`,
+          siteCode: `SITE-${nextSiteNum.toString().padStart(4, '0')}`,
+          customerId: customer.id,
+          customerName: customer.companyName,
+          siteName: data.siteName.trim(),
+          siteAddress: data.siteAddress.trim(),
+          city: 'Indore',
+          state: 'Madhya Pradesh',
+          contactPerson: customer.contactPerson,
+          contactPhone: data.customerPhone?.trim() || customer.phone,
+          assignedSupervisorId: supervisor?.id || data.assignedSupervisorId,
+          supervisorName: data.supervisorName?.trim() || supervisor?.fullName || 'Supervisor',
+          status: 'ACTIVE',
+          createdAt: now,
+        };
+        state.sites.push(site);
+        customer.sitesCount = (customer.sitesCount || 0) + 1;
+      }
+
+      const staffIds = data.staffIds || [];
+      const resolvedStaff = staffIds.map((id, idx) => {
+        const found = state.users.find(u => u.id === id);
+        return {
+          id,
+          name: found?.fullName || data.staffNames?.[idx] || id,
+          role: found?.role || 'Staff',
+        };
+      });
+      const staffNames = resolvedStaff.map(s => s.name);
+
+      const projectCode = this.generateNextProjectCode(state.projects);
+      const projectId = `proj-${Date.now()}`;
+      const isInstalledOrActive = ['INSTALLED', 'ACTIVE_RENTAL', 'EXTENDED', 'BUFFER_PERIOD', 'REMOVAL_PENDING', 'CLOSED'].includes(data.status);
+
+      const measurementRecord: SiteMeasurement | undefined =
+        (dimWidth > 0 || dimHeight > 0 || dimDepth > 0)
+          ? {
+              id: `meas-${Date.now()}`,
+              siteId: site.id,
+              projectId,
+              width: dimWidth,
+              depth: dimDepth || 3,
+              height: dimHeight,
+              length: dimWidth,
+              unit: dimUnit,
+              elevationAreaSqFt,
+              measurementType: 'FAÇADE_SCAFFOLD',
+              description: `${dimWidth} (W) × ${dimDepth} (D) × ${dimHeight} (H) ${dimUnit}`,
+              measuredBy: data.actorName,
+              measuredAt: now,
+            }
+          : undefined;
+
+      const newProject: Project = {
+        id: projectId,
+        projectCode,
+        customerId: customer.id,
+        customerName: customer.companyName,
+        customerPhone: data.customerPhone?.trim() || customer.phone,
+        customerEmail: data.customerEmail?.trim() || customer.email,
+        siteId: site.id,
+        siteName: site.siteName,
+        siteAddress: site.siteAddress,
+        assignedSupervisorId: supervisor?.id || data.assignedSupervisorId,
+        supervisorName: data.supervisorName?.trim() || supervisor?.fullName || 'Supervisor',
+        assignedWorkerIds: staffIds,
+        staffIds,
+        staffNames,
+        installationWorkers: resolvedStaff.length > 0 ? resolvedStaff : undefined,
+        status: data.status || 'NOT_INSTALLED',
+        pricingModel: 'LUMP_SUM',
+        monthlyRentalRate: 0,
+        agreedProjectPrice: totalAmount,
+        depositAmount: 0,
+        transportCharges: 0,
+        installationLabourCharges: 0,
+        shiftingCharges: 0,
+        dismantlingLabourCharges: 0,
+        gstPercentage: state.companySettings?.defaultGstRate || 18,
+        totalAreaSqFt: elevationAreaSqFt,
+        elevationAreaSqFt,
+        measurements: measurementRecord,
+        siteDimensions: measurementRecord
+          ? {
+              length: dimWidth,
+              width: dimWidth,
+              height: dimHeight,
+              unit: dimUnit,
+              configurationType: 'PERIMETER_FACADE',
+            }
+          : undefined,
+        installationDate: data.installationDate || undefined,
+        plannedInstallationDate: data.installationDate || undefined,
+        actualInstallationDate: isInstalledOrActive && data.installationDate ? data.installationDate : undefined,
+        rentalStartDate: data.installationDate || undefined,
+        removalDate: data.removalDate || undefined,
+        rentalEndDate: data.removalDate || undefined,
+        originalRemovalDate: data.removalDate || undefined,
+        originalRentalEndDate: data.removalDate || undefined,
+        durationMonths: data.installationDate ? Math.max(1, rentalDuration.months || 0) : undefined,
+        rentalDurationMonths: data.installationDate ? rentalDuration.months : undefined,
+        rentalDurationDays: data.installationDate ? rentalDuration.days : undefined,
+        rentalDurationDisplay: rentalDuration.display || undefined,
+        totalAmount,
+        paymentReceived,
+        balanceAmount,
+        advancePaidAmount: paymentReceived,
+        completionDueAmount: balanceAmount,
+        remark: data.remark?.trim() || undefined,
+        siteRemarks: data.remark?.trim() || undefined,
+        followUpDate: data.followUpDate || undefined,
+        followUpNotes: data.followUpNotes?.trim() || undefined,
+        materials: [],
+        photos: [],
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      state.projects.unshift(newProject);
+      customer.projectsCount = (customer.projectsCount || 0) + 1;
+
+      state.activityEvents.unshift({
+        id: `act-${Date.now()}`,
+        projectId,
+        eventType: 'PROJECT_CREATED',
+        eventTitle: 'Project Created',
+        eventDescription: `Project ${projectCode} created for ${customer.companyName} (${site.siteName}) with Total ₹${totalAmount.toLocaleString('en-IN')} and Balance ₹${balanceAmount.toLocaleString('en-IN')}.`,
+        actorId: data.actorId,
+        actorName: data.actorName,
+        createdAt: now,
+      });
+
+      state.auditLogs.unshift({
+        id: `aud-${Date.now()}`,
+        actorId: data.actorId,
+        actorEmail: data.actorName,
+        action: 'PROJECT_CREATED',
+        entityTable: 'projects',
+        entityId: projectId,
+        newState: {
+          projectCode,
+          customerName: customer.companyName,
+          siteName: site.siteName,
+          status: newProject.status,
+          totalAmount,
+          paymentReceived,
+          balanceAmount,
+        },
+        createdAt: now,
+      });
+
+      return newProject;
+    });
+  }
+
+  /**
+   * Delete a project and clean up reservations safely
+   */
+  public static async deleteProject(projectId: string, actorId: string, actorName: string): Promise<{ projectCode: string }> {
+    return await dbStore.transaction(async (state) => {
+      const idx = state.projects.findIndex(p => p.id === projectId || p.projectCode === projectId);
+      if (idx === -1) {
+        throw new Error('Project not found');
+      }
+      const project = state.projects[idx];
+
+      // Release any reserved warehouse materials safely
+      if (project.materials && project.materials.length > 0) {
+        for (const reqMat of project.materials) {
+          const mat = state.materials.find(m => m.id === reqMat.materialId);
+          if (mat && reqMat.reservedQuantity > 0) {
+            mat.reservedQty = Math.max(0, mat.reservedQty - reqMat.reservedQuantity);
+          }
+        }
+      }
+
+      // Decrement customer counts
+      const customer = state.customers.find(c => c.id === project.customerId);
+      if (customer) {
+        customer.projectsCount = Math.max(0, (customer.projectsCount || 1) - 1);
+        customer.updatedAt = new Date().toISOString();
+      }
+
+      // Remove linked quotations & project
+      state.quotations = state.quotations.filter(q => q.projectId !== project.id);
+      state.projects.splice(idx, 1);
+
+      state.auditLogs.unshift({
+        id: `aud-${Date.now()}`,
+        actorId,
+        actorEmail: actorName,
+        action: 'PROJECT_DELETED',
+        entityTable: 'projects',
+        entityId: project.id,
+        oldState: { projectCode: project.projectCode, customerName: project.customerName, status: project.status },
+        createdAt: new Date().toISOString(),
+      });
+
+      return { projectCode: project.projectCode };
     });
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 import { ProjectService } from '@/lib/services/project-service';
-import { siteInspectionSchema } from '@/lib/validations';
+import { siteInspectionSchema, addProjectSchema } from '@/lib/validations';
 
 export async function GET(req: NextRequest) {
   try {
@@ -40,6 +40,40 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // Handle direct project creation from Project Directory (+ Add Project form)
+    if (body.mode === 'DIRECT_PROJECT') {
+      const validated = addProjectSchema.parse(body);
+      const project = await ProjectService.createDirectProject({
+        customerId: validated.customerId,
+        customerName: validated.customerName,
+        customerPhone: validated.customerPhone,
+        customerEmail: validated.customerEmail,
+        siteId: validated.siteId,
+        siteName: validated.siteName,
+        siteAddress: validated.siteAddress,
+        assignedSupervisorId: validated.assignedSupervisorId,
+        supervisorName: validated.supervisorName,
+        staffIds: validated.staffIds,
+        staffNames: validated.staffNames,
+        width: validated.width,
+        depth: validated.depth,
+        height: validated.height,
+        unit: validated.unit,
+        status: validated.status,
+        installationDate: validated.installationDate,
+        removalDate: validated.removalDate,
+        totalAmount: validated.totalAmount,
+        paymentReceived: validated.paymentReceived,
+        remark: validated.remark,
+        followUpDate: validated.followUpDate,
+        followUpNotes: validated.followUpNotes,
+        actorId: body.actorId || 'usr-admin-01',
+        actorName: body.actorName || 'Burhan Malu (Admin)',
+      });
+      return NextResponse.json({ success: true, data: project }, { status: 201 });
+    }
+
     const validated = siteInspectionSchema.parse(body);
 
     const siteAddress = validated.siteAddress || validated.address || 'Site Location';

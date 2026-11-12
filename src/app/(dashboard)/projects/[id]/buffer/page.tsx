@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Clock, CheckCircle2, AlertTriangle, Calendar } from 'lucide-react';
 import { Project } from '@/lib/schema';
-import { formatDate, addDays } from '@/lib/formatters';
+import { formatDate, calculateExtendedRemovalDate, getEffectiveRemovalDate, toDateOnlyString } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
 
 export default function ProjectBufferPage({
@@ -30,13 +30,18 @@ export default function ProjectBufferPage({
     fetch(`/api/projects/${id}`)
       .then(r => r.json())
       .then(json => {
-        if (json.success) setProject(json.data);
+        if (json.success) {
+          setProject(json.data);
+          if (json.data?.configuredBufferDays) {
+            setRequestedBufferDays(Number(json.data.configuredBufferDays));
+          }
+        }
       })
       .finally(() => setLoading(false));
   }, [id]);
 
-  const currentEndDate = project?.rentalEndDate ? new Date(project.rentalEndDate) : new Date();
-  const proposedDeadline = addDays(currentEndDate, requestedBufferDays);
+  const currentEndDateStr = toDateOnlyString(getEffectiveRemovalDate(project)) || toDateOnlyString(new Date());
+  const proposedDeadline = calculateExtendedRemovalDate(currentEndDateStr, requestedBufferDays, 'DAYS');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,11 +116,11 @@ export default function ProjectBufferPage({
         {/* Existing Dates */}
         <div className="grid grid-cols-2 gap-3 p-3 bg-amber-50/50 rounded-xl border border-amber-200 text-xs">
           <div>
-            <span className="text-slate-500">Contractual Rental End Date:</span>
-            <div className="font-mono font-bold text-slate-800 mt-0.5">{formatDate(project.rentalEndDate)}</div>
+            <span className="text-slate-500">Current Removal Date:</span>
+            <div className="font-mono font-bold text-slate-800 mt-0.5">{formatDate(currentEndDateStr)}</div>
           </div>
           <div>
-            <span className="text-amber-800 font-semibold">Proposed Removal Deadline:</span>
+            <span className="text-amber-800 font-semibold">Updated Removal Deadline:</span>
             <div className="font-mono font-bold text-amber-900 mt-0.5">{formatDate(proposedDeadline)}</div>
           </div>
         </div>
