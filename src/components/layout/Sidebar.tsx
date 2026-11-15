@@ -10,22 +10,17 @@ import {
   Boxes, 
   ReceiptIndianRupee, 
   Building2, 
-  Layers, 
   Truck, 
   BarChart3, 
   Bell, 
-  UserCheck, 
   Settings, 
-  ShieldAlert, 
   LogOut,
   X,
   FileText,
-  Award,
   ArrowRightLeft,
   PackagePlus,
   ChevronDown,
   Landmark,
-  UserCog,
   BookOpen,
   ClipboardList,
   DollarSign,
@@ -40,14 +35,10 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
   const isAccountsRoute = pathname.startsWith('/accounts');
   const isHRRoute = pathname.startsWith('/hr');
   const [inventoryExpanded, setInventoryExpanded] = useState<boolean>(() => isInventoryRoute);
-  const [accountsExpanded, setAccountsExpanded] = useState<boolean>(() => isAccountsRoute);
-  const [hrExpanded, setHRExpanded] = useState<boolean>(() => isHRRoute);
 
   useEffect(() => {
     if (isInventoryRoute) setInventoryExpanded(true);
-    if (isAccountsRoute) setAccountsExpanded(true);
-    if (isHRRoute) setHRExpanded(true);
-  }, [pathname, isInventoryRoute, isAccountsRoute, isHRRoute]);
+  }, [pathname, isInventoryRoute]);
 
   const isExact = (path: string) => pathname === path;
 
@@ -348,121 +339,6 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                   </div>
                 )}
               </div>
-
-              {/* Accounts & Finance Group (Merged with Billing & Commercial) */}
-              <div className="space-y-1">
-                <button
-                  type="button"
-                  onClick={() => setAccountsExpanded(prev => !prev)}
-                  className={`w-full ${navLinkClass('/accounts')} cursor-pointer text-left select-none`}
-                  aria-expanded={accountsExpanded}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Landmark className={iconClass('/accounts')} />
-                    <span>Accounts & Finance</span>
-                  </div>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 shrink-0 ${accountsExpanded ? 'rotate-180 text-[#c79e7c]' : 'text-[#9c826e]'}`} />
-                </button>
-                {accountsExpanded && (
-                  <div className="pl-3 pr-1 py-0.5 space-y-0.5 border-l-2 border-[#382315] ml-4 mt-1 animate-in fade-in slide-in-from-top-1">
-                    <Link href="/accounts" onClick={onClose} className={subNavLinkClass('/accounts')}>
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/accounts') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                      <span>Overview & COA</span>
-                    </Link>
-                    <Link href="/accounts/ledger" onClick={onClose} className={subNavLinkClass('/accounts/ledger')}>
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/accounts/ledger') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                      <span>General Ledger</span>
-                    </Link>
-                    <Link href="/accounts/bills" onClick={onClose} className={subNavLinkClass('/accounts/bills')}>
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/accounts/bills') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                      <span>Vendor Bills (AP)</span>
-                    </Link>
-                    <Link href="/accounts/billing" onClick={onClose} className={subNavLinkClass('/accounts/billing')}>
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/accounts/billing') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                      <span>Billing & Invoices (AR)</span>
-                    </Link>
-                    <Link href="/accounts/reports" onClick={onClose} className={subNavLinkClass('/accounts/reports')}>
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/accounts/reports') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                      <span>Financial Statements</span>
-                    </Link>
-                  </div>
-                )}
-              </div>
-
-              {/* HR & Workforce Group */}
-              <div className="space-y-1">
-                <button
-                  type="button"
-                  onClick={() => setHRExpanded(prev => !prev)}
-                  className={`w-full ${navLinkClass('/hr')} cursor-pointer text-left select-none`}
-                  aria-expanded={hrExpanded}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <UserCog className={iconClass('/hr')} />
-                    <span>Human Resources</span>
-                  </div>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 shrink-0 ${hrExpanded ? 'rotate-180 text-[#c79e7c]' : 'text-[#9c826e]'}`} />
-                </button>
-                {hrExpanded && (
-                  <div className="pl-3 pr-1 py-0.5 space-y-0.5 border-l-2 border-[#382315] ml-4 mt-1 animate-in fade-in slide-in-from-top-1">
-                    <Link href="/hr" onClick={onClose} className={subNavLinkClass('/hr')}>
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/hr') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                      <span>Overview</span>
-                    </Link>
-                    <Link href="/hr?tab=employees" onClick={onClose} className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-[#bfa38e] hover:bg-[#20140d] hover:text-white`}>
-                      <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#5c3e24]" />
-                      <span>Employees</span>
-                    </Link>
-                    <Link href="/hr?tab=attendance" onClick={onClose} className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-[#bfa38e] hover:bg-[#20140d] hover:text-white`}>
-                      <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#5c3e24]" />
-                      <span>Attendance</span>
-                    </Link>
-                    <Link href="/hr?tab=leaves" onClick={onClose} className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-[#bfa38e] hover:bg-[#20140d] hover:text-white`}>
-                      <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#5c3e24]" />
-                      <span>Leave Requests</span>
-                    </Link>
-                    <Link href="/hr?tab=payroll" onClick={onClose} className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-[#bfa38e] hover:bg-[#20140d] hover:text-white`}>
-                      <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#5c3e24]" />
-                      <span>Payroll & Pay Slips</span>
-                    </Link>
-                  </div>
-                )}
-              </div>
-
-            </div>
-
-            {/* Section: Field Operations Workflow */}
-            <div className="space-y-1.5 pt-2.5 border-t border-[#23150d]">
-              <div className="px-3.5 py-1 text-2xs font-semibold uppercase tracking-wider text-[#8a705e]">
-                Field Workflow
-              </div>
-              <Link href="/sites/new" onClick={onClose} className={navLinkClass('/sites/new')}>
-                <div className="flex items-center gap-2.5">
-                  <Building2 className={iconClass('/sites/new')} />
-                  <span>Site Form</span>
-                </div>
-              </Link>
-
-              <Link href="/quotation" onClick={onClose} className={navLinkClass('/quotation')}>
-                <div className="flex items-center gap-2.5">
-                  <FileText className={iconClass('/quotation')} />
-                  <span>Quotation Form</span>
-                </div>
-              </Link>
-
-              <Link href="/confirmation" onClick={onClose} className={navLinkClass('/confirmation')}>
-                <div className="flex items-center gap-2.5">
-                  <Layers className={iconClass('/confirmation')} />
-                  <span>Confirmation & Plan</span>
-                </div>
-              </Link>
-
-              <Link href="/installation" onClick={onClose} className={navLinkClass('/installation')}>
-                <div className="flex items-center gap-2.5">
-                  <Truck className={iconClass('/installation')} />
-                  <span>Installation & Handover</span>
-                </div>
-              </Link>
             </div>
 
             {/* Section: Insights & Management */}
@@ -477,31 +353,10 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                 </div>
               </Link>
 
-              <Link href="/reports/worker-supervisor" onClick={onClose} className={navLinkClass('/reports/worker-supervisor')}>
-                <div className="flex items-center gap-2.5">
-                  <Award className={iconClass('/reports/worker-supervisor')} />
-                  <span>Worker & Supervisor Reports</span>
-                </div>
-              </Link>
-
               <Link href="/notifications" onClick={onClose} className={navLinkClass('/notifications')}>
                 <div className="flex items-center gap-2.5">
                   <Bell className={iconClass('/notifications')} />
                   <span>Notifications</span>
-                </div>
-              </Link>
-
-              <Link href="/users" onClick={onClose} className={navLinkClass('/users')}>
-                <div className="flex items-center gap-2.5">
-                  <UserCheck className={iconClass('/users')} />
-                  <span>User Management</span>
-                </div>
-              </Link>
-
-              <Link href="/audit-logs" onClick={onClose} className={navLinkClass('/audit-logs')}>
-                <div className="flex items-center gap-2.5">
-                  <ShieldAlert className={iconClass('/audit-logs')} />
-                  <span>Audit Trail</span>
                 </div>
               </Link>
 
