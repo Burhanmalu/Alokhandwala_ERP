@@ -99,13 +99,11 @@ function LoginForm() {
           <div className="relative z-10">
             {/* Brand Logo & Title */}
             <div className="mb-8">
-              <div className="inline-block p-4 rounded-2xl bg-[#1e120a]/80 border border-[#3d2617] shadow-xl backdrop-blur-xs">
-                <img 
-                  src="/logo-white.png" 
-                  alt="Alokhandwala" 
-                  className="h-16 w-auto object-contain filter drop-shadow-md"
-                />
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="ALOKHANDWALA" 
+                className="h-16 sm:h-20 w-auto max-w-[240px] object-contain drop-shadow-md"
+              />
             </div>
 
             {/* Tagline */}
@@ -163,7 +161,9 @@ function LoginForm() {
                   <Sparkles className="w-3.5 h-3.5 text-[#8c5e39]" />
                   Corporate Access Gateway
                 </div>
-                <img src="/logo.png" alt="Alokhandwala" className="h-7 w-auto object-contain lg:hidden" />
+                <div className="lg:hidden bg-[#140c07] px-2.5 py-1 rounded-md">
+                  <img src="/logo.png" alt="ALOKHANDWALA" className="h-6 w-auto max-w-[120px] object-contain" />
+                </div>
               </div>
               <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
                 Sign In

@@ -73,3 +73,106 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 400 });
   }
 }
+
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { searchParams } = new URL(req.url);
+    const id = body.id || searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Customer ID is required' }, { status: 400 });
+    }
+
+    const updatedCustomer = await dbStore.transaction((state) => {
+      const idx = state.customers.findIndex(c => c.id === id);
+      if (idx === -1) {
+        throw new Error(`Customer with ID ${id} not found`);
+      }
+
+      const existing = state.customers[idx];
+      const updated: Customer = {
+        ...existing,
+        companyName: body.companyName !== undefined ? body.companyName.trim() : existing.companyName,
+        referenceName: body.referenceName !== undefined ? (body.referenceName.trim() || undefined) : existing.referenceName,
+        contactPerson: body.contactPerson !== undefined ? body.contactPerson.trim() : (body.companyName ? body.companyName.trim() : existing.contactPerson),
+        phone: body.phone !== undefined ? body.phone.trim() : existing.phone,
+        email: body.email !== undefined ? body.email.trim() : existing.email,
+        billingAddress: body.billingAddress !== undefined ? body.billingAddress.trim() : existing.billingAddress,
+        city: body.city !== undefined ? body.city.trim() : existing.city,
+        state: body.state !== undefined ? body.state.trim() : existing.state,
+        gstin: body.gstin !== undefined ? (body.gstin.trim() ? body.gstin.trim().toUpperCase() : 'N/A') : existing.gstin,
+        status: body.status || existing.status || 'ACTIVE',
+        creditLimit: body.creditLimit !== undefined ? Number(body.creditLimit) : existing.creditLimit,
+        updatedAt: new Date().toISOString(),
+      };
+
+      state.customers[idx] = updated;
+
+      state.auditLogs.unshift({
+        id: `aud-${Date.now()}`,
+        actorId: body.actorId || 'usr-admin-01',
+        actorEmail: body.actorName || 'Burhan Malu',
+        action: 'UPDATE_CUSTOMER',
+        entityTable: 'customers',
+        entityId: updated.id,
+        newState: updated,
+        createdAt: new Date().toISOString(),
+      });
+
+      return updated;
+    });
+
+    return NextResponse.json({ success: true, data: updatedCustomer });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    let id = searchParams.get('id');
+    let actorId = 'usr-admin-01';
+    let actorName = 'Admin';
+
+    if (!id) {
+      try {
+        const body = await req.json();
+        id = body.id;
+        if (body.actorId) actorId = body.actorId;
+        if (body.actorName) actorName = body.actorName;
+      } catch {
+        // empty body allowed if id in query
+      }
+    }
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Customer ID is required' }, { status: 400 });
+    }
+
+    await dbStore.transaction((state) => {
+      const idx = state.customers.findIndex(c => c.id === id);
+      if (idx === -1) {
+        throw new Error(`Customer with ID ${id} not found`);
+      }
+      const customer = state.customers[idx];
+      state.customers.splice(idx, 1);
+
+      state.auditLogs.unshift({
+        id: `aud-${Date.now()}`,
+        actorId,
+        actorEmail: actorName,
+        action: 'DELETE_CUSTOMER',
+        entityTable: 'customers',
+        entityId: id,
+        oldState: customer,
+        createdAt: new Date().toISOString(),
+      });
+    });
+
+    return NextResponse.json({ success: true, message: 'Customer deleted successfully' });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+  }
+}

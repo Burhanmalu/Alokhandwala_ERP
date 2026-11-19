@@ -198,6 +198,33 @@ export async function runGstHandlingTests() {
     assert.ok(doc.getNumberOfPages() >= 1);
   });
 
+  await test('9. Customers with empty, null, or N/A GSTIN are not counted in GST Registered count', () => {
+    const mockCustomers = [
+      { id: 'c1', companyName: 'No GST Customer 1', gstin: 'N/A' },
+      { id: 'c2', companyName: 'No GST Customer 2', gstin: '' },
+      { id: 'c3', companyName: 'No GST Customer 3', gstin: undefined },
+      { id: 'c4', companyName: 'Valid GST Customer 1', gstin: '23AABCA1234F1Z5' },
+      { id: 'c5', companyName: 'Valid GST Customer 2', gstin: '27AAACL1234F1Z9' },
+      { id: 'c6', companyName: 'Invalid GST Customer', gstin: 'INVALID_GST' },
+    ];
+
+    const isCustomerGst = (c: any) => {
+      if (!c || !c.gstin) return false;
+      const val = c.gstin.trim();
+      if (!val || val.toUpperCase() === 'N/A' || val.toUpperCase() === 'NONE' || val.toUpperCase() === 'NULL') {
+        return false;
+      }
+      return isValidGSTIN(val);
+    };
+
+    const gstCount = mockCustomers.filter(isCustomerGst).length;
+    assert.strictEqual(gstCount, 2, 'Only the 2 valid GSTIN customers are counted as GST Registered');
+    assert.strictEqual(isCustomerGst(mockCustomers[0]), false, 'N/A is not GST registered');
+    assert.strictEqual(isCustomerGst(mockCustomers[1]), false, 'Empty string is not GST registered');
+    assert.strictEqual(isCustomerGst(mockCustomers[2]), false, 'Undefined is not GST registered');
+    assert.strictEqual(isCustomerGst(mockCustomers[5]), false, 'Invalid format is not GST registered');
+  });
+
   console.log('---------------------------------------------------------------');
   console.log(`GST Handling Results: ${passed} Passed, ${failed} Failed`);
   console.log('---------------------------------------------------------------');

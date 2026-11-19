@@ -14,9 +14,11 @@ export const metadata: Metadata = {
   description: 'Complete operational lifecycle ERP for scaffolding rental, installation, shifting, dismantling, and billing reconciliation.',
   icons: {
     icon: [
+      { url: '/favicon.ico', sizes: 'any' },
       { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
       { url: '/logo-icon.png', sizes: '192x192', type: 'image/png' },
     ],
+    shortcut: ['/favicon.ico', '/favicon.png'],
     apple: [
       { url: '/logo-icon.png' },
     ],

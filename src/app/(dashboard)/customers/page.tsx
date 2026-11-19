@@ -29,7 +29,9 @@ import {
   ArrowUpDown,
   BadgeCheck,
   Eye,
-  FileText
+  FileText,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { Customer } from '@/lib/schema';
 import { formatINR, formatDate } from '@/lib/formatters';
@@ -40,6 +42,15 @@ import { useAuth } from '@/lib/auth/auth-context';
 type ViewMode = 'grid' | 'table';
 type FilterTab = 'ALL' | 'ACTIVE_RENTALS' | 'OUTSTANDING' | 'GST';
 type SortField = 'NAME_ASC' | 'NAME_DESC' | 'OUTSTANDING_DESC' | 'PROJECTS_DESC' | 'RECENT';
+
+function isCustomerGstRegistered(c?: Customer | null): boolean {
+  if (!c || !c.gstin) return false;
+  const val = c.gstin.trim();
+  if (!val || val.toUpperCase() === 'N/A' || val.toUpperCase() === 'NONE' || val.toUpperCase() === 'NULL') {
+    return false;
+  }
+  return isValidGSTIN(val);
+}
 
 export default function CustomersPage() {
   const router = useRouter();
@@ -63,6 +74,147 @@ export default function CustomersPage() {
   const [billingAddress, setBillingAddress] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Edit Customer Form State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editCompanyName, setEditCompanyName] = useState('');
+  const [editReferenceName, setEditReferenceName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editHasGst, setEditHasGst] = useState(false);
+  const [editGstin, setEditGstin] = useState('');
+  const [editGstError, setEditGstError] = useState<string | null>(null);
+  const [editBillingAddress, setEditBillingAddress] = useState('');
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+  const [editFormError, setEditFormError] = useState<string | null>(null);
+
+  // Delete Customer Confirmation State
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
+
+  const validateEditGst = (val: string) => {
+    if (!val || !val.trim()) {
+      setEditGstError('GSTIN is required when GST Number is selected');
+      return false;
+    }
+    if (!isValidGSTIN(val)) {
+      setEditGstError('Invalid 15-character Indian GSTIN format (e.g. 23AAACT1234F1Z9)');
+      return false;
+    }
+    setEditGstError(null);
+    return true;
+  };
+
+  const handleOpenEdit = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setEditCompanyName(customer.companyName || '');
+    setEditReferenceName(customer.referenceName || '');
+    setEditPhone(customer.phone || '');
+    const isGst = isCustomerGstRegistered(customer);
+    setEditHasGst(isGst);
+    setEditGstin(isGst ? (customer.gstin || '') : '');
+    setEditGstError(null);
+    setEditBillingAddress(customer.billingAddress || '');
+    setEditFormError(null);
+    setEditModalOpen(true);
+  };
+
+  const handleUpdateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCustomer) return;
+    setEditFormError(null);
+
+    if (!editCompanyName.trim() || !editPhone.trim() || !editBillingAddress.trim()) {
+      setEditFormError('Please fill in all mandatory fields.');
+      return;
+    }
+
+    if (editHasGst) {
+      if (!editGstin.trim()) {
+        setEditFormError('Please enter client GST Number or uncheck the GST Number option.');
+        return;
+      }
+      if (!isValidGSTIN(editGstin)) {
+        setEditFormError('Please enter a valid 15-character Indian GSTIN or uncheck the GST Number option.');
+        return;
+      }
+    }
+
+    setIsEditSubmitting(true);
+    try {
+      const res = await fetch(`/api/customers/${editingCustomer.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: editCompanyName.trim(),
+          referenceName: editReferenceName.trim() || undefined,
+          phone: editPhone.trim(),
+          billingAddress: editBillingAddress.trim(),
+          gstin: editHasGst && editGstin.trim() ? editGstin.trim().toUpperCase() : 'N/A',
+          actorId: currentUser?.id,
+          actorName: currentUser?.fullName,
+        }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        const updated = json.data;
+        setCustomers(prev => prev.map(c => c.id === updated.id ? updated : c));
+        if (selectedCustomer?.id === updated.id) {
+          setSelectedCustomer(updated);
+        }
+        setEditModalOpen(false);
+        setBannerMessage(`Customer ${updated.companyName} updated successfully.`);
+        fetchCustomers();
+        setTimeout(() => setBannerMessage(null), 5000);
+      } else {
+        setEditFormError(json.error || 'Failed to update customer');
+      }
+    } catch (e: any) {
+      setEditFormError(e.message || 'An error occurred during customer update');
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  };
+
+  const handleOpenDelete = (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setDeleteError(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!customerToDelete) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/customers/${customerToDelete.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actorId: currentUser?.id,
+          actorName: currentUser?.fullName,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setCustomers(prev => prev.filter(c => c.id !== customerToDelete.id));
+        if (selectedCustomer?.id === customerToDelete.id) {
+          setSelectedCustomer(null);
+        }
+        setBannerMessage(`Customer ${customerToDelete.companyName} deleted successfully.`);
+        setCustomerToDelete(null);
+        fetchCustomers();
+        setTimeout(() => setBannerMessage(null), 5000);
+      } else {
+        setDeleteError(json.error || 'Failed to delete customer');
+      }
+    } catch (e: any) {
+      setDeleteError(e.message || 'An error occurred while deleting the customer.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const validateGst = (val: string) => {
     if (!val || !val.trim()) {
@@ -182,7 +334,7 @@ export default function CustomersPage() {
     } else if (filterTab === 'OUTSTANDING') {
       result = result.filter(c => (c.outstandingBalance || 0) > 0);
     } else if (filterTab === 'GST') {
-      result = result.filter(c => !!c.gstin && c.gstin.trim().length > 0);
+      result = result.filter(c => isCustomerGstRegistered(c));
     }
 
     // Search Query
@@ -196,7 +348,7 @@ export default function CustomersPage() {
         (c.phone && c.phone.includes(q)) ||
         (c.email && c.email.toLowerCase().includes(q)) ||
         (c.city && c.city.toLowerCase().includes(q)) ||
-        (c.gstin && c.gstin.toLowerCase().includes(q))
+        (isCustomerGstRegistered(c) && c.gstin!.toLowerCase().includes(q))
       );
     }
 
@@ -309,10 +461,26 @@ export default function CustomersPage() {
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#24150c] hover:bg-[#382315] border border-[#4d301c] rounded-md shadow-2xs transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-[#c79e7c]" />
-            <span>+ Quick Register</span>
+            <span>Quick Register</span>
           </button>
         </div>
       </div>
+
+      {bannerMessage && (
+        <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-medium flex items-center justify-between shadow-2xs animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{bannerMessage}</span>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => setBannerMessage(null)} 
+            className="text-emerald-700 hover:text-emerald-900 p-0.5 rounded cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* 2. REFINED KPI METRICS ROW */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -491,7 +659,7 @@ export default function CustomersPage() {
             >
               <span>GST Registered</span>
               <span className={`px-1 rounded text-[10px] ${filterTab === 'GST' ? 'bg-white/20' : 'bg-[#ebdcc9]'}`}>
-                {customers.filter(c => !!c.gstin && c.gstin.trim().length > 0).length}
+                {customers.filter(c => isCustomerGstRegistered(c)).length}
               </span>
             </button>
           </div>
@@ -552,7 +720,7 @@ export default function CustomersPage() {
                           <span className="font-mono text-[10px] font-bold text-[#59371d] bg-[#faf6ee] border border-[#ebdcc9] px-1.5 py-0.2 rounded">
                             {c.customerCode}
                           </span>
-                          {c.gstin && (
+                          {isCustomerGstRegistered(c) && (
                             <span className="font-mono text-[9px] text-[#7d6553] bg-[#fbf9f5] px-1 py-0.2 rounded border border-[#e8decb]" title={`GSTIN: ${c.gstin}`}>
                               GST
                             </span>
@@ -716,7 +884,7 @@ export default function CustomersPage() {
 
                       <td className="px-4 py-2.5">
                         <div className="text-[#24160c] truncate max-w-[200px]" title={c.billingAddress}>{c.billingAddress}</div>
-                        {c.gstin && c.gstin !== 'N/A' ? (
+                        {isCustomerGstRegistered(c) ? (
                           <div className="font-mono text-[10px] text-[#59371d] font-semibold">{c.gstin}</div>
                         ) : (
                           <div className="text-[10px] text-[#9c826e] font-mono">GST: N/A</div>
@@ -862,7 +1030,7 @@ export default function CustomersPage() {
                   <div className="space-y-1.5 text-[#574830]">
                     <div>
                       <span className="text-[#9c826e] block text-[10px]">GSTIN Registration:</span>
-                      {selectedCustomer.gstin && selectedCustomer.gstin !== 'N/A' ? (
+                      {isCustomerGstRegistered(selectedCustomer) ? (
                         <span className="font-mono font-bold text-[#59371d] bg-[#faf6ee] px-1.5 py-0.5 rounded border border-[#ebdcc9]">
                           {selectedCustomer.gstin}
                         </span>
@@ -886,12 +1054,24 @@ export default function CustomersPage() {
                   Registered: {formatDate(selectedCustomer.createdAt)}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Link
-                    href={`/sites/new?customerId=${selectedCustomer.id}`}
-                    className="px-3 py-1.5 bg-white hover:bg-[#faf6ee] text-[#4d301c] font-semibold rounded-md border border-[#d8c8b4] transition shadow-2xs"
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEdit(selectedCustomer)}
+                    className="px-3 py-1.5 bg-white hover:bg-[#faf6ee] text-[#4d301c] font-semibold rounded-md border border-[#d8c8b4] transition shadow-2xs flex items-center gap-1.5 cursor-pointer text-xs"
+                    title="Edit Customer"
                   >
-                    + New Site Form
-                  </Link>
+                    <Pencil className="w-3.5 h-3.5 text-[#8c5e39]" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDelete(selectedCustomer)}
+                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded-md border border-rose-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer text-xs"
+                    title="Delete Customer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Delete</span>
+                  </button>
                   <Link
                     href={`/projects?customerId=${selectedCustomer.id}`}
                     className="px-3.5 py-1.5 bg-[#24150c] hover:bg-[#382315] text-white font-semibold rounded-md transition flex items-center gap-1 shadow-2xs border border-[#4d301c]"
@@ -1072,6 +1252,275 @@ export default function CustomersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 7. EDIT CUSTOMER MODAL */}
+      {editModalOpen && editingCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#140b06]/70 backdrop-blur-xs animate-in fade-in duration-200">
+          <div 
+            className="fixed inset-0" 
+            onClick={() => !isEditSubmitting && setEditModalOpen(false)} 
+          />
+          <div className="relative z-10 bg-white rounded-lg max-w-xl w-full p-5 shadow-2xl border border-[#d6c7b2] space-y-4 max-h-[90vh] overflow-y-auto main-scrollbar">
+            <div className="flex items-center justify-between border-b border-[#f0e8db] pb-3">
+              <div>
+                <h3 className="text-base font-bold text-[#24160c] flex items-center gap-2">
+                  <Pencil className="w-4 h-4 text-[#8c5e39]" />
+                  <span>Edit Customer Details</span>
+                  <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-[#faf6ee] text-[#8c5e39] border border-[#ebdcc9]">
+                    {editingCustomer.customerCode}
+                  </span>
+                </h3>
+                <p className="text-xs text-[#7d6553] mt-0.5">Update contact, statutory, and billing details for this account.</p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setEditModalOpen(false)}
+                disabled={isEditSubmitting}
+                className="text-[#9c826e] hover:text-[#24160c] p-1 rounded-md cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {editFormError && (
+              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-800 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{editFormError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateCustomer} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-[#24160c] mb-1">
+                  Customer Name <span className="text-rose-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Reliable Associates"
+                  value={editCompanyName}
+                  onChange={(e) => setEditCompanyName(e.target.value)}
+                  required
+                  className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none font-medium text-[#24160c]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#24160c] mb-1">
+                  Reference Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Hasan"
+                  value={editReferenceName}
+                  onChange={(e) => setEditReferenceName(e.target.value)}
+                  className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#24160c] mb-1">
+                  Phone / Mobile Number <span className="text-rose-600">*</span>
+                </label>
+                <input
+                  type="tel"
+                  placeholder="e.g. +91 98200 45678"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  required
+                  className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
+                />
+              </div>
+
+              {/* GST Number Checkbox & Conditional Input */}
+              <div className="p-3 bg-[#faf6ee]/60 border border-[#ebdcc9] rounded-md space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={editHasGst}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setEditHasGst(checked);
+                        if (!checked) {
+                          setEditGstError(null);
+                        } else if (editGstin && editGstin !== 'N/A') {
+                          validateEditGst(editGstin);
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-[#d6c7b2] text-[#8f6541] focus:ring-[#8f6541] accent-[#8f6541]"
+                    />
+                    <span className="font-semibold text-[#24160c]">GST Number</span>
+                  </label>
+                  <span className="text-[11px] font-mono font-medium text-[#7d6553]">
+                    {editHasGst ? 'GST Registered' : 'N/A'}
+                  </span>
+                </div>
+
+                {editHasGst && (
+                  <div className="space-y-1 pt-1">
+                    <label className="block text-[11px] font-semibold text-[#24160c]">
+                      GSTIN (15 Characters) <span className="text-rose-600">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 23AAACT1234F1Z9"
+                      value={editGstin}
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15);
+                        setEditGstin(val);
+                        validateEditGst(val);
+                      }}
+                      maxLength={15}
+                      className={`w-full p-2 border rounded-md uppercase font-mono text-xs bg-white focus:outline-none text-[#24160c] ${
+                        editGstError ? 'border-rose-400 focus:border-rose-500' : 'border-[#d8c8b4] focus:border-[#8c5e39]'
+                      }`}
+                    />
+                    {editGstError && (
+                      <span className="text-[11px] text-rose-600 block">{editGstError}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#24160c] mb-1">
+                  Address <span className="text-rose-600">*</span>
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Complete address..."
+                  value={editBillingAddress}
+                  onChange={(e) => setEditBillingAddress(e.target.value)}
+                  required
+                  className="w-full p-2 border border-[#d8c8b4] rounded-md text-xs bg-[#faf6ee]/50 focus:bg-white focus:border-[#8c5e39] focus:outline-none text-[#24160c]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#f0e8db]">
+                <button
+                  type="button"
+                  onClick={() => setEditModalOpen(false)}
+                  disabled={isEditSubmitting}
+                  className="px-3.5 py-1.5 text-[#7d6553] hover:text-[#24160c] rounded-md border border-[#d8c8b4] font-medium transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEditSubmitting}
+                  className="px-4 py-1.5 bg-[#24150c] hover:bg-[#382315] text-white rounded-md font-semibold transition flex items-center gap-1.5 shadow-2xs border border-[#4d301c] cursor-pointer"
+                >
+                  {isEditSubmitting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#c79e7c]" />
+                      <span>Save Changes</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 8. DELETE CUSTOMER CONFIRMATION MODAL */}
+      {customerToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#140b06]/70 backdrop-blur-xs animate-in fade-in duration-200">
+          <div 
+            className="fixed inset-0" 
+            onClick={() => !isDeleting && setCustomerToDelete(null)} 
+          />
+          <div className="relative z-10 w-full max-w-md bg-white rounded-xl shadow-2xl border border-[#d6c7b2] p-6 text-stone-800 space-y-4">
+            <div className="flex items-start justify-between border-b border-[#f0e8db] pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-rose-100 text-rose-800 flex items-center justify-center shrink-0 border border-rose-200">
+                  <Trash2 className="w-5 h-5 text-rose-700" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#24160c]">
+                    Delete Customer: {customerToDelete.customerCode}
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Permanent removal from Commercial Directory
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setCustomerToDelete(null)}
+                className="text-stone-400 hover:text-stone-600 p-1 rounded-md cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {deleteError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            <div className="bg-[#fbf9f5] rounded-lg p-3.5 border border-[#ede3d4] text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Customer Name:</span>
+                <span className="font-bold text-[#24160c]">{customerToDelete.companyName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Phone:</span>
+                <span className="font-mono text-stone-800">{customerToDelete.phone}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Active Site Rentals:</span>
+                <span className="font-semibold text-[#8c5e39]">{customerToDelete.activeRentalsCount || 0}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Outstanding Balance:</span>
+                <span className="font-bold font-mono text-[#24160c]">{formatINR(customerToDelete.outstandingBalance || 0)}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-stone-600 leading-relaxed">
+              Are you sure you want to permanently delete this customer? This action will remove the customer record and be recorded in the audit log.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#f0e8db]">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setCustomerToDelete(null)}
+                className="px-4 py-2 text-xs font-semibold text-stone-700 bg-white hover:bg-[#faf6ee] border border-[#d8c8b4] rounded-md transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 text-xs font-semibold text-white bg-rose-700 hover:bg-rose-800 rounded-md transition flex items-center gap-1.5 shadow-2xs cursor-pointer border border-rose-800"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5 text-white" />
+                    <span>Delete Customer</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

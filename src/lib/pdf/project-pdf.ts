@@ -155,8 +155,8 @@ async function drawCorporateHeader(
   // Left: Corporate Brand & Details
   if (logoBase64) {
     try {
-      // 32mm width x 16mm height preserves the 2:1 ratio of the official ALOKHANDWALA logo
-      doc.addImage(logoBase64, 'PNG', 14, headerStartY, 32, 16, undefined, 'FAST');
+      // 32mm width x 14.4mm height preserves the 2.226:1 ratio of the official ALOKHANDWALA logo
+      doc.addImage(logoBase64, 'PNG', 14, headerStartY, 32, 14.4, undefined, 'FAST');
     } catch {
       // Fallback if image rendering fails
       renderLogoFallback(doc, 14, headerStartY);

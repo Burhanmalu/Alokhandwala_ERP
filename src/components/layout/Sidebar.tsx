@@ -74,34 +74,24 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
   return (
     <div className="w-full h-full min-h-0 bg-[#19100a] text-[#debfa6] flex flex-col shrink-0 select-none border-r border-[#2a1a11] overflow-hidden">
       {/* Brand Header */}
-      <div className="px-5 py-4 border-b border-[#2a1a11] flex items-center justify-between bg-[#120b06] shrink-0">
+      <div className="px-5 py-3.5 border-b border-[#2a1a11] flex items-center justify-between bg-[#120b06] shrink-0">
         <Link 
           href="/" 
           onClick={onClose}
-          className="flex items-center gap-3 hover:opacity-95 transition group min-w-0"
+          className="flex-1 flex items-center justify-center hover:opacity-90 transition group min-w-0"
         >
-          <div className="w-9 h-9 rounded-lg bg-[#24150c] flex items-center justify-center p-1.5 border border-[#4d301c] shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src="/logo-icon-accent.png" 
-              alt="Alokhandwala Scaffold Mark" 
-              className="w-full h-full object-contain"
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-bold text-[#fdf8f4] text-sm tracking-wider truncate uppercase">
-              ALOKHANDWALA
-            </div>
-            <div className="text-2xs text-[#9c826e] font-medium tracking-tight truncate">
-              Enterprise ERP System
-            </div>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src="/logo.png" 
+            alt="ALOKHANDWALA" 
+            className="h-11 sm:h-12 w-auto max-w-[200px] object-contain drop-shadow-xs"
+          />
         </Link>
 
         {onClose && (
           <button
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-md text-[#a9927d] hover:text-white hover:bg-[#24150c] transition cursor-pointer"
+            className="lg:hidden p-1.5 rounded-md text-[#a9927d] hover:text-white hover:bg-[#24150c] transition cursor-pointer shrink-0 ml-2"
             aria-label="Close Navigation"
           >
             <X className="w-4 h-4" />
@@ -317,24 +307,6 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                     >
                       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/inventory') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
                       <span>Stock Overview</span>
-                    </Link>
-
-                    <Link
-                      href="/inventory/catalogue"
-                      onClick={onClose}
-                      className={subNavLinkClass('/inventory/catalogue')}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/inventory/catalogue') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                      <span>Catalogue</span>
-                    </Link>
-
-                    <Link
-                      href="/inventory/movements"
-                      onClick={onClose}
-                      className={subNavLinkClass('/inventory/movements')}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isExact('/inventory/movements') ? 'bg-[#c79e7c]' : 'bg-[#5c3e24]'}`} />
-                      <span>Ledger</span>
                     </Link>
                   </div>
                 )}

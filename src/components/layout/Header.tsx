@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   Search, 
@@ -34,13 +35,12 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           </button>
         )}
 
-        <div className="lg:hidden flex items-center gap-1.5 shrink-0">
-          <div className="w-6 h-6 rounded bg-[#24150c] flex items-center justify-center p-0.5">
+        <Link href="/" className="lg:hidden flex items-center gap-2 shrink-0 hover:opacity-90 transition">
+          <div className="bg-[#120b06] px-2.5 py-1 rounded-md flex items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-icon-accent.png" alt="Alokhandwala" className="h-full w-full object-contain" />
+            <img src="/logo.png" alt="ALOKHANDWALA" className="h-6 w-auto max-w-[110px] object-contain" />
           </div>
-          <span className="hidden xs:inline font-bold text-xs uppercase tracking-wider text-[#24160c]">ALOKHANDWALA</span>
-        </div>
+        </Link>
 
         {/* Global Search Bar */}
         <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-[120px] max-w-xl">

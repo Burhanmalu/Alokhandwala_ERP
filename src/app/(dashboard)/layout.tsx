@@ -25,11 +25,11 @@ export default function DashboardLayout({
   if (isLoading || !isAuthenticated) {
     return (
       <div className="h-full h-[100dvh] w-full bg-[#140c07] flex flex-col items-center justify-center text-slate-300 p-6 overflow-hidden">
-        <div className="p-4 rounded-2xl bg-[#24150c] flex items-center justify-center shadow-xl shadow-black/60 border border-[#59371d]/60 mb-4 animate-pulse">
+        <div className="p-4 rounded-2xl bg-white flex items-center justify-center shadow-xl border border-[#e8decb] mb-4">
           <img 
-            src="/logo-white.png" 
+            src="/logo.png" 
             alt="ALOKHANDWALA" 
-            className="h-14 w-auto object-contain filter drop-shadow"
+            className="h-14 w-auto max-w-[200px] object-contain"
           />
         </div>
         <div className="text-xs font-semibold tracking-widest text-[#debfa6] uppercase">
