@@ -56,11 +56,14 @@ export default function InvoicePrintViewPage({
         <div className="flex justify-between items-start border-b-2 border-[#322016] pb-5">
           <div>
             <div className="flex items-center gap-3.5">
-              <img
-                src="/logo.png"
-                alt="Alokhandwala"
-                className="h-16 w-auto object-contain print:h-14"
-              />
+              <div className="bg-[#140c07] px-3.5 py-2 rounded-lg flex items-center justify-center shadow-xs">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/logo.png"
+                  alt="Alokhandwala"
+                  className="h-12 w-auto max-w-[180px] object-contain print:h-10"
+                />
+              </div>
               <div className="border-l border-[#d8c3ae] pl-3.5">
                 <div className="text-[11px] font-bold tracking-widest text-[#24160c] uppercase">
                   Scaffolding Division

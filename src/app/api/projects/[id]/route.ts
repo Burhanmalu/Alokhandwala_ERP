@@ -128,6 +128,14 @@ export async function PATCH(
             ? (body.clientGstNumber && body.clientGstNumber !== 'N/A' ? body.clientGstNumber.trim().toUpperCase() : 'N/A')
             : 'N/A';
         }
+        if (body.hasCompanyGst !== undefined) {
+          proj.hasCompanyGst = Boolean(body.hasCompanyGst);
+        }
+        if (body.companyGstNumber !== undefined) {
+          proj.companyGstNumber = proj.hasCompanyGst
+            ? (body.companyGstNumber && body.companyGstNumber !== 'N/A' ? body.companyGstNumber.trim().toUpperCase() : undefined)
+            : undefined;
+        }
 
         if ((body.width !== undefined || body.length !== undefined) && body.height !== undefined) {
           const numW = Number(body.width !== undefined ? body.width : body.length);

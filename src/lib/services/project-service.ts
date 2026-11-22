@@ -78,6 +78,8 @@ export class ProjectService {
     contactPhone?: string;
     hasClientGst?: boolean;
     clientGstNumber?: string;
+    hasCompanyGst?: boolean;
+    companyGstNumber?: string;
     assignedSupervisorId?: string;
     supervisorName?: string;
     measurements: {
@@ -246,6 +248,8 @@ export class ProjectService {
         supervisorName: supervisor.fullName,
         hasClientGst: resolvedHasClientGst,
         clientGstNumber: resolvedClientGstNumber,
+        hasCompanyGst: data.hasCompanyGst !== undefined ? Boolean(data.hasCompanyGst) : true,
+        companyGstNumber: data.hasCompanyGst !== false ? (data.companyGstNumber || state.companySettings?.gstin || undefined) : undefined,
         status: 'NOT_INSTALLED',
         totalAreaSqFt: areaSqFt,
         elevationAreaSqFt: areaSqFt,

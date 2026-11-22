@@ -105,6 +105,8 @@ export async function POST(req: NextRequest) {
       contactPhone: contactPhone,
       hasClientGst: validated.hasClientGst,
       clientGstNumber: validated.clientGstNumber || validated.gstin,
+      hasCompanyGst: body.hasCompanyGst !== undefined ? Boolean(body.hasCompanyGst) : undefined,
+      companyGstNumber: body.companyGstNumber as string | undefined,
       assignedSupervisorId: validated.assignedSupervisorId,
       supervisorName: validated.supervisorName,
       measurements: {

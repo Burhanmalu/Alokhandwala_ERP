@@ -103,8 +103,9 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs shrink-0 flex items-center justify-center">
-              <img src="/logo.png" alt="Alokhandwala Logo" className="h-16 w-auto object-contain" />
+            <div className="p-4 bg-[#140c07] rounded-xl border border-[#2a1a11] shadow-xs shrink-0 flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="Alokhandwala Logo" className="h-14 w-auto max-w-[200px] object-contain" />
             </div>
             <div className="space-y-1 text-center sm:text-left">
               <div className="font-bold text-slate-800 text-sm">Alokhandwala Official Insignia</div>

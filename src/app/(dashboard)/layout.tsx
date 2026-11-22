@@ -25,17 +25,15 @@ export default function DashboardLayout({
   if (isLoading || !isAuthenticated) {
     return (
       <div className="h-full h-[100dvh] w-full bg-[#140c07] flex flex-col items-center justify-center text-slate-300 p-6 overflow-hidden">
-        <div className="p-4 rounded-2xl bg-white flex items-center justify-center shadow-xl border border-[#e8decb] mb-4">
+        <div className="mb-6 flex items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src="/logo.png" 
             alt="ALOKHANDWALA" 
-            className="h-14 w-auto max-w-[200px] object-contain"
+            className="h-16 sm:h-20 w-auto max-w-[260px] object-contain drop-shadow-md"
           />
         </div>
-        <div className="text-xs font-semibold tracking-widest text-[#debfa6] uppercase">
-          ALOKHANDWALA
-        </div>
-        <div className="text-xs text-[#a9927d] mt-2 flex items-center gap-2">
+        <div className="text-xs text-[#a9927d] flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#c79e7c] animate-ping" />
           Verifying security session...
         </div>

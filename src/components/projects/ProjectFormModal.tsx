@@ -21,8 +21,10 @@ import {
   Check,
   Ruler,
   Clock,
+  Receipt,
 } from 'lucide-react';
-import { Customer, Project, ProjectStatus, UserProfile } from '@/lib/schema';
+import { Customer, Project, ProjectStatus, UserProfile, CompanySettings } from '@/lib/schema';
+import { initialCompanySettings } from '@/lib/db/seed-data';
 import {
   formatINR,
   calculateScaffoldingArea,
@@ -67,6 +69,7 @@ export function ProjectFormModal({
   // Master reference lists loaded from live APIs
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [companySettings, setCompanySettings] = useState<CompanySettings | null>(initialCompanySettings);
   const [loadingRefs, setLoadingRefs] = useState(false);
 
   // Section A: Customer & Project Details
@@ -99,20 +102,24 @@ export function ProjectFormModal({
   const [followUpDate, setFollowUpDate] = useState('');
   const [followUpNotes, setFollowUpNotes] = useState('');
 
+  // GST Details State: Company GST inclusion option
+  const [includeCompanyGst, setIncludeCompanyGst] = useState<boolean>(true);
+
   // Form Submission & Feedback State
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inlineToast, setInlineToast] = useState<string | null>(null);
 
-  // Load customers & users
+  // Load customers, users & company settings
   useEffect(() => {
     if (!isOpen) return;
     setLoadingRefs(true);
     Promise.all([
       fetch('/api/customers').then(r => r.json()).catch(() => ({ success: false })),
       fetch('/api/users').then(r => r.json()).catch(() => ({ success: false })),
+      fetch('/api/settings').then(r => r.json()).catch(() => ({ success: false })),
     ])
-      .then(([custJson, usersJson]) => {
+      .then(([custJson, usersJson, settingsJson]) => {
         if (custJson.success && Array.isArray(custJson.data)) {
           setCustomers(custJson.data);
         }
@@ -127,6 +134,9 @@ export function ProjectFormModal({
               setAssignedSupervisorId(prev => prev || defaultSup.id);
             }
           }
+        }
+        if (settingsJson.success && settingsJson.data) {
+          setCompanySettings(settingsJson.data);
         }
       })
       .finally(() => setLoadingRefs(false));
@@ -154,6 +164,7 @@ export function ProjectFormModal({
     setRemark('');
     setFollowUpDate('');
     setFollowUpNotes('');
+    setIncludeCompanyGst(true);
     setError(null);
   };
 
@@ -202,6 +213,7 @@ export function ProjectFormModal({
       setRemark(editingProject.remark || editingProject.siteRemarks || '');
       setFollowUpDate(editingProject.followUpDate || '');
       setFollowUpNotes(editingProject.followUpNotes || '');
+      setIncludeCompanyGst(editingProject.hasCompanyGst !== undefined ? Boolean(editingProject.hasCompanyGst) : true);
     } else {
       const defaultSup =
         users.find(u => u.role === 'SUPERVISOR') || users[0];
@@ -270,6 +282,41 @@ export function ProjectFormModal({
       }
     }
   };
+
+  // Selected Customer Resolution & Dual GST Identifiers
+  const selectedCustomer = useMemo(() => {
+    if (selectedCustomerId) {
+      return customers.find(c => c.id === selectedCustomerId) || null;
+    }
+    if (customerName.trim()) {
+      return (
+        customers.find(
+          c => c.companyName.trim().toLowerCase() === customerName.trim().toLowerCase()
+        ) || null
+      );
+    }
+    return null;
+  }, [customers, selectedCustomerId, customerName]);
+
+  const clientGstin = useMemo(() => {
+    if (!selectedCustomer || !selectedCustomer.gstin) return 'Not Available';
+    const val = selectedCustomer.gstin.trim();
+    if (!val || val.toUpperCase() === 'N/A' || val.toUpperCase() === 'NONE' || val.toUpperCase() === 'NULL') {
+      return 'Not Available';
+    }
+    return val;
+  }, [selectedCustomer]);
+
+  const companyGstin = useMemo(() => {
+    if (!companySettings || !companySettings.gstin) return 'Not Available';
+    const val = companySettings.gstin.trim();
+    if (!val || val.toUpperCase() === 'N/A' || val.toUpperCase() === 'NONE' || val.toUpperCase() === 'NULL') {
+      return 'Not Available';
+    }
+    return val;
+  }, [companySettings]);
+
+  const isCompanyGstAvailable = companyGstin !== 'Not Available';
 
   const toggleStaffMember = (staffId: string) => {
     setSelectedStaffIds(prev =>
@@ -356,6 +403,10 @@ export function ProjectFormModal({
             remark: remark.trim(),
             followUpDate: followUpDate || undefined,
             followUpNotes: followUpNotes.trim(),
+            hasCompanyGst: isCompanyGstAvailable ? includeCompanyGst : false,
+            companyGstNumber: isCompanyGstAvailable && includeCompanyGst ? companyGstin : undefined,
+            hasClientGst: clientGstin !== 'Not Available',
+            clientGstNumber: clientGstin !== 'Not Available' ? clientGstin : undefined,
             actorId: currentUser?.id || 'usr-admin-01',
             actorName: currentUser?.fullName || 'Admin',
           }),
@@ -399,6 +450,10 @@ export function ProjectFormModal({
             remark: remark.trim(),
             followUpDate: followUpDate || undefined,
             followUpNotes: followUpNotes.trim(),
+            hasCompanyGst: isCompanyGstAvailable ? includeCompanyGst : false,
+            companyGstNumber: isCompanyGstAvailable && includeCompanyGst ? companyGstin : undefined,
+            hasClientGst: clientGstin !== 'Not Available',
+            clientGstNumber: clientGstin !== 'Not Available' ? clientGstin : undefined,
             actorId: currentUser?.id || 'usr-admin-01',
             actorName: currentUser?.fullName || 'Admin',
           }),
@@ -997,6 +1052,166 @@ export function ProjectFormModal({
                 </span>
               </div>
             )}
+          </section>
+
+          {/* GST DETAILS SECTION */}
+          <section className="bg-white rounded-lg border border-[#e5dac8] p-4 sm:p-5 space-y-4 shadow-2xs">
+            <div className="flex items-center justify-between pb-2.5 border-b border-[#f0e8db]">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded bg-[#f7f2eb] border border-[#d6c7b2] flex items-center justify-center text-[#8f6541]">
+                  <Receipt className="w-3.5 h-3.5" />
+                </div>
+                <h3 className="font-bold text-sm text-[#24160c]">
+                  GST Details
+                </h3>
+              </div>
+              <span className="text-[10px] font-medium text-[#8c5e39] bg-[#faf6ee] px-2 py-0.5 rounded border border-[#ebdcc9]">
+                Tax Configuration
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 1. Company GST */}
+              <div className="p-3.5 bg-[#faf6ee]/70 border border-[#ebdcc9] rounded-lg space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-[#4d301c] flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-[#8c5e39]" />
+                    <span>Company GST</span>
+                  </label>
+                  <span
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                      !isCompanyGstAvailable
+                        ? 'bg-stone-100 text-stone-600 border border-stone-200'
+                        : includeCompanyGst
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : 'bg-amber-50 text-amber-800 border border-amber-200'
+                    }`}
+                  >
+                    {!isCompanyGstAvailable
+                      ? 'Not Available'
+                      : includeCompanyGst
+                        ? 'Included in Project'
+                        : 'Excluded from Project'}
+                  </span>
+                </div>
+
+                {/* Inclusion Dropdown */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#6e4627] mb-1">
+                    Include Company GST in Project?
+                  </label>
+                  <select
+                    value={!isCompanyGstAvailable ? 'NO' : includeCompanyGst ? 'YES' : 'NO'}
+                    onChange={(e) => setIncludeCompanyGst(e.target.value === 'YES')}
+                    disabled={!isCompanyGstAvailable || submitting}
+                    className={`w-full px-2.5 py-1.5 rounded-md text-xs font-medium border bg-white text-[#24160c] focus:outline-none transition ${
+                      !isCompanyGstAvailable
+                        ? 'border-stone-200 bg-stone-50 text-stone-400 cursor-not-allowed'
+                        : 'border-[#d6c7b2] focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] cursor-pointer'
+                    }`}
+                  >
+                    {isCompanyGstAvailable ? (
+                      <>
+                        <option value="YES">Yes – Include Company GST</option>
+                        <option value="NO">No – Do Not Include Company GST</option>
+                      </>
+                    ) : (
+                      <option value="NO">Not Available (No GST Registered)</option>
+                    )}
+                  </select>
+                </div>
+
+                {/* Company GSTIN (Read-Only) */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#6e4627] mb-1">
+                    Company GSTIN {isCompanyGstAvailable && includeCompanyGst ? '(Applied)' : '(Excluded)'}
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    tabIndex={-1}
+                    value={
+                      !isCompanyGstAvailable
+                        ? 'Not Available'
+                        : includeCompanyGst
+                          ? companyGstin
+                          : `${companyGstin} (Excluded from Project)`
+                    }
+                    className={`w-full px-3 py-2 border rounded-md font-mono text-xs font-bold cursor-default focus:outline-none select-all ${
+                      !isCompanyGstAvailable
+                        ? 'bg-stone-50 border-stone-200 text-stone-400'
+                        : includeCompanyGst
+                          ? 'bg-white border-[#d6c7b2] text-[#24160c]'
+                          : 'bg-[#f7f2eb]/60 border-[#e5dac8] text-[#8c7360]'
+                    }`}
+                    aria-label="Company GSTIN"
+                  />
+                </div>
+
+                <p className="text-[10px] text-[#7d6553]">
+                  {!isCompanyGstAvailable
+                    ? 'No registered GSTIN in Company Settings (inclusion disabled).'
+                    : includeCompanyGst
+                      ? `${companySettings?.companyName || 'Alokhandwala'} registered GSTIN will be applied to this project.`
+                      : 'Company GST will not be included in this project.'}
+                </p>
+              </div>
+
+              {/* 2. Client GST */}
+              <div className="p-3.5 bg-[#faf6ee]/70 border border-[#ebdcc9] rounded-lg space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-[#4d301c] flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-[#8c5e39]" />
+                    <span>Client GST</span>
+                  </label>
+                  <span
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                      clientGstin !== 'Not Available'
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        : 'bg-stone-100 text-stone-600 border border-stone-200'
+                    }`}
+                  >
+                    {clientGstin !== 'Not Available' ? 'Registered GSTIN' : 'Not Available'}
+                  </span>
+                </div>
+
+                {/* Read-Only Status Indicator to balance height */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#6e4627] mb-1">
+                    Client GST Profile Status
+                  </label>
+                  <div className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-[#ebdcc9] bg-[#fbf9f5] text-[#574830] flex items-center justify-between">
+                    <span>
+                      {clientGstin !== 'Not Available' ? 'Active Customer Profile GSTIN' : 'No Customer GSTIN Registered'}
+                    </span>
+                    <span className="text-[10px] font-semibold text-[#8c5e39] uppercase tracking-wider">
+                      Read-Only
+                    </span>
+                  </div>
+                </div>
+
+                {/* Client GSTIN (Read-Only) */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#6e4627] mb-1">
+                    Client GSTIN (Read-Only)
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    tabIndex={-1}
+                    value={clientGstin}
+                    className="w-full px-3 py-2 bg-white border border-[#d6c7b2] rounded-md font-mono text-xs font-bold text-[#24160c] cursor-default focus:outline-none select-all"
+                    aria-label="Client GSTIN"
+                  />
+                </div>
+
+                <p className="text-[10px] text-[#7d6553] truncate">
+                  {selectedCustomer
+                    ? `${selectedCustomer.companyName} registered GSTIN from Customer Profile`
+                    : 'Select a customer to view registered GSTIN'}
+                </p>
+              </div>
+            </div>
           </section>
 
           {/* SECTION D: ADDITIONAL INFORMATION */}
