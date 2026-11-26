@@ -23,6 +23,8 @@ export function getDbPool(): Pool {
       max: 5,
       idleTimeoutMillis: 20000,
       connectionTimeoutMillis: 10000,
+      query_timeout: 15000,
+      statement_timeout: 15000,
       allowExitOnIdle: true,
     });
 

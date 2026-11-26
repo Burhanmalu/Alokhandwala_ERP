@@ -311,6 +311,12 @@ export const addProjectSchema = z.object({
   remark: z.string().optional(),
   followUpDate: z.string().optional(),
   followUpNotes: z.string().optional(),
+  rentalMode: z.enum(['BY_MONTH', 'BY_DATE']).optional(),
+  hasCompanyGst: z.boolean().optional(),
+  companyGstNumber: z.string().optional(),
+  hasClientGst: z.boolean().optional(),
+  clientGstNumber: z.string().optional(),
+  clientRequestId: z.string().optional(),
 }).refine((data) => data.paymentReceived <= data.totalAmount, {
   message: 'Payment Received cannot exceed Total Amount',
   path: ['paymentReceived'],

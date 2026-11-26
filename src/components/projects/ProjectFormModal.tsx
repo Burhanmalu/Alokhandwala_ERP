@@ -130,13 +130,21 @@ export function ProjectFormModal({
   const [includeCompanyGst, setIncludeCompanyGst] = useState<boolean>(true);
 
   // Form Submission & Feedback State
-  const [submitting, setSubmitting] = useState(false);
+  const [savingMode, setSavingMode] = useState<'NONE' | 'SAVE' | 'SAVE_AND_ADD'>('NONE');
+  const submitting = savingMode !== 'NONE';
+  const clientRequestIdRef = useRef<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [inlineToast, setInlineToast] = useState<string | null>(null);
 
   // Load customers, users & company settings
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setSavingMode('NONE');
+      clientRequestIdRef.current = null;
+      return;
+    }
+    setSavingMode('NONE');
+    clientRequestIdRef.current = null;
     setLoadingRefs(true);
     Promise.all([
       fetch('/api/customers').then(r => r.json()).catch(() => ({ success: false })),
@@ -486,6 +494,8 @@ export function ProjectFormModal({
   };
 
   const handleSave = async (addAnother: boolean) => {
+    if (savingMode !== 'NONE') return;
+
     setError(null);
     setInlineToast(null);
 
@@ -495,7 +505,15 @@ export function ProjectFormModal({
       return;
     }
 
-    setSubmitting(true);
+    if (!clientRequestIdRef.current) {
+      clientRequestIdRef.current = `proj-req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+    const requestId = clientRequestIdRef.current;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+    setSavingMode(addAnother ? 'SAVE_AND_ADD' : 'SAVE');
     try {
       const selectedSup =
         ASSIGNED_SUPERVISOR_OPTIONS.find(s => s.id === assignedSupervisorId) ||
@@ -504,10 +522,29 @@ export function ProjectFormModal({
         id => users.find(u => u.id === id)?.fullName || id
       );
 
+      const parseJsonResponse = async (res: Response, fallbackError: string) => {
+        const rawText = await res.text();
+        let json: any = null;
+        try {
+          json = rawText ? JSON.parse(rawText) : null;
+        } catch {
+          throw new Error(
+            res.ok
+              ? 'Server returned an invalid response.'
+              : `${fallbackError} (HTTP ${res.status})`
+          );
+        }
+        if (!res.ok || !json?.success) {
+          throw new Error(json?.error || `${fallbackError} (HTTP ${res.status})`);
+        }
+        return json;
+      };
+
       if (isEdit && editingProject) {
         const res = await fetch(`/api/projects/${editingProject.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             updateProjectDetails: true,
             customerId: selectedCustomerId || editingProject.customerId,
@@ -546,18 +583,17 @@ export function ProjectFormModal({
           }),
         });
 
-        const json = await res.json();
-        if (!res.ok || !json.success) {
-          throw new Error(json.error || 'Failed to update project.');
-        }
-
+        const json = await parseJsonResponse(res, 'Failed to update project.');
+        clientRequestIdRef.current = null;
         onSaved(json.data, 'edit', false);
       } else {
         const res = await fetch('/api/projects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             mode: 'DIRECT_PROJECT',
+            clientRequestId: requestId,
             customerId: selectedCustomerId || undefined,
             customerName: customerName.trim(),
             customerPhone: customerPhone.trim(),
@@ -594,11 +630,8 @@ export function ProjectFormModal({
           }),
         });
 
-        const json = await res.json();
-        if (!res.ok || !json.success) {
-          throw new Error(json.error || 'Failed to save project.');
-        }
-
+        const json = await parseJsonResponse(res, 'Failed to save project.');
+        clientRequestIdRef.current = null;
         onSaved(json.data, 'create', addAnother);
 
         if (addAnother) {
@@ -609,9 +642,14 @@ export function ProjectFormModal({
         }
       }
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred while saving.');
+      if (err?.name === 'AbortError') {
+        setError('Request timed out while saving project. Please check your connection and try again.');
+      } else {
+        setError(err?.message || 'An unexpected error occurred while saving.');
+      }
     } finally {
-      setSubmitting(false);
+      clearTimeout(timeoutId);
+      setSavingMode('NONE');
     }
   };
 
@@ -1744,12 +1782,12 @@ export function ProjectFormModal({
               onClick={() => handleSave(true)}
               className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#24160c] bg-[#f4ece1] hover:bg-[#ebdcc9] border border-[#c79e7c] rounded-md transition cursor-pointer disabled:opacity-50"
             >
-              {submitting ? (
+              {savingMode === 'SAVE_AND_ADD' ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
                 <Plus className="w-3.5 h-3.5 text-[#8f6541]" />
               )}
-              <span>Save & Add Another</span>
+              <span>{savingMode === 'SAVE_AND_ADD' ? 'Saving...' : 'Save & Add Another'}</span>
             </button>
           )}
 
@@ -1759,12 +1797,16 @@ export function ProjectFormModal({
             onClick={() => handleSave(false)}
             className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-[#24150c] hover:bg-[#382315] border border-[#4d301c] rounded-md shadow-xs transition cursor-pointer disabled:opacity-50"
           >
-            {submitting ? (
+            {savingMode === 'SAVE' ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-[#c79e7c]" />
             ) : (
               <Save className="w-3.5 h-3.5 text-[#c79e7c]" />
             )}
-            <span>{isEdit ? 'Save Changes' : 'Save Project'}</span>
+            <span>
+              {savingMode === 'SAVE'
+                ? (isEdit ? 'Saving Changes...' : 'Saving Project...')
+                : (isEdit ? 'Save Changes' : 'Save Project')}
+            </span>
           </button>
         </div>
       </div>

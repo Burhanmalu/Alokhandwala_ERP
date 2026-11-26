@@ -186,6 +186,7 @@ export interface Quotation {
   hasClientGst?: boolean;
   clientGstNumber?: string;
   hasCompanyGst?: boolean;
+  clientRequestId?: string;
   companyGstNumber?: string;
   
   // Tracking & Audit
@@ -393,6 +394,7 @@ export interface Project {
   hasClientGst?: boolean;
   clientGstNumber?: string;
   hasCompanyGst?: boolean;
+  clientRequestId?: string;
   companyGstNumber?: string;
   scaffoldingType?: string;
   scaffoldingPlan?: ScaffoldingMaterialPlanOption;

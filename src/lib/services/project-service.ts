@@ -555,10 +555,23 @@ export class ProjectService {
     remark?: string;
     followUpDate?: string;
     followUpNotes?: string;
+    hasCompanyGst?: boolean;
+    companyGstNumber?: string;
+    hasClientGst?: boolean;
+    clientGstNumber?: string;
+    clientRequestId?: string;
     actorId: string;
     actorName: string;
   }): Promise<Project> {
     return await dbStore.transaction(async (state) => {
+      if (data.clientRequestId) {
+        const existingProject = state.projects.find(
+          (p) => p.clientRequestId === data.clientRequestId
+        );
+        if (existingProject) {
+          return existingProject;
+        }
+      }
       const totalAmount = Math.max(0, Number(data.totalAmount) || 0);
       const paymentReceived = Math.max(0, Number(data.paymentReceived) || 0);
       if (paymentReceived > totalAmount) {
@@ -748,6 +761,11 @@ export class ProjectService {
         siteRemarks: data.remark?.trim() || undefined,
         followUpDate: data.followUpDate || undefined,
         followUpNotes: data.followUpNotes?.trim() || undefined,
+        hasCompanyGst: data.hasCompanyGst,
+        companyGstNumber: data.companyGstNumber,
+        hasClientGst: data.hasClientGst,
+        clientGstNumber: data.clientGstNumber,
+        clientRequestId: data.clientRequestId,
         materials: [],
         photos: [],
         createdAt: now,

@@ -390,27 +390,32 @@ class ERPDataStore {
 
       try {
         await client.query('BEGIN');
-        await client.query(
-          `INSERT INTO erp_state_sync (key, payload, updated_at)
-           VALUES ('latest_state', $1::jsonb, NOW())
-           ON CONFLICT (key) DO NOTHING`,
-          [JSON.stringify(this.state)]
-        );
         const locked = await client.query(
           "SELECT payload FROM erp_state_sync WHERE key = 'latest_state' FOR UPDATE"
         );
+        const rowExists = locked.rows.length > 0;
         if (locked.rows[0]?.payload) {
           this.state = this.normalizeState(locked.rows[0].payload);
         }
 
         const result = await fn(this.state);
+        const serializedState = JSON.stringify(this.state);
 
-        await client.query(
-          `INSERT INTO erp_state_sync (key, payload, updated_at)
-           VALUES ('latest_state', $1::jsonb, NOW())
-           ON CONFLICT (key) DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW()`,
-          [JSON.stringify(this.state)]
-        );
+        if (rowExists) {
+          await client.query(
+            `UPDATE erp_state_sync
+             SET payload = $1::jsonb, updated_at = NOW()
+             WHERE key = 'latest_state'`,
+            [serializedState]
+          );
+        } else {
+          await client.query(
+            `INSERT INTO erp_state_sync (key, payload, updated_at)
+             VALUES ('latest_state', $1::jsonb, NOW())
+             ON CONFLICT (key) DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW()`,
+            [serializedState]
+          );
+        }
         await client.query('COMMIT');
         this.saveStateToDiskBestEffort();
         return result;

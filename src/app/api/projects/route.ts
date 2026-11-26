@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const startedAt = Date.now();
   try {
     const body = await req.json();
 
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
         height: validated.height,
         unit: validated.unit,
         status: validated.status,
+        rentalMode: validated.rentalMode,
         installationDate: validated.installationDate,
         removalDate: validated.removalDate,
         totalAmount: validated.totalAmount,
@@ -86,9 +88,17 @@ export async function POST(req: NextRequest) {
         remark: validated.remark,
         followUpDate: validated.followUpDate,
         followUpNotes: validated.followUpNotes,
+        hasCompanyGst: validated.hasCompanyGst,
+        companyGstNumber: validated.companyGstNumber,
+        hasClientGst: validated.hasClientGst,
+        clientGstNumber: validated.clientGstNumber,
+        clientRequestId: validated.clientRequestId,
         actorId: body.actorId || 'usr-admin-01',
         actorName: body.actorName || 'Ali/Abdeali(Admin)',
       });
+      console.info(
+        `[POST /api/projects] DIRECT_PROJECT saved ${project.projectCode} (${project.id}) in ${Date.now() - startedAt}ms`
+      );
       return NextResponse.json({ success: true, data: project }, { status: 201 });
     }
 
@@ -144,6 +154,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: project }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    console.error(`[POST /api/projects] Failed after ${Date.now() - startedAt}ms:`, error?.message || error);
+    const statusCode = error?.name === 'ZodError' ? 400 : 400;
+    return NextResponse.json({ success: false, error: error?.message || 'Failed to save project.' }, { status: statusCode });
   }
 }
