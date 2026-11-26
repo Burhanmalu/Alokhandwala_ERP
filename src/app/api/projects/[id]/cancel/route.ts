@@ -20,7 +20,7 @@ export async function POST(
       projectId: id,
       reason: body.reason.trim(),
       actorId: body.actorId || 'usr-admin-01',
-      actorName: body.actorName || 'Burhan Malu (Admin)',
+      actorName: body.actorName || 'Ali/Abdeali(Admin)',
     });
 
     return NextResponse.json({ success: true, data: result }, { status: 200 });

@@ -902,6 +902,45 @@ export class InventoryService {
         createdAt: new Date().toISOString(),
       });
 
+      // Genuine Dismantling & Payment Notifications
+      if (!state.notifications) state.notifications = [];
+      state.notifications.unshift({
+        id: `notif-dism-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        roleTarget: 'ADMIN',
+        title: 'Dismantling Completed',
+        message: `Dismantling completed for Project ${project.projectCode} – ${project.customerName} on ${data.actualDismantlingDate}. Balance: ₹${nextBalance.toLocaleString('en-IN')}.`,
+        type: nextBalance > 0 ? 'WARNING' : 'SUCCESS',
+        entityType: 'PROJECT',
+        entityId: project.id,
+        projectCode: project.projectCode,
+        customerName: project.customerName,
+        siteAddress: project.siteAddress || project.siteName,
+        removalDate: data.actualDismantlingDate,
+        supervisorName: data.teamMembers || project.supervisorName,
+        isRead: false,
+        createdAt: now,
+      });
+
+      if (paymentDelta > 0) {
+        state.notifications.unshift({
+          id: `notif-pay-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          roleTarget: 'ADMIN',
+          title: nextBalance === 0 ? 'Project Fully Paid' : 'Payment Received',
+          message:
+            nextBalance === 0
+              ? `Final payment of ₹${paymentDelta.toLocaleString('en-IN')} received for Project ${project.projectCode} – ${project.customerName}. Balance is now ₹0.`
+              : `Payment of ₹${paymentDelta.toLocaleString('en-IN')} received for Project ${project.projectCode} – ${project.customerName}. Remaining balance: ₹${nextBalance.toLocaleString('en-IN')}.`,
+          type: 'SUCCESS',
+          entityType: 'PROJECT',
+          entityId: project.id,
+          projectCode: project.projectCode,
+          customerName: project.customerName,
+          siteAddress: project.siteAddress || project.siteName,
+          isRead: false,
+          createdAt: now,
+        });
+      }
+
       return { removalRequest, transaction, project };
     });
   }

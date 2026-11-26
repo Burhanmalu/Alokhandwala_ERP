@@ -438,7 +438,7 @@ function ProjectsListContent() {
         body: JSON.stringify({
           reason: cancelReason.trim(),
           actorId: currentUser?.id || 'usr-admin-01',
-          actorName: currentUser?.fullName || 'Burhan Malu (Admin)',
+          actorName: currentUser?.fullName || 'Ali/Abdeali(Admin)',
         }),
       });
 
@@ -1453,7 +1453,7 @@ function ProjectsListContent() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-stone-700 whitespace-nowrap">
-                          {p.cancelledByName || 'Burhan Malu (Admin)'}
+                          {p.cancelledByName || 'Ali/Abdeali(Admin)'}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-center align-middle min-w-[160px] w-[160px]">
                           <div className="inline-flex items-center justify-center gap-2">

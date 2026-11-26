@@ -12,6 +12,7 @@ import {
   Calendar,
   UserCheck,
   ArrowUpRight,
+  Trash2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -23,6 +24,7 @@ export default function NotificationsPage() {
   const { currentUser } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentUser && currentUser.role !== 'ADMIN') {
@@ -36,18 +38,23 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     fetchNotifications();
-  }, []);
+  }, [currentUser?.id, currentUser?.role]);
 
   const fetchNotifications = async () => {
+    setError(null);
     try {
-      const res = await fetch('/api/notifications');
+      const params = new URLSearchParams();
+      if (currentUser?.role) params.set('role', currentUser.role);
+      if (currentUser?.id) params.set('userId', currentUser.id);
+      const res = await fetch(`/api/notifications?${params.toString()}`);
       const json = await res.json();
-      if (json.success) {
-        setNotifications(json.data);
-        window.dispatchEvent(new Event('notifications-updated'));
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to load notifications');
       }
-    } catch (e) {
-      console.error(e);
+      setNotifications(json.data || []);
+      window.dispatchEvent(new Event('notifications-updated'));
+    } catch (e: any) {
+      setError(e.message || 'Unable to load notifications');
     } finally {
       setLoading(false);
     }
@@ -57,7 +64,11 @@ export default function NotificationsPage() {
     await fetch('/api/notifications', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ markAllRead: true }),
+      body: JSON.stringify({
+        markAllRead: true,
+        role: currentUser?.role,
+        userId: currentUser?.id,
+      }),
     });
     fetchNotifications();
   };
@@ -69,6 +80,29 @@ export default function NotificationsPage() {
       body: JSON.stringify({ notificationId: id }),
     });
     fetchNotifications();
+  };
+
+  const handleDeleteNotification = async (id: string) => {
+    setError(null);
+    try {
+      const res = await fetch('/api/notifications', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          notificationId: id,
+          role: currentUser?.role,
+          userId: currentUser?.id,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to delete notification');
+      }
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      window.dispatchEvent(new Event('notifications-updated'));
+    } catch (e: any) {
+      setError(e.message || 'Unable to delete notification');
+    }
   };
 
   const handleOpenNotification = async (n: Notification) => {
@@ -117,12 +151,25 @@ export default function NotificationsPage() {
         </button>
       </div>
 
+      {error && (
+        <div className="p-3.5 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-semibold rounded-xl flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
       <div className="space-y-3">
         {loading ? (
           <div className="p-8 text-center text-xs text-[#7d6553]">Loading notifications...</div>
         ) : notifications.length === 0 ? (
-          <div className="p-8 bg-white rounded-xl border border-[#e5dac8] text-center text-xs text-[#7d6553]">
-            No notifications in history.
+          <div className="p-10 bg-white rounded-xl border border-[#e5dac8] text-center space-y-2">
+            <div className="w-11 h-11 rounded-full bg-[#fbf7f0] border border-[#ebdcc9] flex items-center justify-center mx-auto">
+              <Bell className="w-5 h-5 text-[#8f6541]" />
+            </div>
+            <h2 className="text-sm font-bold text-[#24160c]">No Notifications Yet</h2>
+            <p className="text-xs text-[#7d6553] max-w-sm mx-auto">
+              You&apos;re all caught up! New notifications will appear here when an activity occurs.
+            </p>
           </div>
         ) : (
           notifications.map((n) => {
@@ -252,6 +299,18 @@ export default function NotificationsPage() {
                       Mark Read
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteNotification(n.id);
+                    }}
+                    title="Delete notification"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-md transition cursor-pointer"
+                  >
+                    <Trash2 className="w-3 h-3 text-rose-700" />
+                    <span>Delete</span>
+                  </button>
                 </div>
               </div>
             );

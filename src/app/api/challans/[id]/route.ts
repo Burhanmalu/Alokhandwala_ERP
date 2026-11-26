@@ -47,7 +47,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await req.json();
     const actorId = body.actorId || 'usr-admin-01';
-    const actorName = body.actorName || 'Burhan Malu (Admin)';
+    const actorName = body.actorName || 'Ali/Abdeali(Admin)';
 
     if (body.action === 'ADD_RETURN') {
       const validated = challanAddReturnSchema.parse(body);
@@ -117,7 +117,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     let actorId = 'usr-admin-01';
-    let actorName = 'Burhan Malu (Admin)';
+    let actorName = 'Ali/Abdeali(Admin)';
     try {
       const body = await req.json();
       if (body?.actorId) actorId = body.actorId;

@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
         followUpDate: validated.followUpDate,
         followUpNotes: validated.followUpNotes,
         actorId: body.actorId || 'usr-admin-01',
-        actorName: body.actorName || 'Burhan Malu (Admin)',
+        actorName: body.actorName || 'Ali/Abdeali(Admin)',
       });
       return NextResponse.json({ success: true, data: project }, { status: 201 });
     }

@@ -264,6 +264,7 @@ export async function PATCH(
         if (!proj) throw new Error('Project not found');
 
         const oldStatus = proj.status;
+        const prevPaymentReceived = Number(proj.paymentReceived ?? proj.advancePaidAmount ?? 0);
         if (body.customerId) proj.customerId = body.customerId;
         if (body.customerName) proj.customerName = body.customerName.trim();
         if (body.customerPhone !== undefined) proj.customerPhone = body.customerPhone ? body.customerPhone.trim() : undefined;
@@ -425,6 +426,27 @@ export async function PATCH(
         }
 
         proj.updatedAt = new Date().toISOString();
+        const paymentDelta = Math.round((paymentReceived - prevPaymentReceived) * 100) / 100;
+        if (paymentDelta > 0) {
+          if (!state.notifications) state.notifications = [];
+          state.notifications.unshift({
+            id: `notif-pay-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            roleTarget: 'ADMIN',
+            title: balanceAmount === 0 ? 'Project Fully Paid' : 'Payment Received',
+            message:
+              balanceAmount === 0
+                ? `Final payment of ₹${paymentDelta.toLocaleString('en-IN')} received for Project ${proj.projectCode} – ${proj.customerName}. Balance is now ₹0.`
+                : `Payment of ₹${paymentDelta.toLocaleString('en-IN')} received for Project ${proj.projectCode} – ${proj.customerName}. Remaining balance: ₹${balanceAmount.toLocaleString('en-IN')}.`,
+            type: 'SUCCESS',
+            entityType: 'PROJECT',
+            entityId: proj.id,
+            projectCode: proj.projectCode,
+            customerName: proj.customerName,
+            siteAddress: proj.siteAddress || proj.siteName,
+            isRead: false,
+            createdAt: proj.updatedAt,
+          });
+        }
         ReminderService.syncProjectReminderInState(state, proj);
         ReminderService.syncProjectRentalExpiryInState(state, proj);
 

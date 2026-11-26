@@ -48,7 +48,7 @@ export const initialUsers: UserProfile[] = [
   {
     id: 'usr-admin-01',
     email: 'admin@alokhandwala.com',
-    fullName: 'Burhan Malu (Admin)',
+    fullName: 'Ali/Abdeali(Admin)',
     phone: '+91 98200 11111',
     role: 'ADMIN',
     password: 'demo2026',

@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       notes: validated.notes,
       clientRequestId: validated.clientRequestId,
       actorId: body.actorId || 'usr-admin-01',
-      actorName: body.actorName || 'Burhan Malu (Admin)',
+      actorName: body.actorName || 'Ali/Abdeali(Admin)',
     });
 
     return NextResponse.json({ success: true, data: created }, { status: 201 });

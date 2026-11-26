@@ -1,8 +1,8 @@
 {
   "companySettings": {
     "companyName": "Alokhandwala",
-    "gstin": "23AABCA1234F1Z5",
-    "pan": "",
+    "gstin": "23AMCPL6892M1ZK",
+    "pan": "ACHFA3492P",
     "address": "4th Floor, Office No. 401 Sapphire Square Tower, Square Indore, Madhya Pradesh (MP), India",
     "state": "Madhya Pradesh",
     "stateCode": "23",
@@ -97,7 +97,7 @@
     {
       "id": "usr-admin-01",
       "email": "admin@alokhandwala.com",
-      "fullName": "Burhan Malu (Admin)",
+      "fullName": "Ali/Abdeali(Admin)",
       "phone": "+91 98200 11111",
       "role": "ADMIN",
       "password": "demo2026",
@@ -1539,30 +1539,7 @@
       "createdAt": "2026-11-26T12:06:47.641Z"
     }
   ],
-  "notifications": [
-    {
-      "id": "notif-1795693747356",
-      "roleTarget": "ADMIN",
-      "title": "Rental Extension Approved: AW-SCF-000001",
-      "message": "Project extended by 2 Months until 2027-03-18.",
-      "type": "INFO",
-      "entityType": "RENTAL",
-      "entityId": "proj-1795681382600",
-      "isRead": true,
-      "createdAt": "2026-11-26T11:49:07.336Z"
-    },
-    {
-      "id": "notif-1795691075639",
-      "roleTarget": "SUPERVISOR",
-      "title": "Buffer Period Active: AW-SCF-000001",
-      "message": "5 buffer day(s) (PAID) applied. Updated removal deadline: 2027-01-18.",
-      "type": "WARNING",
-      "entityType": "RENTAL",
-      "entityId": "proj-1795681382600",
-      "isRead": true,
-      "createdAt": "2026-11-26T11:04:35.638Z"
-    }
-  ],
+  "notifications": [],
   "auditLogs": [
     {
       "id": "aud-1795698601488",
