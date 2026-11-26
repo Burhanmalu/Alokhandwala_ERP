@@ -108,111 +108,102 @@ class ERPDataStore {
   private state: DatabaseState;
   private lockPromise: Promise<void> = Promise.resolve();
   private lastMtime: number = 0;
+  private syncInFlight: Promise<void> | null = null;
 
-  public syncFromDisk(): void {
-    try {
-      const dataFile = getDataFilePath();
-      if (fs.existsSync(dataFile)) {
-        const stat = fs.statSync(dataFile);
-        if (stat.mtimeMs !== this.lastMtime) {
-          this.state = this.loadState();
-          this.lastMtime = stat.mtimeMs;
-        }
-      }
-    } catch {
-      // ignore
-    }
-  }
-
-  constructor() {
-    this.state = this.loadState();
-  }
-
-  private loadState(): DatabaseState {
-    try {
-      const dataFile = getDataFilePath();
-      if (fs.existsSync(dataFile)) {
-        const raw = fs.readFileSync(dataFile, 'utf-8');
-        const parsed = JSON.parse(raw);
-        // Ensure new materials & categories from seed data are seamlessly synced
-        if (parsed.materials) {
-          const existingIds = new Set(parsed.materials.map((m: any) => m.id));
-          for (const seedMat of initialMaterials) {
-            if (!existingIds.has(seedMat.id)) {
-              parsed.materials.push(JSON.parse(JSON.stringify(seedMat)));
-            }
-          }
-        }
-        if (parsed.categories) {
-          const existingCatIds = new Set(parsed.categories.map((c: any) => c.id));
-          for (const seedCat of initialCategories) {
-            if (!existingCatIds.has(seedCat.id)) {
-              parsed.categories.push(JSON.parse(JSON.stringify(seedCat)));
-            }
-          }
-        }
-        // Ensure users are strictly mapped to the 3 roles: ADMIN, SUPERVISOR, WORKER
-        if (parsed.users) {
-          parsed.users = parsed.users.map((u: any) => {
-            if (u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role === 'ADMIN_PM' || u.role === 'INVENTORY_MGR') {
-              return { ...u, role: 'ADMIN' };
-            }
-            if (u.role === 'SUPERVISOR') {
-              return { ...u, role: 'SUPERVISOR' };
-            }
-            if (u.role === 'ACCOUNTANT') {
-              return { ...u, role: 'ACCOUNTANT' };
-            }
-            if (u.role === 'CLIENT') {
-              return { ...u, role: 'CLIENT' };
-            }
-            return { ...u, role: 'WORKER' };
-          });
-          const existingUserIds = new Set(parsed.users.map((u: any) => u.id));
-          for (const seedUser of initialUsers) {
-            if (!existingUserIds.has(seedUser.id)) {
-              parsed.users.push(JSON.parse(JSON.stringify(seedUser)));
-            }
-          }
-        } else {
-          parsed.users = JSON.parse(JSON.stringify(initialUsers));
-        }
-
-        if (!parsed.companySettings) {
-          parsed.companySettings = JSON.parse(JSON.stringify(initialCompanySettings));
-        } else if (!parsed.companySettings.termsAndConditions) {
-          parsed.companySettings.termsAndConditions = JSON.parse(JSON.stringify(initialCompanySettings.termsAndConditions));
-        }
-
-        if (!parsed.quotations) {
-          parsed.quotations = [];
-        }
-        if (!parsed.chartOfAccounts || parsed.chartOfAccounts.length === 0) {
-          parsed.chartOfAccounts = JSON.parse(JSON.stringify(initialChartOfAccounts));
-        }
-        if (!parsed.accountingPeriods || parsed.accountingPeriods.length === 0) {
-          parsed.accountingPeriods = JSON.parse(JSON.stringify(initialAccountingPeriods));
-        }
-        if (!parsed.costCenters || parsed.costCenters.length === 0) {
-          parsed.costCenters = JSON.parse(JSON.stringify(initialCostCenters));
-        }
-        if (!parsed.departments || parsed.departments.length === 0) {
-          parsed.departments = JSON.parse(JSON.stringify(initialDepartments));
-        }
-        if (!parsed.journalEntries) parsed.journalEntries = [];
-        if (!parsed.vendorBills) parsed.vendorBills = [];
-        if (!parsed.employees) parsed.employees = [];
-        if (!parsed.attendanceRecords) parsed.attendanceRecords = [];
-        if (!parsed.leaveRequests) parsed.leaveRequests = [];
-        if (!parsed.paySlips) parsed.paySlips = [];
-        if (!parsed.challans) parsed.challans = [];
-
-        return parsed;
-      }
-    } catch (e) {
-      console.warn('Failed to load persistent file, falling back to seed state:', e);
+  private normalizeState(parsed: any): DatabaseState {
+    if (!parsed || typeof parsed !== 'object') {
+      return this.createSeedState();
     }
 
+    if (Array.isArray(parsed.materials)) {
+      const existingIds = new Set(parsed.materials.map((m: any) => m.id));
+      for (const seedMat of initialMaterials) {
+        if (!existingIds.has(seedMat.id)) {
+          parsed.materials.push(JSON.parse(JSON.stringify(seedMat)));
+        }
+      }
+    } else {
+      parsed.materials = JSON.parse(JSON.stringify(initialMaterials));
+    }
+
+    if (Array.isArray(parsed.categories)) {
+      const existingCatIds = new Set(parsed.categories.map((c: any) => c.id));
+      for (const seedCat of initialCategories) {
+        if (!existingCatIds.has(seedCat.id)) {
+          parsed.categories.push(JSON.parse(JSON.stringify(seedCat)));
+        }
+      }
+    } else {
+      parsed.categories = JSON.parse(JSON.stringify(initialCategories));
+    }
+
+    if (Array.isArray(parsed.users)) {
+      parsed.users = parsed.users.map((u: any) => {
+        if (u.role === 'ADMIN' || u.role === 'SUPER_ADMIN' || u.role === 'ADMIN_PM' || u.role === 'INVENTORY_MGR') {
+          return { ...u, role: 'ADMIN' };
+        }
+        if (u.role === 'SUPERVISOR') return { ...u, role: 'SUPERVISOR' };
+        if (u.role === 'ACCOUNTANT') return { ...u, role: 'ACCOUNTANT' };
+        if (u.role === 'CLIENT') return { ...u, role: 'CLIENT' };
+        return { ...u, role: 'WORKER' };
+      });
+      const existingUserIds = new Set(parsed.users.map((u: any) => u.id));
+      for (const seedUser of initialUsers) {
+        if (!existingUserIds.has(seedUser.id)) {
+          parsed.users.push(JSON.parse(JSON.stringify(seedUser)));
+        }
+      }
+    } else {
+      parsed.users = JSON.parse(JSON.stringify(initialUsers));
+    }
+
+    if (!parsed.companySettings) {
+      parsed.companySettings = JSON.parse(JSON.stringify(initialCompanySettings));
+    } else if (!parsed.companySettings.termsAndConditions) {
+      parsed.companySettings.termsAndConditions = JSON.parse(JSON.stringify(initialCompanySettings.termsAndConditions));
+    }
+
+    if (!parsed.warehouses) parsed.warehouses = JSON.parse(JSON.stringify(initialWarehouses));
+    if (!parsed.customers) parsed.customers = JSON.parse(JSON.stringify(initialCustomers));
+    if (!parsed.sites) parsed.sites = JSON.parse(JSON.stringify(initialSites));
+    if (!parsed.projects) parsed.projects = [];
+    if (!parsed.invoices) parsed.invoices = [];
+    if (!parsed.payments) parsed.payments = [];
+    if (!parsed.transactions) parsed.transactions = [];
+    if (!parsed.bufferRequests) parsed.bufferRequests = [];
+    if (!parsed.rentalExtensions) parsed.rentalExtensions = [];
+    if (!parsed.shiftingRequests) parsed.shiftingRequests = [];
+    if (!parsed.removalRequests) parsed.removalRequests = [];
+    if (!parsed.notifications) parsed.notifications = [];
+    if (!parsed.installationReminders) parsed.installationReminders = [];
+    if (!parsed.rentalExpiryReminders) parsed.rentalExpiryReminders = [];
+    if (!parsed.auditLogs) parsed.auditLogs = [];
+    if (!parsed.activityEvents) parsed.activityEvents = [];
+    if (!parsed.quotations) parsed.quotations = [];
+    if (!parsed.chartOfAccounts || parsed.chartOfAccounts.length === 0) {
+      parsed.chartOfAccounts = JSON.parse(JSON.stringify(initialChartOfAccounts));
+    }
+    if (!parsed.accountingPeriods || parsed.accountingPeriods.length === 0) {
+      parsed.accountingPeriods = JSON.parse(JSON.stringify(initialAccountingPeriods));
+    }
+    if (!parsed.costCenters || parsed.costCenters.length === 0) {
+      parsed.costCenters = JSON.parse(JSON.stringify(initialCostCenters));
+    }
+    if (!parsed.departments || parsed.departments.length === 0) {
+      parsed.departments = JSON.parse(JSON.stringify(initialDepartments));
+    }
+    if (!parsed.journalEntries) parsed.journalEntries = [];
+    if (!parsed.vendorBills) parsed.vendorBills = [];
+    if (!parsed.employees) parsed.employees = [];
+    if (!parsed.attendanceRecords) parsed.attendanceRecords = [];
+    if (!parsed.leaveRequests) parsed.leaveRequests = [];
+    if (!parsed.paySlips) parsed.paySlips = [];
+    if (!parsed.challans) parsed.challans = [];
+
+    return parsed as DatabaseState;
+  }
+
+  private createSeedState(): DatabaseState {
     return {
       companySettings: JSON.parse(JSON.stringify(initialCompanySettings)),
       users: JSON.parse(JSON.stringify(initialUsers)),
@@ -249,7 +240,99 @@ class ERPDataStore {
     };
   }
 
-  private saveState() {
+  public syncFromDisk(): void {
+    try {
+      const dataFile = getDataFilePath();
+      if (fs.existsSync(dataFile)) {
+        const stat = fs.statSync(dataFile);
+        if (stat.mtimeMs !== this.lastMtime) {
+          this.state = this.loadState();
+          this.lastMtime = stat.mtimeMs;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  /**
+   * Synchronize in-memory state from Neon PostgreSQL before serving any read API request.
+   * Ensures every Vercel serverless instance always returns consistent, persisted database records.
+   */
+  public async ensureSynced(): Promise<void> {
+    const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.IS_TEST);
+    if (isTest) {
+      this.syncFromDisk();
+      return;
+    }
+
+    if (this.syncInFlight) {
+      return this.syncInFlight;
+    }
+
+    this.syncInFlight = (async () => {
+      try {
+        const { isPostgresEnabled, getDbPool, ensureErpStateTable } = await import('./postgres');
+        if (!isPostgresEnabled()) {
+          this.syncFromDisk();
+          return;
+        }
+
+        await ensureErpStateTable();
+        const pool = getDbPool();
+        const res = await pool.query(
+          "SELECT payload FROM erp_state_sync WHERE key = 'latest_state' LIMIT 1"
+        );
+
+        if (res.rows.length > 0 && res.rows[0].payload) {
+          this.state = this.normalizeState(res.rows[0].payload);
+        } else {
+          // Initialize empty Neon row once from local seed/disk state
+          const initial = this.loadState();
+          await pool.query(
+            `INSERT INTO erp_state_sync (key, payload, updated_at)
+             VALUES ('latest_state', $1::jsonb, NOW())
+             ON CONFLICT (key) DO NOTHING`,
+            [JSON.stringify(initial)]
+          );
+          const seeded = await pool.query(
+            "SELECT payload FROM erp_state_sync WHERE key = 'latest_state' LIMIT 1"
+          );
+          this.state = seeded.rows[0]?.payload
+            ? this.normalizeState(seeded.rows[0].payload)
+            : initial;
+        }
+      } catch (err: any) {
+        console.error('[ERPDataStore] Failed to sync from Neon PostgreSQL:', err?.message || err);
+        throw new Error('Database connection error while loading ERP records. Please retry.');
+      } finally {
+        this.syncInFlight = null;
+      }
+    })();
+
+    return this.syncInFlight;
+  }
+
+  constructor() {
+    this.state = this.loadState();
+  }
+
+  private loadState(): DatabaseState {
+    try {
+      const dataFile = getDataFilePath();
+      if (fs.existsSync(dataFile)) {
+        const raw = fs.readFileSync(dataFile, 'utf-8');
+        const parsed = JSON.parse(raw);
+        return this.normalizeState(parsed);
+      }
+    } catch (e) {
+      console.warn('Failed to load persistent file, falling back to seed state:', e);
+    }
+
+    return this.createSeedState();
+  }
+
+  private saveStateToDiskBestEffort() {
     try {
       if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -261,27 +344,14 @@ class ERPDataStore {
           this.lastMtime = fs.statSync(dataFile).mtimeMs;
         }
       } catch {}
-
-      // Asynchronous replication to Neon PostgreSQL
-      const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.IS_TEST);
-      if (process.env.DATABASE_URL && !isTest) {
-        import('./postgres').then(({ getDbPool }) => {
-          getDbPool().query(`
-            INSERT INTO erp_state_sync (key, payload, updated_at)
-            VALUES ('latest_state', $1, NOW())
-            ON CONFLICT (key) DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW();
-          `, [JSON.stringify(this.state)]).catch((err) => {
-            console.warn('[Neon Sync] Background sync warning:', err?.message || err);
-          });
-        }).catch(() => {});
-      }
-    } catch (e) {
-      console.error('Error persisting state to disk:', e);
+    } catch {
+      // Vercel serverless filesystem is read-only; Neon PostgreSQL is the primary persistence store
     }
   }
 
   /**
-   * Concurrency mutex lock: serializes critical transactional operations
+   * Concurrency mutex lock + PostgreSQL FOR UPDATE row lock:
+   * Serializes transactional writes across both local and Vercel serverless instances.
    */
   public async transaction<T>(fn: (state: DatabaseState) => Promise<T> | T): Promise<T> {
     let releaseLock: () => void;
@@ -296,12 +366,60 @@ class ERPDataStore {
     })();
 
     await previousLock;
-    this.syncFromDisk();
 
     try {
-      const result = await fn(this.state);
-      this.saveState();
-      return result;
+      const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.IS_TEST);
+      if (isTest) {
+        this.syncFromDisk();
+        const result = await fn(this.state);
+        this.saveStateToDiskBestEffort();
+        return result;
+      }
+
+      const { isPostgresEnabled, getDbPool, ensureErpStateTable } = await import('./postgres');
+      if (!isPostgresEnabled()) {
+        this.syncFromDisk();
+        const result = await fn(this.state);
+        this.saveStateToDiskBestEffort();
+        return result;
+      }
+
+      await ensureErpStateTable();
+      const pool = getDbPool();
+      const client = await pool.connect();
+
+      try {
+        await client.query('BEGIN');
+        await client.query(
+          `INSERT INTO erp_state_sync (key, payload, updated_at)
+           VALUES ('latest_state', $1::jsonb, NOW())
+           ON CONFLICT (key) DO NOTHING`,
+          [JSON.stringify(this.state)]
+        );
+        const locked = await client.query(
+          "SELECT payload FROM erp_state_sync WHERE key = 'latest_state' FOR UPDATE"
+        );
+        if (locked.rows[0]?.payload) {
+          this.state = this.normalizeState(locked.rows[0].payload);
+        }
+
+        const result = await fn(this.state);
+
+        await client.query(
+          `INSERT INTO erp_state_sync (key, payload, updated_at)
+           VALUES ('latest_state', $1::jsonb, NOW())
+           ON CONFLICT (key) DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW()`,
+          [JSON.stringify(this.state)]
+        );
+        await client.query('COMMIT');
+        this.saveStateToDiskBestEffort();
+        return result;
+      } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw err;
+      } finally {
+        client.release();
+      }
     } finally {
       releaseLock!();
     }
@@ -397,7 +515,7 @@ class ERPDataStore {
       paySlips: [],
       challans: [],
     };
-    this.saveState();
+    this.saveStateToDiskBestEffort();
   }
 }
 

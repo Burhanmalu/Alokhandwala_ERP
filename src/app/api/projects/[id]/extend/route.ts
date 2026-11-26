@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { RentalService } from '@/lib/services/rental-service';
 import { extensionRequestSchema } from '@/lib/validations';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

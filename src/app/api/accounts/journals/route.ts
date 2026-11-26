@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 import { AccountingService } from '@/lib/services/accounting-service';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
+    await dbStore.ensureSynced();
     const { searchParams } = new URL(req.url);
     const kind = searchParams.get('kind');
     const status = searchParams.get('status');

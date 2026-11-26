@@ -1,8 +1,12 @@
+import { dbStore } from '@/lib/db/store';
 import { NextRequest, NextResponse } from 'next/server';
 import { LocationService } from '@/lib/services/location-service';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
+    await dbStore.ensureSynced();
     const { searchParams } = new URL(req.url);
     const latStr = searchParams.get('lat');
     const lngStr = searchParams.get('lng');

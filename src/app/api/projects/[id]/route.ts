@@ -11,11 +11,14 @@ import {
   verifyProjectChallanReconciliation,
 } from '@/lib/formatters';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbStore.ensureSynced();
     const { id } = await params;
     const project = dbStore.getProjects().find(p => p.id === id || p.projectCode === id);
 

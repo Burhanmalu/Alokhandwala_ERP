@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ProjectService } from '@/lib/services/project-service';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

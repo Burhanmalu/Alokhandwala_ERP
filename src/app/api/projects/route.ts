@@ -4,8 +4,11 @@ import { ProjectService } from '@/lib/services/project-service';
 import { siteInspectionSchema, addProjectSchema } from '@/lib/validations';
 import { isEligibleActiveProjectStatus } from '@/lib/formatters';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
+    await dbStore.ensureSynced();
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
     const customerId = searchParams.get('customerId');

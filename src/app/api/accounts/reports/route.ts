@@ -1,8 +1,12 @@
+import { dbStore } from '@/lib/db/store';
 import { NextResponse } from 'next/server';
 import { AccountingService } from '@/lib/services/accounting-service';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
+    await dbStore.ensureSynced();
     const reports = AccountingService.getFinancialStatements();
     return NextResponse.json({ success: true, data: reports });
   } catch (error: unknown) {

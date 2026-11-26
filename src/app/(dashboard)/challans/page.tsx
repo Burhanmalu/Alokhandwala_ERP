@@ -29,6 +29,7 @@ export default function ChallanDirectoryPage() {
 
   const [challans, setChallans] = useState<Challan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Filters
@@ -45,14 +46,16 @@ export default function ChallanDirectoryPage() {
 
   const fetchChallans = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
-      const res = await fetch('/api/challans');
+      const res = await fetch('/api/challans', { cache: 'no-store' });
       const json = await res.json();
-      if (json.success) {
-        setChallans(json.data || []);
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to load challans.');
       }
-    } catch (err) {
-      console.error('Failed to fetch challans:', err);
+      setChallans(json.data || []);
+    } catch (err: any) {
+      setLoadError(err?.message || 'Unable to load challans from database. Please retry.');
     } finally {
       setLoading(false);
     }

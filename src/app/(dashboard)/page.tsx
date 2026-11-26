@@ -43,9 +43,27 @@ export default function DashboardOverviewPage() {
   const { currentUser, can } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeFinancialCard, setActiveFinancialCard] = useState<'TOTAL_AMOUNT' | 'TOTAL_RECEIVED' | 'TOTAL_OVERDUE' | null>(null);
   const [financialSearch, setFinancialSearch] = useState('');
   const [financialPage, setFinancialPage] = useState(1);
+
+  const loadDashboard = async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const res = await fetch('/api/dashboard', { cache: 'no-store' });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to load dashboard data.');
+      }
+      setData(json.data);
+    } catch (err: any) {
+      setLoadError(err?.message || 'Unable to connect to database. Please retry.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (currentUser?.role === 'WORKER') {
@@ -61,12 +79,7 @@ export default function DashboardOverviewPage() {
       return;
     }
 
-    fetch('/api/dashboard')
-      .then(res => res.json())
-      .then(json => {
-        if (json.success) setData(json.data);
-      })
-      .finally(() => setLoading(false));
+    loadDashboard();
   }, [currentUser, router]);
 
   if (loading) {
@@ -116,6 +129,21 @@ export default function DashboardOverviewPage() {
 
   return (
     <div className="space-y-4">
+      {loadError && (
+        <div className="p-3.5 bg-rose-50 border border-rose-300 rounded-xl text-xs text-rose-900 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 font-semibold">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{loadError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={loadDashboard}
+            className="px-3 py-1.5 bg-white border border-rose-300 rounded-md text-xs font-bold text-rose-800 hover:bg-rose-100 cursor-pointer shrink-0"
+          >
+            Retry
+          </button>
+        </div>
+      )}
       {/* Row 1: Compact Primary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Active Rentals */}

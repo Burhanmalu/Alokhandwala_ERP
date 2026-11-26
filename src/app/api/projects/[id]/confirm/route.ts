@@ -3,11 +3,14 @@ import { InventoryService } from '@/lib/services/inventory-service';
 import { projectConfirmationSchema } from '@/lib/validations';
 import { dbStore } from '@/lib/db/store';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbStore.ensureSynced();
     const { id } = await params;
     const body = await req.json();
 

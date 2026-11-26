@@ -2,8 +2,11 @@ import { NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 import { CompanySettings } from '@/lib/schema';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
+    await dbStore.ensureSynced();
     const settings = dbStore.getCompanySettings();
     return NextResponse.json({ success: true, data: settings });
   } catch (error: any) {

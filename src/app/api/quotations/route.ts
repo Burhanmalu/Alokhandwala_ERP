@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 import { QuotationService } from '@/lib/services/quotation-service';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
+    await dbStore.ensureSynced();
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId');
     const customerId = searchParams.get('customerId');

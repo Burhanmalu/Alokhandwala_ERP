@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 import { Customer } from '@/lib/schema';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbStore.ensureSynced();
     const { id } = await params;
     const customer = dbStore.getCustomers().find(c => c.id === id);
     if (!customer) {

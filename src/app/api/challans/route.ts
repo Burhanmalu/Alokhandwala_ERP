@@ -3,8 +3,11 @@ import { dbStore } from '@/lib/db/store';
 import { ChallanService } from '@/lib/services/challan-service';
 import { challanUpsertSchema } from '@/lib/validations';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
+    await dbStore.ensureSynced();
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search')?.toLowerCase().trim();
     const customerId = searchParams.get('customerId');

@@ -134,6 +134,7 @@ function ProjectsListContent() {
   const { can, currentUser } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState(initialStatus);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [customerFilter, setCustomerFilter] = useState('ALL');
@@ -382,12 +383,16 @@ function ProjectsListContent() {
 
   const fetchProjects = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
-      const res = await fetch('/api/projects');
+      const res = await fetch('/api/projects', { cache: 'no-store' });
       const json = await res.json();
-      if (json.success) setProjects(json.data);
-    } catch (e) {
-      console.error(e);
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to load projects.');
+      }
+      setProjects(json.data || []);
+    } catch (e: any) {
+      setLoadError(e?.message || 'Unable to load projects from database. Please retry.');
     } finally {
       setLoading(false);
     }
@@ -1152,6 +1157,22 @@ function ProjectsListContent() {
           </div>
         </div>
       </div>
+
+      {loadError && (
+        <div className="p-3.5 bg-rose-50 border border-rose-300 rounded-xl text-xs text-rose-900 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 font-semibold">
+            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{loadError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={fetchProjects}
+            className="px-3 py-1.5 bg-white border border-rose-300 rounded-md text-xs font-bold text-rose-800 hover:bg-rose-100 cursor-pointer shrink-0"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Projects Directory Container */}
       <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs overflow-hidden">

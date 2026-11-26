@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 import { buildQuotationPdfDoc, ProjectWithRelations } from '@/lib/pdf/project-pdf';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbStore.ensureSynced();
     const { id } = await params;
     const quotation = dbStore.getQuotationById(id) || dbStore.getQuotationByProjectId(id);
 

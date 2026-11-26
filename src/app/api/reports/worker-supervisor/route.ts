@@ -1,8 +1,12 @@
+import { dbStore } from '@/lib/db/store';
 import { NextRequest, NextResponse } from 'next/server';
 import { WorkerReportService } from '@/lib/services/worker-report-service';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
+    await dbStore.ensureSynced();
     const { searchParams } = new URL(req.url);
     const year = searchParams.get('year') || undefined;
     const month = searchParams.get('month') || undefined;

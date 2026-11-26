@@ -3,8 +3,11 @@ import { dbStore } from '@/lib/db/store';
 import { BillingService } from '@/lib/services/billing-service';
 import { invoiceGenerationSchema } from '@/lib/validations';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
+    await dbStore.ensureSynced();
     const { searchParams } = new URL(req.url);
     const customerId = searchParams.get('customerId');
     const projectId = searchParams.get('projectId');

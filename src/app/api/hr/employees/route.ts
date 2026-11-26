@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 import { HRService } from '@/lib/services/hr-service';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
+    await dbStore.ensureSynced();
     const { searchParams } = new URL(req.url);
     const departmentId = searchParams.get('departmentId');
     const status = searchParams.get('status');

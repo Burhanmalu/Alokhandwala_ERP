@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
+    await dbStore.ensureSynced();
     const materials = dbStore.getMaterials().map(m => {
       const available = Math.max(0, m.usableWarehouseQty - m.reservedQty);
       return {

@@ -3,6 +3,8 @@ import { dbStore } from '@/lib/db/store';
 import { ReminderService } from '@/lib/services/reminder-service';
 import { Notification } from '@/lib/schema';
 
+export const dynamic = 'force-dynamic';
+
 function filterNotificationsForViewer(
   notifications: Notification[],
   role?: string | null,
@@ -21,6 +23,7 @@ function filterNotificationsForViewer(
 
 export async function GET(req: NextRequest) {
   try {
+    await dbStore.ensureSynced();
     await ReminderService.processDueInstallationReminders();
     await ReminderService.processDueRentalExpiryReminders();
 

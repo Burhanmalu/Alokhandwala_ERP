@@ -4,8 +4,11 @@ import { customerSchema } from '@/lib/validations';
 import { Customer } from '@/lib/schema';
 import { computeCustomerStatsFromProjects, isEligibleActiveProjectStatus } from '@/lib/formatters';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
+    await dbStore.ensureSynced();
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search')?.toLowerCase();
     const eligibleForChallan = searchParams.get('eligibleForChallan') === 'true';

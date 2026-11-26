@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 import { getEffectiveRemovalDate, getRemainingDaysInfo, isEligibleActiveProjectStatus } from '@/lib/formatters';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
+    await dbStore.ensureSynced();
     const projects = dbStore.getProjects();
     const customers = dbStore.getCustomers();
     const materials = dbStore.getMaterials();
