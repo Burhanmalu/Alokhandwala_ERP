@@ -18,10 +18,14 @@ import {
   Loader2,
   Save,
   PlusCircle,
+  Camera,
+  ImageIcon,
+  RefreshCw,
 } from 'lucide-react';
-import { Challan, Customer, Material, Project, Site } from '@/lib/schema';
+import { Challan, ChallanImage, Customer, Material, Project, Site } from '@/lib/schema';
 import { extractProjectDimensions, formatDate, isEligibleActiveProjectStatus, toDateOnlyString } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
+import { processAndUploadImage } from '@/lib/image-utils';
 
 interface FormMaterialRow {
   rowId: string;
@@ -111,6 +115,12 @@ export function ChallanForm({
   );
 
   const [lossApproved, setLossApproved] = useState<boolean>(Boolean(editingChallan?.lossApproved));
+  const [challanImages, setChallanImages] = useState<ChallanImage[]>(editingChallan?.images || []);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [failedImageFiles, setFailedImageFiles] = useState<{ file: File; source: 'CAMERA' | 'GALLERY' }[]>([]);
+  const cameraInputRef = React.useRef<HTMLInputElement>(null);
+  const galleryInputRef = React.useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
@@ -118,7 +128,7 @@ export function ChallanForm({
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/customers').then(r => r.json()),
+      fetch('/api/customers?eligibleForChallan=true').then(r => r.json()),
       fetch('/api/sites').then(r => r.json()),
       fetch('/api/projects?eligibleForChallan=true').then(r => r.json()),
       fetch('/api/inventory').then(r => r.json()),
@@ -132,9 +142,20 @@ export function ChallanForm({
       .finally(() => setLoadingRefs(false));
   }, []);
 
+  const eligibleCustomers = useMemo(() => {
+    const eligibleIds = new Set(
+      projects
+        .filter((p) => p.status !== 'CANCELLED' && isEligibleActiveProjectStatus(p.status))
+        .map((p) => p.customerId)
+    );
+    return customers.filter(
+      (c) => eligibleIds.has(c.id) || (isEdit && c.id === editingChallan?.customerId)
+    );
+  }, [customers, projects, isEdit, editingChallan?.customerId]);
+
   const selectedCustomer = useMemo(
-    () => customers.find(c => c.id === customerId) || null,
-    [customers, customerId]
+    () => eligibleCustomers.find(c => c.id === customerId) || customers.find(c => c.id === customerId) || null,
+    [eligibleCustomers, customers, customerId]
   );
 
   const customerSites = useMemo(
@@ -322,11 +343,14 @@ export function ChallanForm({
   };
 
   const addInputRow = () => {
-    const defaultMat = issuedMaterialsList[0]?.id || '';
-    setInputRows(prev => [
-      ...prev,
-      { rowId: `in-${Date.now()}-${Math.random()}`, date: getTodayDateString(), materialId: defaultMat, quantity: '1', remarks: '' },
-    ]);
+    setInputRows(prev => {
+      const used = new Set(prev.map(r => r.materialId).filter(Boolean));
+      const nextUnselected = issuedMaterialsList.find(m => !used.has(m.id))?.id || '';
+      return [
+        ...prev,
+        { rowId: `in-${Date.now()}-${Math.random()}`, date: getTodayDateString(), materialId: nextUnselected, quantity: '1', remarks: '' },
+      ];
+    });
   };
 
   const addLostRow = () => {
@@ -363,15 +387,21 @@ export function ChallanForm({
     if (validOutputs.length === 0) {
       return 'Please add at least one Output Material row with a valid material and quantity.';
     }
+    const seenOutputMats = new Set<string>();
     for (const r of outputRows) {
       if (!r.materialId) return 'Every Output Material row must have a selected material.';
+      if (seenOutputMats.has(r.materialId)) return 'Duplicate materials are not allowed in Output Material.';
+      seenOutputMats.add(r.materialId);
       if (!r.date) return 'Every Output Material row must have a valid date.';
       const qty = Number(r.quantity);
       if (!Number.isInteger(qty) || qty < 1) return 'Output quantities must be positive whole numbers.';
     }
 
+    const seenInputMats = new Set<string>();
     for (const r of inputRows) {
       if (!r.materialId) return 'Every Input (Return) row must have a selected material.';
+      if (seenInputMats.has(r.materialId)) return 'Duplicate materials are not allowed in Input Material.';
+      seenInputMats.add(r.materialId);
       if (!r.date) return 'Every Input (Return) row must have a valid date.';
       const qty = Number(r.quantity);
       if (!Number.isInteger(qty) || qty < 1) return 'Returned quantities must be positive whole numbers.';
@@ -398,6 +428,72 @@ export function ChallanForm({
     }
 
     return null;
+  };
+
+  const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
+  const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+  const uploadChallanFiles = async (files: { file: File; source: 'CAMERA' | 'GALLERY' }[]) => {
+    if (files.length === 0) return;
+    setUploadingImages(true);
+    setImageUploadError(null);
+    const failed: { file: File; source: 'CAMERA' | 'GALLERY' }[] = [];
+    const uploaded: ChallanImage[] = [];
+
+    for (const item of files) {
+      const { file, source } = item;
+      if (!ALLOWED_IMAGE_TYPES.has(file.type.toLowerCase())) {
+        setImageUploadError(`Unsupported format "${file.name}". Please use JPG, JPEG, PNG, or WEBP.`);
+        continue;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        setImageUploadError(`"${file.name}" exceeds the 10 MB limit.`);
+        continue;
+      }
+      const isDuplicate = challanImages.some((existing) => existing.fileName === file.name);
+      if (isDuplicate) {
+        continue;
+      }
+      try {
+        const storedUrl = await processAndUploadImage(file);
+        if (!storedUrl || storedUrl.startsWith('blob:')) {
+          throw new Error('Invalid storage URL returned.');
+        }
+        uploaded.push({
+          id: `chl-img-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          url: storedUrl,
+          fileName: file.name,
+          source,
+          uploadedAt: new Date().toISOString(),
+        });
+      } catch {
+        failed.push(item);
+      }
+    }
+
+    if (uploaded.length > 0) {
+      setChallanImages((prev) => [...prev, ...uploaded]);
+    }
+    if (failed.length > 0) {
+      setFailedImageFiles(failed);
+      setImageUploadError(`Failed to upload ${failed.length} image(s). Click Retry to try again.`);
+    } else {
+      setFailedImageFiles([]);
+    }
+    setUploadingImages(false);
+  };
+
+  const handleChallanFilesSelected = async (fileList: FileList | null, source: 'CAMERA' | 'GALLERY') => {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList).map((file) => ({ file, source }));
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
+    await uploadChallanFiles(files);
+  };
+
+  const retryFailedUploads = async () => {
+    if (failedImageFiles.length === 0) return;
+    await uploadChallanFiles(failedImageFiles);
   };
 
   const handleSubmit = async (addAnother: boolean) => {
@@ -442,6 +538,7 @@ export function ChallanForm({
         })),
         lossApproved: lostRows.length > 0 ? lossApproved : undefined,
         notes: notes.trim() || undefined,
+        images: challanImages,
         clientRequestId: isEdit ? undefined : clientRequestId,
         actorId: currentUser?.id || 'usr-admin-01',
         actorName: currentUser?.fullName || 'Admin',
@@ -570,7 +667,7 @@ export function ChallanForm({
                 className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] font-medium focus:bg-white focus:border-[#8f6541] focus:outline-none"
               >
                 <option value="">-- Select Customer --</option>
-                {customers.map(c => (
+                {eligibleCustomers.map(c => (
                   <option key={c.id} value={c.id}>
                     {c.companyName} ({c.customerCode})
                   </option>
@@ -674,14 +771,6 @@ export function ChallanForm({
             <div className="px-3 py-1 bg-[#fbf7f0] border border-[#ebdcc9] rounded font-mono font-bold text-[#24160c]">
               Total Output: {reconciliationPreview.totalOutput.toLocaleString('en-IN')}
             </div>
-            <button
-              type="button"
-              onClick={addOutputRow}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#24160c] hover:bg-[#382315] text-[#c79e7c] rounded-md font-bold transition cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Material</span>
-            </button>
           </div>
         </div>
 
@@ -728,17 +817,23 @@ export function ChallanForm({
                         className="w-full px-2.5 py-1.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded text-[#24160c] font-medium focus:bg-white focus:border-[#8f6541] focus:outline-none"
                       >
                         <option value="">-- Select Material --</option>
-                        {materials.map(m => {
-                          const avail = Math.max(
-                            0,
-                            m.usableWarehouseQty - m.reservedQty + (originalIssuedByMat.get(m.id) || 0)
-                          );
-                          return (
-                            <option key={m.id} value={m.id}>
-                              {m.name} ({m.itemCode}) — Avail: {avail} {m.unitOfMeasurement}
-                            </option>
-                          );
-                        })}
+                        {materials
+                          .filter(
+                            (m) =>
+                              m.id === row.materialId ||
+                              !outputRows.some((other, otherIdx) => otherIdx !== idx && other.materialId === m.id)
+                          )
+                          .map(m => {
+                            const avail = Math.max(
+                              0,
+                              m.usableWarehouseQty - m.reservedQty + (originalIssuedByMat.get(m.id) || 0)
+                            );
+                            return (
+                              <option key={m.id} value={m.id}>
+                                {m.name} ({m.itemCode}) — Avail: {avail} {m.unitOfMeasurement}
+                              </option>
+                            );
+                          })}
                       </select>
                     </td>
                     <td className="px-3 py-2.5">
@@ -790,6 +885,17 @@ export function ChallanForm({
             </tbody>
           </table>
         </div>
+
+        <div className="pt-1 flex justify-end">
+          <button
+            type="button"
+            onClick={addOutputRow}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#24160c] hover:bg-[#382315] text-[#c79e7c] rounded-md font-bold transition cursor-pointer shadow-2xs"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Material</span>
+          </button>
+        </div>
       </section>
 
       {/* SECTION C: INPUT MATERIAL (MATERIAL RETURNED FROM SITE) */}
@@ -810,15 +916,6 @@ export function ChallanForm({
             <div className="px-3 py-1 bg-emerald-50 border border-emerald-200 rounded font-mono font-bold text-emerald-900">
               Total Returned: {reconciliationPreview.totalReturned.toLocaleString('en-IN')}
             </div>
-            <button
-              type="button"
-              disabled={issuedMaterialsList.length === 0}
-              onClick={addInputRow}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#fbf7f0] hover:bg-[#ebdcc9] text-[#24160c] border border-[#d6c7b2] rounded-md font-bold transition disabled:opacity-40 cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5 text-[#8f6541]" />
-              <span>Add Material</span>
-            </button>
           </div>
         </div>
 
@@ -866,14 +963,20 @@ export function ChallanForm({
                           className="w-full px-2.5 py-1.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded text-[#24160c] font-medium focus:bg-white focus:border-[#8f6541] focus:outline-none"
                         >
                           <option value="">-- Select Issued Material --</option>
-                          {issuedMaterialsList.map(m => {
-                            const line = reconciliationPreview.lines.find(l => l.materialId === m.id);
-                            return (
-                              <option key={m.id} value={m.id}>
-                                {m.name} (Issued: {line?.issued || 0} {m.unitOfMeasurement})
-                              </option>
-                            );
-                          })}
+                          {issuedMaterialsList
+                            .filter(
+                              (m) =>
+                                m.id === row.materialId ||
+                                !inputRows.some((other, otherIdx) => otherIdx !== idx && other.materialId === m.id)
+                            )
+                            .map(m => {
+                              const line = reconciliationPreview.lines.find(l => l.materialId === m.id);
+                              return (
+                                <option key={m.id} value={m.id}>
+                                  {m.name} (Issued: {line?.issued || 0} {m.unitOfMeasurement})
+                                </option>
+                              );
+                            })}
                         </select>
                       </td>
                       <td className="px-3 py-2.5">
@@ -929,6 +1032,18 @@ export function ChallanForm({
             </table>
           </div>
         )}
+
+        <div className="pt-1 flex justify-end">
+          <button
+            type="button"
+            disabled={issuedMaterialsList.length === 0 || inputRows.length >= issuedMaterialsList.length}
+            onClick={addInputRow}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#fbf7f0] hover:bg-[#ebdcc9] text-[#24160c] border border-[#d6c7b2] rounded-md font-bold transition disabled:opacity-40 cursor-pointer shadow-2xs"
+          >
+            <Plus className="w-3.5 h-3.5 text-[#8f6541]" />
+            <span>Add Material</span>
+          </button>
+        </div>
       </section>
 
       {/* SECTION D: LIVE RECONCILIATION, LOST/MISSING & STATUS */}
@@ -1131,6 +1246,144 @@ export function ChallanForm({
             className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] focus:bg-white focus:border-[#8f6541] focus:outline-none"
           />
         </div>
+      </section>
+
+      {/* SECTION E: CHALLAN IMAGES / MATERIAL EVIDENCE */}
+      <section className="bg-white rounded-lg border border-[#e5dac8] p-5 space-y-4 shadow-2xs text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-[#f0e8db]">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-[#f7f2eb] border border-[#d6c7b2] flex items-center justify-center text-[#8f6541]">
+              <Camera className="w-3.5 h-3.5" />
+            </div>
+            <div>
+              <h2 className="font-bold text-sm text-[#24160c]">E. Challan Images / Material Evidence</h2>
+              <p className="text-[11px] text-stone-500">
+                Capture or upload photographs of a Challan (JPG, JPEG, PNG, WEBP).
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => handleChallanFilesSelected(e.target.files, 'CAMERA')}
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              multiple
+              className="hidden"
+              onChange={(e) => handleChallanFilesSelected(e.target.files, 'GALLERY')}
+            />
+
+            <button
+              type="button"
+              disabled={uploadingImages || submitting}
+              onClick={() => cameraInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#24160c] hover:bg-[#382315] text-[#c79e7c] rounded-md font-bold transition disabled:opacity-50 cursor-pointer"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Take Photo</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={uploadingImages || submitting}
+              onClick={() => galleryInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#fbf7f0] hover:bg-[#ebdcc9] text-[#24160c] border border-[#d6c7b2] rounded-md font-bold transition disabled:opacity-50 cursor-pointer"
+            >
+              <ImageIcon className="w-3.5 h-3.5 text-[#8f6541]" />
+              <span>Choose from Gallery</span>
+            </button>
+          </div>
+        </div>
+
+        {imageUploadError && (
+          <div className="p-3 bg-rose-50 border border-rose-300 rounded-md text-rose-800 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span className="font-semibold">{imageUploadError}</span>
+            </div>
+            {failedImageFiles.length > 0 && (
+              <button
+                type="button"
+                onClick={retryFailedUploads}
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-rose-300 rounded text-[11px] font-bold text-rose-800 hover:bg-rose-100 cursor-pointer shrink-0"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Retry</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {uploadingImages && (
+          <div className="p-3 bg-[#fbf7f0] border border-[#ebdcc9] rounded-md text-[#714f36] flex items-center gap-2 font-semibold">
+            <Loader2 className="w-4 h-4 animate-spin text-[#8f6541]" />
+            <span>Uploading challan photographs...</span>
+          </div>
+        )}
+
+        {challanImages.length === 0 ? (
+          <div className="p-6 bg-[#fbf9f5] border border-dashed border-[#d6c7b2] rounded-lg text-center text-stone-500 space-y-1">
+            <ImageIcon className="w-6 h-6 text-[#c79e7c] mx-auto" />
+            <p className="font-semibold text-[#4d301c]">No Challan Images Attached</p>
+            <p className="text-[11px]">
+              Use <strong>Take Photo</strong> or <strong>Choose from Gallery</strong> to attach material evidence.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {challanImages.map((img) => (
+              <div
+                key={img.id}
+                className="group relative bg-[#fbf9f5] border border-[#d6c7b2] rounded-lg overflow-hidden shadow-2xs"
+              >
+                <div className="aspect-4/3 bg-stone-100 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt={img.fileName || 'Challan evidence'}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="px-2.5 py-1.5 flex items-center justify-between gap-1.5 border-t border-[#ebdcc9] bg-white">
+                  <span className="text-[10px] font-mono text-stone-600 truncate" title={img.fileName}>
+                    {img.fileName || 'Challan Photo'}
+                  </span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {img.source === 'CAMERA' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setChallanImages((prev) => prev.filter((item) => item.id !== img.id));
+                          cameraInputRef.current?.click();
+                        }}
+                        title="Retake photo"
+                        className="p-1 text-[#714f36] hover:bg-[#fbf7f0] rounded cursor-pointer"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setChallanImages((prev) => prev.filter((item) => item.id !== img.id))}
+                      title="Delete image"
+                      className="p-1 text-rose-700 hover:bg-rose-50 rounded cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* FORM ACTIONS FOOTER */}

@@ -10,6 +10,7 @@ import {
 } from '../schema';
 import { ProjectService } from './project-service';
 import { OFFICIAL_TERMS_AND_CONDITIONS, DEFAULT_PAYMENT_TERMS_TEXT } from '../constants/terms-and-conditions';
+import { verifyProjectChallanReconciliation } from '../formatters';
 
 export class InventoryService {
   /**
@@ -660,6 +661,17 @@ export class InventoryService {
     return await dbStore.transaction(async (state) => {
       const project = state.projects.find(p => p.id === data.projectId);
       if (!project) throw new Error('Project not found');
+
+      // Strict Backend Challan Reconciliation Enforcement
+      const challanCheck = verifyProjectChallanReconciliation(project, state.challans || []);
+      if (!challanCheck.allowed) {
+        const pendingSummary = challanCheck.pendingMaterials
+          .map((m) => `${m.materialName}${m.itemCode ? ` (${m.itemCode})` : ''} – ${m.remaining} ${m.unit}`)
+          .join(', ');
+        throw new Error(
+          `Cannot Dismantle Project: ${pendingSummary} still pending at site. Complete material reconciliation in the Challan module before dismantling.`
+        );
+      }
 
       const warehouse =
         (data.warehouseId ? state.warehouses.find(w => w.id === data.warehouseId) : undefined) ||

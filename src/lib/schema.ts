@@ -1226,6 +1226,14 @@ export interface ChallanHistoryEntry {
   metadata?: any;
 }
 
+export interface ChallanImage {
+  id: string;
+  url: string;
+  fileName?: string;
+  source?: 'CAMERA' | 'GALLERY';
+  uploadedAt?: string;
+}
+
 export interface Challan {
   id: string;
   challanNumber: string; // e.g. CHL-2026-000001
@@ -1254,6 +1262,7 @@ export interface Challan {
   lossApprovedBy?: string;
   lossApprovedAt?: string;
   notes?: string;
+  images?: ChallanImage[];
   history: ChallanHistoryEntry[];
   clientRequestId?: string;
   createdBy: string;

@@ -2699,6 +2699,132 @@
   ],
   "transactions": [
     {
+      "id": "txn-cd-1795717110478",
+      "transactionNumber": "TXN-2026-000010",
+      "movementType": "PHYSICAL_COUNT_CORRECTION",
+      "sourceLocation": "Plot 42 Site",
+      "destinationLocation": "Indore Central Scaffolding Yard",
+      "referenceDocument": "CHL-2026-000001",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu (Admin)",
+      "remarks": "Inventory reversed on deletion of CHL-2026-000001",
+      "lines": [
+        {
+          "materialId": "mat-01",
+          "materialName": "VERTICAL 10FT/3MTR",
+          "itemCode": "V-10FT-3M",
+          "quantity": 10,
+          "condition": "GOOD",
+          "remarks": "Stock restored on deletion of challan CHL-2026-000001"
+        }
+      ],
+      "createdAt": "2026-11-26T18:18:30.478Z"
+    },
+    {
+      "id": "txn-cl-1795717110473-418",
+      "transactionNumber": "TXN-2026-000009",
+      "movementType": "MISSING_STOCK_ADJUSTMENT",
+      "sourceLocation": "Plot 42 Site",
+      "destinationLocation": "Missing / Loss Ledger",
+      "referenceDocument": "CHL-2026-000001",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu (Admin)",
+      "remarks": "Challan CHL-2026-000001 missing/lost material logged (Lost/Missing Material Recorded)",
+      "lines": [
+        {
+          "materialId": "mat-01",
+          "materialName": "VERTICAL 10FT/3MTR",
+          "itemCode": "V-10FT-3M",
+          "quantity": 10,
+          "condition": "MISSING",
+          "remarks": "Challan CHL-2026-000001 lost/missing recorded (Lost/Missing Material Recorded)"
+        }
+      ],
+      "createdAt": "2026-11-26T18:18:30.473Z"
+    },
+    {
+      "id": "txn-ci-1795717110468-791",
+      "transactionNumber": "TXN-2026-000008",
+      "movementType": "WAREHOUSE_RETURN",
+      "sourceLocation": "Plot 42 Site",
+      "destinationLocation": "Indore Central Scaffolding Yard",
+      "referenceDocument": "CHL-2026-000001",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu (Admin)",
+      "remarks": "Challan CHL-2026-000001 material return (Material Return Entry Added)",
+      "lines": [
+        {
+          "materialId": "mat-01",
+          "materialName": "VERTICAL 10FT/3MTR",
+          "itemCode": "V-10FT-3M",
+          "quantity": 30,
+          "condition": "GOOD",
+          "remarks": "Challan CHL-2026-000001 physical return to warehouse (Material Return Entry Added)"
+        }
+      ],
+      "createdAt": "2026-11-26T18:18:30.468Z"
+    },
+    {
+      "id": "txn-ci-1795717110458-728",
+      "transactionNumber": "TXN-2026-000007",
+      "movementType": "WAREHOUSE_RETURN",
+      "sourceLocation": "Plot 42 Site",
+      "destinationLocation": "Indore Central Scaffolding Yard",
+      "referenceDocument": "CHL-2026-000001",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu (Admin)",
+      "remarks": "Challan CHL-2026-000001 material return (New Challan Created)",
+      "lines": [
+        {
+          "materialId": "mat-01",
+          "materialName": "VERTICAL 10FT/3MTR",
+          "itemCode": "V-10FT-3M",
+          "quantity": 60,
+          "condition": "GOOD",
+          "remarks": "Challan CHL-2026-000001 physical return to warehouse (New Challan Created)"
+        },
+        {
+          "materialId": "mat-02",
+          "materialName": "VERTICAL 8FT/2.5MTR",
+          "itemCode": "V-8FT-2.5M",
+          "quantity": 50,
+          "condition": "GOOD",
+          "remarks": "Challan CHL-2026-000001 physical return to warehouse (New Challan Created)"
+        }
+      ],
+      "createdAt": "2026-11-26T18:18:30.458Z"
+    },
+    {
+      "id": "txn-co-1795717110458-578",
+      "transactionNumber": "TXN-2026-000006",
+      "movementType": "MATERIAL_ISSUE_DISPATCH",
+      "sourceLocation": "Indore Central Scaffolding Yard",
+      "destinationLocation": "Plot 42 Site",
+      "referenceDocument": "CHL-2026-000001",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu (Admin)",
+      "remarks": "Challan CHL-2026-000001 issue dispatch (New Challan Created)",
+      "lines": [
+        {
+          "materialId": "mat-01",
+          "materialName": "VERTICAL 10FT/3MTR",
+          "itemCode": "V-10FT-3M",
+          "quantity": 100,
+          "condition": "GOOD",
+          "remarks": "Challan CHL-2026-000001 output issued (New Challan Created)"
+        },
+        {
+          "materialId": "mat-02",
+          "materialName": "VERTICAL 8FT/2.5MTR",
+          "itemCode": "V-8FT-2.5M",
+          "quantity": 50,
+          "condition": "GOOD",
+          "remarks": "Challan CHL-2026-000001 output issued (New Challan Created)"
+        }
+      ],
+      "createdAt": "2026-11-26T18:18:30.458Z"
+    },
+    {
       "id": "txn-1795696570906",
       "transactionNumber": "TXN-2026-000005",
       "movementType": "RESERVATION_RELEASE",
@@ -3097,6 +3223,89 @@
     }
   ],
   "auditLogs": [
+    {
+      "id": "aud-1795717110478",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "CHALLAN_DELETED",
+      "entityTable": "challans",
+      "entityId": "chl-1795717110458-509",
+      "oldState": {
+        "challanNumber": "CHL-2026-000001",
+        "customerName": "Sharma Construction & Developers",
+        "siteName": "Plot 42 Site",
+        "status": "CLOSED"
+      },
+      "createdAt": "2026-11-26T18:18:30.478Z"
+    },
+    {
+      "id": "aud-1795717110473",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "CHALLAN_LOSS_RECORDED",
+      "entityTable": "challans",
+      "entityId": "chl-1795717110458-509",
+      "newState": {
+        "lostAddedQty": 10,
+        "totalLostQuantity": 10,
+        "remainingAtSiteQuantity": 0,
+        "lossApproved": true,
+        "status": "CLOSED"
+      },
+      "createdAt": "2026-11-26T18:18:30.473Z"
+    },
+    {
+      "id": "aud-1795717110468",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "CHALLAN_RETURN_RECORDED",
+      "entityTable": "challans",
+      "entityId": "chl-1795717110458-509",
+      "newState": {
+        "addedQty": 30,
+        "totalReturnedQuantity": 140,
+        "remainingAtSiteQuantity": 10,
+        "status": "UNCLOSED"
+      },
+      "createdAt": "2026-11-26T18:18:30.468Z"
+    },
+    {
+      "id": "aud-1795717110465",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "CHALLAN_UPDATED",
+      "entityTable": "challans",
+      "entityId": "chl-1795717110458-509",
+      "oldState": {
+        "status": "UNCLOSED"
+      },
+      "newState": {
+        "status": "UNCLOSED",
+        "totalOutputQuantity": 150,
+        "totalReturnedQuantity": 110,
+        "totalLostQuantity": 0,
+        "remainingAtSiteQuantity": 40
+      },
+      "createdAt": "2026-11-26T18:18:30.465Z"
+    },
+    {
+      "id": "aud-1795717110458",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "CHALLAN_CREATED",
+      "entityTable": "challans",
+      "entityId": "chl-1795717110458-509",
+      "newState": {
+        "challanNumber": "CHL-2026-000001",
+        "customerName": "Sharma Construction & Developers",
+        "siteName": "Plot 42 Site",
+        "totalOutputQuantity": 150,
+        "totalReturnedQuantity": 110,
+        "totalLostQuantity": 0,
+        "status": "UNCLOSED"
+      },
+      "createdAt": "2026-11-26T18:18:30.458Z"
+    },
     {
       "id": "aud-1795696590099",
       "actorId": "usr-admin-01",
@@ -6839,7 +7048,45 @@
   "attendanceRecords": [],
   "leaveRequests": [],
   "paySlips": [],
-  "challans": [],
+  "challans": [
+    {
+      "id": "ch-block-test",
+      "challanNumber": "CHL-TEST-99",
+      "customerId": "cust-1795696589813",
+      "customerName": "Approval Workflow Test Client",
+      "siteId": "site-1795696589813",
+      "siteName": "Indore Approval Site Tower 1",
+      "projectId": "proj-1795696589813",
+      "size": "10x10",
+      "issueDate": "2026-11-01",
+      "outputEntries": [
+        {
+          "id": "o1",
+          "date": "2026-11-01",
+          "materialId": "mat-01",
+          "materialName": "V10",
+          "itemCode": "V10",
+          "unit": "NOS",
+          "quantity": 5
+        }
+      ],
+      "inputEntries": [],
+      "lostEntries": [],
+      "totalOutputQuantity": 5,
+      "totalReturnedQuantity": 0,
+      "totalLostQuantity": 0,
+      "pendingQuantity": 5,
+      "remainingAtSiteQuantity": 5,
+      "reconciliation": [],
+      "status": "UNCLOSED",
+      "hasLostMaterials": false,
+      "history": [],
+      "createdBy": "u1",
+      "createdByName": "Admin",
+      "createdAt": "2026-11-26T18:26:59.771Z",
+      "updatedAt": "2026-11-26T18:26:59.772Z"
+    }
+  ],
   "installationReminders": [
     {
       "id": "rem-inst-1795697871628-856",

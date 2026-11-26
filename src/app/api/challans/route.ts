@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
       status: validated.status,
       lossApproved: validated.lossApproved,
       notes: validated.notes,
+      images: validated.images,
       clientRequestId: validated.clientRequestId,
       actorId: body.actorId || 'usr-admin-01',
       actorName: body.actorName || 'Ali/Abdeali(Admin)',

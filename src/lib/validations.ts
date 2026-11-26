@@ -357,6 +357,18 @@ export const challanUpsertSchema = z.object({
   status: z.enum(['UNCLOSED', 'CLOSED']).optional(),
   lossApproved: z.boolean().optional(),
   notes: z.string().optional(),
+  images: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        url: z.string().min(1),
+        fileName: z.string().optional(),
+        source: z.enum(['CAMERA', 'GALLERY']).optional(),
+        uploadedAt: z.string().optional(),
+      })
+    )
+    .optional()
+    .default([]),
   clientRequestId: z.string().optional(),
 });
 

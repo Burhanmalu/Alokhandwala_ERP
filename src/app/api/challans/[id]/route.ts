@@ -97,6 +97,7 @@ export async function PATCH(
       status: validated.status,
       lossApproved: validated.lossApproved,
       notes: validated.notes,
+      images: validated.images,
       actorId,
       actorName,
     });

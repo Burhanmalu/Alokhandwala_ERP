@@ -156,6 +156,40 @@ export default function ProjectWorkspacePage({
   const [extendSubmitting, setExtendSubmitting] = useState(false);
   const [extendError, setExtendError] = useState<string | null>(null);
 
+  const [dismantleModalState, setDismantleModalState] = useState<'NONE' | 'BLOCKED' | 'CONFIRM'>('NONE');
+  const [dismantleCheck, setDismantleCheck] = useState<any>(null);
+  const [checkingDismantle, setCheckingDismantle] = useState(false);
+
+  const handleDismantleClick = async () => {
+    if (!project || checkingDismantle) return;
+    setCheckingDismantle(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}`);
+      const json = await res.json();
+      const latest = json.success && json.data ? json.data : project;
+      if (json.success && json.data) {
+        setProject((prev: any) => ({ ...prev, ...json.data }));
+      }
+      const check = latest.challanReconciliation;
+      setDismantleCheck(check || { allowed: true, pendingMaterials: [] });
+      if (check && !check.allowed) {
+        setDismantleModalState('BLOCKED');
+      } else {
+        setDismantleModalState('CONFIRM');
+      }
+    } catch {
+      const check = project.challanReconciliation;
+      setDismantleCheck(check || { allowed: true, pendingMaterials: [] });
+      if (check && !check.allowed) {
+        setDismantleModalState('BLOCKED');
+      } else {
+        setDismantleModalState('CONFIRM');
+      }
+    } finally {
+      setCheckingDismantle(false);
+    }
+  };
+
   const isInstalled = Boolean(
     project && (
       ['INSTALLED', 'ACTIVE_RENTAL', 'BUFFER_PERIOD', 'EXTENSION_REQUESTED', 'EXTENDED', 'SHIFTING_PENDING', 'SHIFTING_IN_PROGRESS', 'REMOVAL_PENDING', 'RETURNED_RECONCILIATION', 'CLOSED'].includes(project.status) ||
@@ -767,13 +801,30 @@ export default function ProjectWorkspacePage({
                 )}
 
                 {can('PROJECT_DISMANTLE_SUBMIT') && (
-                  <Link
-                    href={`/projects/${project.id}/dismantle`}
-                    className="h-9 px-3.5 bg-rose-700 hover:bg-rose-800 text-white rounded-md text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
+                  <button
+                    type="button"
+                    disabled={checkingDismantle}
+                    onClick={handleDismantleClick}
+                    title={
+                      project.challanReconciliation && !project.challanReconciliation.allowed
+                        ? 'Pending Challan materials must be reconciled before dismantling'
+                        : 'Verify Challan reconciliation and proceed to Dismantle'
+                    }
+                    className={`h-9 px-3.5 rounded-md text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-60 ${
+                      project.challanReconciliation && !project.challanReconciliation.allowed
+                        ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300'
+                        : 'bg-rose-700 hover:bg-rose-800 text-white'
+                    }`}
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
+                    {checkingDismantle ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : project.challanReconciliation && !project.challanReconciliation.allowed ? (
+                      <AlertTriangle className="w-3.5 h-3.5 text-rose-700" />
+                    ) : (
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    )}
                     <span>Dismantle</span>
-                  </Link>
+                  </button>
                 )}
               </div>
             )}
@@ -1785,6 +1836,110 @@ export default function ProjectWorkspacePage({
                 <Ban className="w-3.5 h-3.5" />
                 <span>{cancelling ? 'Cancelling Project...' : 'Confirm Project Cancellation'}</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DISMANTLE CHALLAN VERIFICATION & CONFIRMATION MODAL */}
+      {dismantleModalState !== 'NONE' && project && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#140b06]/70 backdrop-blur-xs">
+          <div className="fixed inset-0" onClick={() => setDismantleModalState('NONE')} />
+          <div className="relative z-10 w-full max-w-lg bg-white rounded-xl shadow-2xl border border-[#d6c7b2] overflow-hidden text-stone-800">
+            <div className="bg-[#24160c] px-5 py-4 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-md bg-[#382315] border border-[#523622] flex items-center justify-center text-[#c79e7c]">
+                  {dismantleModalState === 'BLOCKED' ? (
+                    <AlertTriangle className="w-4 h-4 text-rose-400" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {dismantleModalState === 'BLOCKED' ? 'Cannot Dismantle Project' : 'Confirm Dismantling'}
+                  </h3>
+                  <p className="text-[11px] font-mono text-[#c79e7c]">
+                    {project.projectCode} · {project.customerName}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDismantleModalState('NONE')}
+                className="p-1 text-stone-300 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs bg-[#fbf9f5]/50">
+              {dismantleModalState === 'BLOCKED' ? (
+                <>
+                  <p className="font-semibold text-rose-900">
+                    The following materials are still pending at the site:
+                  </p>
+                  <ul className="space-y-1.5 bg-rose-50 border border-rose-200 rounded-lg p-3 font-mono text-rose-900">
+                    {(dismantleCheck?.pendingMaterials || []).map((m: any) => (
+                      <li key={m.materialId} className="font-semibold">
+                        • {m.materialName}{m.itemCode ? ` (${m.itemCode})` : ''} – {m.remaining} {m.unit}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-stone-600">
+                    Please complete material reconciliation in the Challan module before dismantling this project.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-2.5 text-emerald-900">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="font-bold">All issued materials have been reconciled.</div>
+                      <div className="text-[11px] text-emerald-800 mt-0.5">
+                        Project <strong>{project.projectCode}</strong> ({project.customerName}) is cleared for dismantling &amp; final financial settlement.
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-stone-600">
+                    Are you sure you want to proceed to dismantle this project?
+                  </p>
+                </>
+              )}
+            </div>
+
+            <div className="bg-white border-t border-[#e5dac8] px-5 py-3.5 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setDismantleModalState('NONE')}
+                className="px-4 py-2 text-xs font-semibold text-stone-700 bg-white hover:bg-[#faf6ee] border border-[#d6c7b2] rounded-md transition cursor-pointer"
+              >
+                {dismantleModalState === 'BLOCKED' ? 'Close' : 'Cancel'}
+              </button>
+              {dismantleModalState === 'BLOCKED' ? (
+                <Link
+                  href={
+                    dismantleCheck?.challanIds?.length === 1
+                      ? `/challans/${dismantleCheck.challanIds[0]}`
+                      : '/challans'
+                  }
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-[#c79e7c] bg-[#24160c] hover:bg-[#382315] rounded-md transition"
+                >
+                  <span>Go to Challan Reconciliation</span>
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDismantleModalState('NONE');
+                    router.push(`/projects/${project.id}/dismantle`);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-700 hover:bg-rose-800 rounded-md transition cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Confirm &amp; Proceed to Dismantle</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

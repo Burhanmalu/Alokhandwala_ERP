@@ -6,6 +6,7 @@ import { hasPermission, PermissionKey } from '../auth';
 import {
   Challan,
   ChallanHistoryEntry,
+  ChallanImage,
   ChallanLostEntry,
   ChallanMaterialEntry,
   ChallanReconciliationLine,
@@ -535,6 +536,7 @@ export class ChallanService {
     status?: ChallanStatus;
     lossApproved?: boolean;
     notes?: string;
+    images?: ChallanImage[];
     clientRequestId?: string;
     actorId: string;
     actorName: string;
@@ -659,6 +661,7 @@ export class ChallanService {
         lossApprovedAt:
           computed.hasLostMaterials && data.lossApproved ? now : undefined,
         notes: data.notes?.trim() || undefined,
+        images: data.images && data.images.length > 0 ? data.images : [],
         history,
         clientRequestId: data.clientRequestId,
         createdBy: data.actorId,
@@ -731,6 +734,7 @@ export class ChallanService {
       status?: ChallanStatus;
       lossApproved?: boolean;
       notes?: string;
+      images?: ChallanImage[];
       actorId: string;
       actorName: string;
     }
@@ -839,6 +843,9 @@ export class ChallanService {
         challan.lossApprovedAt = now;
       }
       challan.notes = data.notes?.trim() || undefined;
+      if (data.images !== undefined) {
+        challan.images = data.images;
+      }
       challan.updatedAt = now;
 
       if (resolvedStatus === 'CLOSED') {

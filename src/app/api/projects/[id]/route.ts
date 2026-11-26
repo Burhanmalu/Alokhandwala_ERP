@@ -5,8 +5,10 @@ import { ReminderService } from '@/lib/services/reminder-service';
 import {
   calculateScaffoldingArea,
   calculateRentalDurationBreakdown,
+  computeCustomerStatsFromProjects,
   getEffectiveRemovalDate,
   toDateOnlyString,
+  verifyProjectChallanReconciliation,
 } from '@/lib/formatters';
 
 export async function GET(
@@ -31,6 +33,7 @@ export async function GET(
     const customer = dbStore.getCustomers().find(c => c.id === project.customerId);
     const site = dbStore.getSites().find(s => s.id === project.siteId);
     const companySettings = dbStore.getCompanySettings();
+    const challanReconciliation = verifyProjectChallanReconciliation(project, dbStore.getChallans());
 
     return NextResponse.json({
       success: true,
@@ -45,6 +48,7 @@ export async function GET(
         removals: relatedRemovals,
         extensions: relatedExtensions,
         buffers: relatedBuffers,
+        challanReconciliation,
       },
     });
   } catch (error: any) {
@@ -415,6 +419,11 @@ export async function PATCH(
           if (body.customerName) customer.companyName = body.customerName.trim();
           if (body.customerPhone) customer.phone = body.customerPhone.trim();
           if (body.customerEmail !== undefined) customer.email = body.customerEmail.trim();
+          const stats = computeCustomerStatsFromProjects(customer.id, state.projects);
+          customer.sitesCount = stats.sitesCount;
+          customer.projectsCount = stats.projectsCount;
+          customer.activeRentalsCount = stats.activeRentalsCount;
+          customer.outstandingBalance = stats.outstandingBalance;
           customer.updatedAt = new Date().toISOString();
         }
         const site = state.sites.find(s => s.id === proj.siteId);

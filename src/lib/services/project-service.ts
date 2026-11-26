@@ -2,7 +2,7 @@
 
 import { dbStore } from '../db/store';
 import { Project, ProjectStatus, SiteMeasurement, FileAttachment, InventoryTransaction } from '../schema';
-import { calculateScaffoldingArea, calculateRentalDurationBreakdown } from '../formatters';
+import { calculateScaffoldingArea, calculateRentalDurationBreakdown, computeCustomerStatsFromProjects } from '../formatters';
 import { ReminderService } from './reminder-service';
 
 export const VALID_STATUS_TRANSITIONS: Record<ProjectStatus, ProjectStatus[]> = {
@@ -814,16 +814,25 @@ export class ProjectService {
         }
       }
 
-      // Decrement customer counts
-      const customer = state.customers.find(c => c.id === project.customerId);
-      if (customer) {
-        customer.projectsCount = Math.max(0, (customer.projectsCount || 1) - 1);
-        customer.updatedAt = new Date().toISOString();
-      }
-
       // Remove linked quotations & project
       state.quotations = state.quotations.filter(q => q.projectId !== project.id);
       state.projects.splice(idx, 1);
+
+      // Remove orphan site if no remaining project references it
+      if (project.siteId && !state.projects.some(p => p.siteId === project.siteId)) {
+        state.sites = state.sites.filter(s => s.id !== project.siteId);
+      }
+
+      // Recompute customer counts & outstanding balance from remaining genuine projects
+      const customer = state.customers.find(c => c.id === project.customerId);
+      if (customer) {
+        const stats = computeCustomerStatsFromProjects(customer.id, state.projects);
+        customer.sitesCount = stats.sitesCount;
+        customer.projectsCount = stats.projectsCount;
+        customer.activeRentalsCount = stats.activeRentalsCount;
+        customer.outstandingBalance = stats.outstandingBalance;
+        customer.updatedAt = new Date().toISOString();
+      }
 
       state.auditLogs.unshift({
         id: `aud-${Date.now()}`,

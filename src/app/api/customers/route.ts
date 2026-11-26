@@ -2,12 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 import { customerSchema } from '@/lib/validations';
 import { Customer } from '@/lib/schema';
+import { computeCustomerStatsFromProjects, isEligibleActiveProjectStatus } from '@/lib/formatters';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search')?.toLowerCase();
-    let customers = dbStore.getCustomers();
+    const eligibleForChallan = searchParams.get('eligibleForChallan') === 'true';
+    const allProjects = dbStore.getProjects();
+    const eligibleCustomerIds = eligibleForChallan
+      ? new Set(
+          allProjects
+            .filter((p) => p.status !== 'CANCELLED' && isEligibleActiveProjectStatus(p.status))
+            .map((p) => p.customerId)
+        )
+      : null;
+
+    let customers = dbStore.getCustomers()
+      .filter((c) => !eligibleCustomerIds || eligibleCustomerIds.has(c.id))
+      .map((c) => {
+        const stats = computeCustomerStatsFromProjects(c.id, allProjects);
+        return {
+          ...c,
+          ...stats,
+        };
+      });
 
     if (search) {
       customers = customers.filter(c => 

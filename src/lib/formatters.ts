@@ -13,6 +13,156 @@ export function isEligibleActiveProjectStatus(status?: string | null): boolean {
   return !(NON_ACTIVE_PROJECT_STATUSES as readonly string[]).includes(status);
 }
 
+const CUSTOMER_ACTIVE_RENTAL_STATUSES = new Set([
+  'INSTALLED',
+  'ACTIVE_RENTAL',
+  'BUFFER_PERIOD',
+  'EXTENSION_REQUESTED',
+  'EXTENDED',
+  'SHIFTING_PENDING',
+  'SHIFTING_IN_PROGRESS',
+  'REMOVAL_PENDING',
+]);
+
+export function computeCustomerStatsFromProjects(customerId: string, projects: any[]) {
+  const validProjects = (projects || []).filter(
+    (p) => p.customerId === customerId && p.status !== 'CANCELLED'
+  );
+
+  const siteKeys = new Set<string>();
+  let activeRentalsCount = 0;
+  let outstandingBalance = 0;
+
+  for (const p of validProjects) {
+    const siteKey = p.siteId || (p.siteName ? `name:${String(p.siteName).trim().toLowerCase()}` : p.id);
+    siteKeys.add(siteKey);
+
+    if (CUSTOMER_ACTIVE_RENTAL_STATUSES.has(p.status)) {
+      activeRentalsCount++;
+    }
+
+    const total = Number(p.totalAmount ?? p.agreedProjectPrice ?? p.quotationAmount ?? 0);
+    const received = Number(p.paymentReceived ?? p.advancePaidAmount ?? 0);
+    const bal = Math.max(0, Math.round((total - received) * 100) / 100);
+    outstandingBalance = Math.round((outstandingBalance + bal) * 100) / 100;
+  }
+
+  return {
+    sitesCount: siteKeys.size,
+    projectsCount: validProjects.length,
+    activeRentalsCount,
+    outstandingBalance,
+  };
+}
+
+export interface PendingChallanMaterial {
+  materialId: string;
+  materialName: string;
+  itemCode: string;
+  unit: string;
+  issued: number;
+  returned: number;
+  lost: number;
+  remaining: number;
+}
+
+export interface ChallanReconciliationVerification {
+  allowed: boolean;
+  challanCount: number;
+  challanIds: string[];
+  pendingMaterials: PendingChallanMaterial[];
+  totalIssued: number;
+  totalReturned: number;
+  totalLost: number;
+  totalRemaining: number;
+}
+
+/**
+ * Verifies whether all materials issued via Challans for a project have been
+ * fully accounted for (Remaining = max(0, Issued - Returned - Lost) === 0).
+ */
+export function verifyProjectChallanReconciliation(
+  project: { id?: string; customerId?: string; siteId?: string; siteName?: string },
+  allChallans: any[]
+): ChallanReconciliationVerification {
+  const projSiteName = (project.siteName || '').trim().toLowerCase();
+
+  const matchingChallans = (allChallans || []).filter((c) => {
+    if (c.projectId && project.id) {
+      return c.projectId === project.id;
+    }
+    if (!project.customerId || c.customerId !== project.customerId) {
+      return false;
+    }
+    if (project.siteId && c.siteId) {
+      return c.siteId === project.siteId;
+    }
+    const cSiteName = (c.siteName || '').trim().toLowerCase();
+    return Boolean(projSiteName && cSiteName && cSiteName === projSiteName);
+  });
+
+  const byMaterial = new Map<string, PendingChallanMaterial>();
+
+  for (const ch of matchingChallans) {
+    for (const out of ch.outputEntries || []) {
+      const existing = byMaterial.get(out.materialId) || {
+        materialId: out.materialId,
+        materialName: out.materialName || 'Material',
+        itemCode: out.itemCode || '',
+        unit: out.unit || 'NOS',
+        issued: 0,
+        returned: 0,
+        lost: 0,
+        remaining: 0,
+      };
+      existing.issued += Math.max(0, Number(out.quantity) || 0);
+      byMaterial.set(out.materialId, existing);
+    }
+
+    for (const ret of ch.inputEntries || []) {
+      const existing = byMaterial.get(ret.materialId);
+      if (existing) {
+        existing.returned += Math.max(0, Number(ret.quantity) || 0);
+      }
+    }
+
+    for (const lst of ch.lostEntries || []) {
+      const existing = byMaterial.get(lst.materialId);
+      if (existing) {
+        existing.lost += Math.max(0, Number(lst.quantity) || 0);
+      }
+    }
+  }
+
+  const pendingMaterials: PendingChallanMaterial[] = [];
+  let totalIssued = 0;
+  let totalReturned = 0;
+  let totalLost = 0;
+  let totalRemaining = 0;
+
+  for (const item of byMaterial.values()) {
+    item.remaining = Math.max(0, item.issued - item.returned - item.lost);
+    totalIssued += item.issued;
+    totalReturned += item.returned;
+    totalLost += item.lost;
+    totalRemaining += item.remaining;
+    if (item.remaining > 0) {
+      pendingMaterials.push(item);
+    }
+  }
+
+  return {
+    allowed: pendingMaterials.length === 0,
+    challanCount: matchingChallans.length,
+    challanIds: matchingChallans.map((c) => c.id),
+    pendingMaterials,
+    totalIssued,
+    totalReturned,
+    totalLost,
+    totalRemaining,
+  };
+}
+
 /**
  * Format a number as Indian Currency (INR / ₹)
  * Supports Indian number numbering system (e.g. ₹ 1,50,000.00 or ₹ 12,50,000)
