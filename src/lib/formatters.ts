@@ -1,5 +1,18 @@
 // ALOKHANDWALA - Formatting and Localization Utilities (en-IN, INR)
 
+export const NON_ACTIVE_PROJECT_STATUSES = [
+  'NOT_INSTALLED',
+  'SITE_CREATED',
+  'QUOTATION_DRAFT',
+  'QUOTATION_SENT',
+  'QUOTATION_ACCEPTED',
+] as const;
+
+export function isEligibleActiveProjectStatus(status?: string | null): boolean {
+  if (!status) return false;
+  return !(NON_ACTIVE_PROJECT_STATUSES as readonly string[]).includes(status);
+}
+
 /**
  * Format a number as Indian Currency (INR / ₹)
  * Supports Indian number numbering system (e.g. ₹ 1,50,000.00 or ₹ 12,50,000)
@@ -268,6 +281,34 @@ export function calculateExtendedRemovalDate(
       ? addDays(baseDate, safeAmount)
       : addCalendarMonths(baseDate, safeAmount);
   return toDateOnlyString(resultDate);
+}
+
+/**
+ * Calculate Removal Date from Installation Date + Rental Duration in Months (supports decimals e.g. 1.5, 2.5)
+ * Example: 2026-12-01 + 3 Months => 2027-03-01
+ */
+export function calculateRemovalDateFromMonths(
+  installationDate?: string | null,
+  monthsValue?: number | string | null
+): string {
+  if (!installationDate) return '';
+  const start = toUtcMidnightFromDateOnly(installationDate);
+  if (!start) return '';
+  const numMonths = Number(monthsValue);
+  if (isNaN(numMonths) || numMonths <= 0) return '';
+
+  const wholeMonths = Math.floor(numMonths);
+  const fractionalMonths = numMonths - wholeMonths;
+  const extraDays = Math.round(fractionalMonths * 30);
+
+  let target = start;
+  if (wholeMonths > 0) {
+    target = addCalendarMonths(target, wholeMonths);
+  }
+  if (extraDays > 0) {
+    target = addDays(target, extraDays);
+  }
+  return toDateOnlyString(target);
 }
 
 /**

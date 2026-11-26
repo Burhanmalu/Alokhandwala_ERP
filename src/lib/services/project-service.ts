@@ -3,6 +3,7 @@
 import { dbStore } from '../db/store';
 import { Project, ProjectStatus, SiteMeasurement, FileAttachment, InventoryTransaction } from '../schema';
 import { calculateScaffoldingArea, calculateRentalDurationBreakdown } from '../formatters';
+import { ReminderService } from './reminder-service';
 
 export const VALID_STATUS_TRANSITIONS: Record<ProjectStatus, ProjectStatus[]> = {
   SITE_CREATED: ['QUOTATION_DRAFT', 'QUOTATION_SENT', 'NOT_INSTALLED', 'CONFIRMED_PROJECT', 'CANCELLED'],
@@ -272,6 +273,8 @@ export class ProjectService {
 
       state.projects.unshift(newProject);
       customer.projectsCount = (customer.projectsCount || 0) + 1;
+      ReminderService.syncProjectReminderInState(state, newProject);
+      ReminderService.syncProjectRentalExpiryInState(state, newProject);
 
       // Activity log
       state.activityEvents.push({
@@ -367,6 +370,9 @@ export class ProjectService {
         newState: { status: targetStatus, reason },
         createdAt: new Date().toISOString(),
       });
+
+      ReminderService.syncProjectReminderInState(state, project);
+      ReminderService.syncProjectRentalExpiryInState(state, project);
 
       return project;
     });
@@ -541,6 +547,7 @@ export class ProjectService {
     actualDismantlingDate?: string;
     monthlyRentalRate?: number;
     status: ProjectStatus;
+    rentalMode?: 'BY_MONTH' | 'BY_DATE';
     installationDate?: string;
     removalDate?: string;
     totalAmount: number;
@@ -727,6 +734,7 @@ export class ProjectService {
         originalRemovalDate: data.removalDate || undefined,
         originalRentalEndDate: data.removalDate || undefined,
         actualDismantlingDate: data.status === 'CLOSED' ? (data.actualDismantlingDate || data.removalDate || undefined) : undefined,
+        rentalMode: data.rentalMode || undefined,
         durationMonths: data.installationDate ? Math.max(1, rentalDuration.months || 0) : undefined,
         rentalDurationMonths: data.installationDate ? rentalDuration.months : undefined,
         rentalDurationDays: data.installationDate ? rentalDuration.days : undefined,
@@ -748,6 +756,8 @@ export class ProjectService {
 
       state.projects.unshift(newProject);
       customer.projectsCount = (customer.projectsCount || 0) + 1;
+      ReminderService.syncProjectReminderInState(state, newProject);
+      ReminderService.syncProjectRentalExpiryInState(state, newProject);
 
       state.activityEvents.unshift({
         id: `act-${Date.now()}`,

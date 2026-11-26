@@ -357,6 +357,8 @@ async function runAllTests() {
     const { project: extended } = await RentalService.extendRental({
       projectId: project.id,
       durationMonths: 1,
+      extensionAmount: 5000,
+      paymentReceived: 2500,
       extensionReason: 'Monsoon delay',
       actorId: 'usr-pm-01',
       actorName: 'Taha Merchant',
@@ -368,23 +370,9 @@ async function runAllTests() {
     assert.strictEqual(extended.rentalEndDate, expectedEnd);
   });
 
-  // Test 8: Shifting Type A (Unchanged Qty)
-  await test('8. Shifting Type A with unchanged quantities does NOT deduct warehouse stock', async () => {
-    const project = dbStore.getProjects().find(p => p.status === 'ACTIVE_RENTAL')!;
-    const mat = dbStore.getMaterials().find(m => m.id === 'mat-01')!;
-    const usableBefore = mat.usableWarehouseQty;
-
-    const { shiftingRequest } = await InventoryService.executeShifting({
-      projectId: project.id,
-      shiftingType: 'TYPE_A_UNCHANGED',
-      destinationAreaDescription: 'East Wing Elevation',
-      plannedShiftingDate: '2026-02-05',
-      actorId: 'usr-sup-01',
-      actorName: 'Mustafa Alokhandwala',
-    });
-
-    assert.strictEqual(shiftingRequest.shiftingType, 'TYPE_A_UNCHANGED');
-    assert.strictEqual(mat.usableWarehouseQty, usableBefore, 'Warehouse stock must remain completely unchanged');
+  // Test 8: Shift Scaffolding removed from InventoryService
+  await test('8. Shift Scaffolding logic is completely removed from InventoryService', async () => {
+    assert.strictEqual((InventoryService as any).executeShifting, undefined, 'executeShifting must not exist');
   });
 
   // Test 9: Dismantling Reconciliation - Usable vs Damaged vs Missing

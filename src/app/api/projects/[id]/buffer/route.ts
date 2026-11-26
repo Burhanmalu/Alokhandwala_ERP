@@ -18,6 +18,11 @@ export async function POST(
     const result = await RentalService.applyBufferPeriod({
       projectId: id,
       requestedBufferDays: validated.requestedBufferDays,
+      bufferEndDate: validated.bufferEndDate,
+      paymentStatus: validated.paymentStatus,
+      totalAmount: validated.totalAmount,
+      paymentReceived: validated.paymentReceived,
+      balanceAmount: validated.balanceAmount,
       reason: validated.reason,
       additionalCharges: validated.additionalCharges,
       actorId: body.actorId || 'system',

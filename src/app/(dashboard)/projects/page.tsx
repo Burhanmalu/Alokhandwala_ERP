@@ -67,7 +67,7 @@ const STATUS_TABS: { key: string; label: string }[] = [
   { key: 'ACTIVE_RENTAL', label: 'Active Rentals' },
   { key: 'BUFFER_PERIOD', label: 'Buffer Period' },
   { key: 'EXTENDED', label: 'Extended' },
-  { key: 'SHIFTING_IN_PROGRESS', label: 'Shifting' },
+  { key: 'OVERDUE_AMOUNT', label: 'Overdue Amount' },
   { key: 'REMOVAL_PENDING', label: 'Removal Pending' },
   { key: 'CLOSED', label: 'Closed' },
   { key: 'CANCELLED', label: 'Cancelled Projects' },
@@ -661,6 +661,9 @@ function ProjectsListContent() {
         if (p.status !== 'ACTIVE_RENTAL' && p.status !== 'INSTALLED' && p.status !== 'EXTENDED') {
           return false;
         }
+      } else if (currentTab === 'OVERDUE_AMOUNT') {
+        if (p.status === 'CANCELLED') return false;
+        if (getProjectFinancials(p).balance <= 0) return false;
       } else {
         if (p.status !== currentTab) return false;
       }
@@ -729,6 +732,8 @@ function ProjectsListContent() {
       if (t.key === 'ALL' || t.key === 'QUOTED' || t.key === 'CANCELLED') return;
       if (t.key === 'ACTIVE_RENTAL') {
         counts[t.key] = projects.filter(p => p.status === 'ACTIVE_RENTAL' || p.status === 'INSTALLED' || p.status === 'EXTENDED').length;
+      } else if (t.key === 'OVERDUE_AMOUNT') {
+        counts[t.key] = activeProjects.filter(p => getProjectFinancials(p).balance > 0).length;
       } else {
         counts[t.key] = projects.filter(p => p.status === t.key).length;
       }
@@ -1020,8 +1025,8 @@ function ProjectsListContent() {
                                         tab.key === 'ACTIVE_RENTAL' ? 'bg-emerald-600' :
                                           tab.key === 'BUFFER_PERIOD' ? 'bg-orange-500' :
                                             tab.key === 'EXTENDED' ? 'bg-teal-600' :
-                                              tab.key === 'SHIFTING_IN_PROGRESS' ? 'bg-indigo-600' :
-                                                tab.key === 'REMOVAL_PENDING' ? 'bg-rose-600' :
+                                              tab.key === 'OVERDUE_AMOUNT' ? 'bg-rose-600' :
+                                                tab.key === 'REMOVAL_PENDING' ? 'bg-amber-600' :
                                                   'bg-stone-400'
                                 }`} />
                               <span>{tab.label}</span>
@@ -1185,32 +1190,27 @@ function ProjectsListContent() {
               const installDate = getProjectInstallDate(p);
               const removalDate = getProjectRemovalDate(p);
               const fin = getProjectFinancials(p);
+              const isDismantleCompleted =
+                p.dismantleStatus === 'COMPLETED' ||
+                p.status === 'CLOSED' ||
+                p.status === 'RETURNED_RECONCILIATION' ||
+                Boolean(p.actualDismantlingDate);
+              const rowHighlightClass = isDismantleCompleted
+                ? fin.balance > 0
+                  ? 'bg-rose-50/85'
+                  : 'bg-emerald-50/85'
+                : '';
 
               return (
-                <div key={p.id} className="p-4 space-y-3 text-xs">
+                <div key={p.id} className={`p-4 space-y-3 text-xs ${rowHighlightClass}`}>
                   <div className="flex items-center justify-between">
                     <Link href={`/projects/${p.id}`} className="font-mono font-bold text-[#24160c] text-sm hover:underline">
                       {p.projectCode}
                     </Link>
-                    {['QUOTATION_DRAFT', 'QUOTATION_SENT', 'QUOTATION_ACCEPTED', 'QUOTATION_REJECTED'].includes(p.status) || p.quotationId ? (
-                      <div className="relative inline-block">
-                        <button
-                          type="button"
-                          onClick={(e) => handleToggleQuotationMenu(p, e)}
-                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-semibold border transition cursor-pointer hover:shadow-xs hover:brightness-95 active:scale-95 ${badge.className}`}
-                          title="Click to Accept, Reject, or Edit quotation"
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${badge.dotColor}`} />
-                          <span>{badge.label}</span>
-                          <ChevronDown className={`w-3 h-3 opacity-60 ml-0.5 transition-transform duration-150 ${activeQuotationMenuId === p.id ? 'rotate-180' : ''}`} />
-                        </button>
-                      </div>
-                    ) : (
-                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-semibold border ${badge.className}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${badge.dotColor}`} />
-                        {badge.label}
-                      </span>
-                    )}
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border whitespace-nowrap ${badge.className}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${badge.dotColor}`} />
+                      <span>{badge.label}</span>
+                    </span>
                   </div>
 
                   <div>
@@ -1480,8 +1480,19 @@ function ProjectsListContent() {
                     );
                   }
 
+                  const isDismantleCompleted =
+                    p.dismantleStatus === 'COMPLETED' ||
+                    p.status === 'CLOSED' ||
+                    p.status === 'RETURNED_RECONCILIATION' ||
+                    Boolean(p.actualDismantlingDate);
+                  const rowHighlightClass = isDismantleCompleted
+                    ? fin.balance > 0
+                      ? 'bg-rose-50/85 hover:bg-rose-100/80'
+                      : 'bg-emerald-50/85 hover:bg-emerald-100/80'
+                    : 'hover:bg-[#fcfbf9]';
+
                   return (
-                    <tr key={p.id} className="hover:bg-[#fcfbf9] transition">
+                    <tr key={p.id} className={`${rowHighlightClass} transition`}>
                       <td className="px-3 py-3 font-mono font-bold text-[#24160c] whitespace-nowrap">
                         <Link href={`/projects/${p.id}`} className="hover:underline hover:text-[#8f6541]">
                           {p.projectCode}
@@ -1563,25 +1574,10 @@ function ProjectsListContent() {
                         })()}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap">
-                        {['QUOTATION_DRAFT', 'QUOTATION_SENT', 'QUOTATION_ACCEPTED', 'QUOTATION_REJECTED'].includes(p.status) || p.quotationId ? (
-                          <div className="relative inline-block">
-                            <button
-                              type="button"
-                              onClick={(e) => handleToggleQuotationMenu(p, e)}
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-semibold border transition cursor-pointer hover:shadow-xs hover:brightness-95 active:scale-95 ${badge.className}`}
-                              title="Click to Accept, Reject, or Edit quotation"
-                            >
-                              <span className={`w-1.5 h-1.5 rounded-full ${badge.dotColor}`} />
-                              <span>{badge.label}</span>
-                              <ChevronDown className={`w-3 h-3 opacity-60 ml-0.5 transition-transform duration-150 ${activeQuotationMenuId === p.id ? 'rotate-180' : ''}`} />
-                            </button>
-                          </div>
-                        ) : (
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[10px] font-semibold border ${badge.className}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${badge.dotColor}`} />
-                            {badge.label}
-                          </span>
-                        )}
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border whitespace-nowrap ${badge.className}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${badge.dotColor}`} />
+                          <span>{badge.label}</span>
+                        </span>
                       </td>
                       <td className="px-3 py-3 font-mono font-bold text-[#24160c] whitespace-nowrap text-right">
                         {formatINR(fin.total, false)}

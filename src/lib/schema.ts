@@ -362,12 +362,29 @@ export interface Project {
   staffNames?: string[];
   installationDate?: string;
   removalDate?: string;
+  rentalMode?: 'BY_MONTH' | 'BY_DATE';
   rentalDurationMonths?: number;
   rentalDurationDays?: number;
   rentalDurationDisplay?: string;
   totalAmount?: number;
   paymentReceived?: number;
   balanceAmount?: number;
+  dismantleStatus?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+  outstandingPaymentNote?: string;
+  expectedPaymentDate?: string;
+  actualPaymentDate?: string;
+  outstandingPaymentHistory?: {
+    id: string;
+    note?: string;
+    dateType: 'EXPECTED' | 'ACTUAL';
+    paymentDate: string;
+    amountPaid?: number;
+    totalAgreedPrice: number;
+    totalPaymentReceived: number;
+    balanceAmount: number;
+    recordedAt: string;
+    recordedByName: string;
+  }[];
   remark?: string;
   followUpDate?: string;
   followUpNotes?: string;
@@ -401,6 +418,11 @@ export interface RentalHistoryEntry {
   newRemovalDate: string;
   addedValue: number;
   addedUnit: 'DAYS' | 'MONTHS';
+  paymentStatus?: 'PAID' | 'UNPAID';
+  extensionAmount?: number;
+  totalAgreedPrice?: number;
+  paymentReceived?: number;
+  balanceAmount?: number;
   reason?: string;
   changedAt: string;
   changedById: string;
@@ -573,6 +595,11 @@ export interface BufferRequest {
   currentRentalEndDate: string;
   requestedBufferDays: number;
   proposedRemovalDeadline: string;
+  bufferEndDate?: string;
+  paymentStatus?: 'PAID' | 'UNPAID';
+  totalAgreedPrice?: number;
+  paymentReceived?: number;
+  balanceAmount?: number;
   reason: string;
   additionalCharges: number;
   approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -598,6 +625,9 @@ export interface RentalExtension {
   extensionReason: string;
   monthlyRentalRate: number;
   additionalCharges: number;
+  extensionAmount?: number;
+  paymentReceived?: number;
+  balanceAmount?: number;
   approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
   approvedBy?: string;
   approverName?: string;
@@ -781,8 +811,52 @@ export interface Notification {
   type: 'INFO' | 'WARNING' | 'URGENT' | 'SUCCESS';
   entityType?: 'PROJECT' | 'RENTAL' | 'INVENTORY' | 'INVOICE';
   entityId?: string;
+  projectCode?: string;
+  customerName?: string;
+  siteAddress?: string;
+  installationDate?: string;
+  removalDate?: string;
+  remainingDays?: number;
+  reminderMilestone?: '7_DAYS' | '3_DAYS' | '1_DAY' | '0_DAYS' | 'OVERDUE';
+  supervisorName?: string;
+  notificationDate?: string;
+  scheduledTime?: string;
   isRead: boolean;
   createdAt: string;
+}
+
+export type RentalExpiryMilestone = '7_DAYS' | '3_DAYS' | '1_DAY' | '0_DAYS' | 'OVERDUE';
+
+export interface RentalExpiryReminderRecord {
+  id: string;
+  projectId: string;
+  projectCode: string;
+  removalDate: string; // YYYY-MM-DD (effective removal date)
+  milestone: RentalExpiryMilestone;
+  remainingDays: number;
+  status: 'SENT' | 'CANCELLED';
+  notificationId?: string;
+  sentAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InstallationReminder {
+  id: string;
+  projectId: string;
+  projectCode: string;
+  customerName: string;
+  siteAddress: string;
+  supervisorName?: string;
+  installationDate: string; // YYYY-MM-DD
+  notificationDate: string; // YYYY-MM-DD (1 day prior)
+  scheduledTime: string; // e.g. '13:00 - 14:00 IST'
+  scheduledAt: string; // ISO string in Asia/Kolkata (+05:30)
+  status: 'PENDING' | 'SENT' | 'CANCELLED';
+  sentAt?: string;
+  notificationId?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuditLog {

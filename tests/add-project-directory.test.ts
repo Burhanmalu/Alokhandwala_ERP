@@ -8,6 +8,7 @@ import { dbStore } from '../src/lib/db/store';
 import {
   calculateRentalDurationBreakdown,
   calculateExtendedRemovalDate,
+  calculateRemovalDateFromMonths,
   getEffectiveRemovalDate,
   getRemainingDaysInfo,
   getFollowUpStatus,
@@ -52,10 +53,10 @@ export async function runAddProjectDirectoryTests() {
   );
   assert.ok(
     projectDetailsSrc.includes('Extend Rental') &&
-      projectDetailsSrc.includes('Shift Scaffolding') &&
+      !projectDetailsSrc.includes('Shift Scaffolding') &&
       projectDetailsSrc.includes('Dismantle') &&
       projectDetailsSrc.includes('Buffer Period'),
-    'Buffer Period, Extend Rental, Shift Scaffolding, and Dismantle buttons preserved'
+    'Buffer Period, Extend Rental, and Dismantle buttons preserved; Shift Scaffolding removed'
   );
   console.log('  ✓ PASS: 1. Project Directory UI replaced "Register Site" with "Add Project"');
 
@@ -261,43 +262,60 @@ export async function runAddProjectDirectoryTests() {
   assert.strictEqual(getEffectiveRemovalDate(bufferedProj), expectedBufDate);
   assert.strictEqual(bufferedProj.originalRemovalDate, '2026-12-04');
   assert.strictEqual(bufferedProj.rentalHistory?.[0]?.actionType, 'BUFFER_PERIOD');
+  assert.strictEqual(bufferedProj.rentalHistory?.[0]?.paymentStatus, 'UNPAID');
+  assert.strictEqual(bufferedProj.totalAmount, 10000, 'Unpaid buffer preserves Total Agreed Price');
+  assert.strictEqual(bufferedProj.paymentReceived, 2000, 'Unpaid buffer preserves Payment Received');
+  assert.strictEqual(bufferedProj.balanceAmount, 8000, 'Unpaid buffer preserves Balance Amount');
 
-  // Duplicate buffer activation must fail cleanly
-  let dupBufferRejected = false;
-  try {
-    await RentalService.applyBufferPeriod({
-      projectId: rentalProj.id,
-      actorId: 'usr-admin-01',
-      actorName: 'Burhan Malu (Admin)',
-    });
-  } catch (err: any) {
-    dupBufferRejected = /already active/i.test(err.message);
-  }
-  assert.strictEqual(dupBufferRejected, true, 'Duplicate buffer period activation prevented');
+  // Repeated Paid buffer period activation must succeed and update financials
+  const { project: secondBufferedProj } = await RentalService.applyBufferPeriod({
+    projectId: rentalProj.id,
+    requestedBufferDays: 2,
+    paymentStatus: 'PAID',
+    totalAmount: 12000,
+    paymentReceived: 10000,
+    actorId: 'usr-admin-01',
+    actorName: 'Burhan Malu (Admin)',
+  });
+  const expectedSecondBufDate = calculateExtendedRemovalDate(expectedBufDate, 2, 'DAYS');
+  assert.strictEqual(secondBufferedProj.status, 'BUFFER_PERIOD');
+  assert.strictEqual(secondBufferedProj.bufferEndDate, expectedSecondBufDate);
+  assert.strictEqual(secondBufferedProj.totalAmount, 12000, 'Paid buffer updates Total Agreed Price');
+  assert.strictEqual(secondBufferedProj.paymentReceived, 10000, 'Paid buffer updates Payment Received');
+  assert.strictEqual(secondBufferedProj.balanceAmount, 2000, 'Paid buffer updates Balance Amount');
+  assert.strictEqual(secondBufferedProj.rentalHistory?.length, 2, 'Both buffer activations preserved in history');
+  assert.strictEqual(secondBufferedProj.rentalHistory?.[0]?.paymentStatus, 'PAID');
 
-  // Example 1: Extend by 15 Days from 2026-12-07 -> 2026-12-22
+  // Example 1: Extend by 15 Days from 2nd buffer date with mandatory Extension Amount & Payment Received
   const { project: extDaysProj } = await RentalService.extendRental({
     projectId: rentalProj.id,
     extensionType: 'DAYS',
     extensionValue: 15,
+    extensionAmount: 3000,
+    paymentReceived: 3000,
     extensionReason: 'Site finishing work',
     actorId: 'usr-admin-01',
     actorName: 'Burhan Malu (Admin)',
   });
-  const expectedDaysEnd = calculateExtendedRemovalDate(expectedBufDate, 15, 'DAYS');
+  const expectedDaysEnd = calculateExtendedRemovalDate(expectedSecondBufDate, 15, 'DAYS');
   assert.strictEqual(extDaysProj.status, 'EXTENDED');
   assert.strictEqual(extDaysProj.removalDate, expectedDaysEnd);
   assert.strictEqual(extDaysProj.rentalEndDate, expectedDaysEnd);
   assert.strictEqual(extDaysProj.bufferEndDate, undefined);
   assert.strictEqual(getEffectiveRemovalDate(extDaysProj), expectedDaysEnd);
   assert.strictEqual(extDaysProj.originalRemovalDate, '2026-12-04');
+  assert.strictEqual(extDaysProj.totalAmount, 15000, 'Total Agreed Price = 12000 + 3000 = 15000');
+  assert.strictEqual(extDaysProj.paymentReceived, 13000, 'Payment Received = 10000 + 3000 = 13000');
+  assert.strictEqual(extDaysProj.balanceAmount, 2000, 'Balance Amount = 15000 - 13000 = 2000');
 
-  // Example 2: Calendar Month math from 2026-12-07 + 2 Months -> 2027-02-07
+  // Example 2: Calendar Month math from 2026-12-07 + 2 Months -> 2027-02-07 (with partial payment)
   assert.strictEqual(calculateExtendedRemovalDate('2026-12-07', 2, 'MONTHS'), '2027-02-07');
   const { project: extMonthsProj } = await RentalService.extendRental({
     projectId: rentalProj.id,
     extensionType: 'MONTHS',
     extensionValue: 2,
+    extensionAmount: 4000,
+    paymentReceived: 1500,
     extensionReason: 'Second phase facade',
     actorId: 'usr-admin-01',
     actorName: 'Burhan Malu (Admin)',
@@ -305,7 +323,10 @@ export async function runAddProjectDirectoryTests() {
   const expectedMonthsEnd = calculateExtendedRemovalDate(expectedDaysEnd, 2, 'MONTHS');
   assert.strictEqual(extMonthsProj.removalDate, expectedMonthsEnd);
   assert.strictEqual(getEffectiveRemovalDate(extMonthsProj), expectedMonthsEnd);
-  assert.strictEqual(extMonthsProj.rentalHistory?.length, 3);
+  assert.strictEqual(extMonthsProj.totalAmount, 19000, 'Total Agreed Price = 15000 + 4000 = 19000');
+  assert.strictEqual(extMonthsProj.paymentReceived, 14500, 'Payment Received = 13000 + 1500 = 14500');
+  assert.strictEqual(extMonthsProj.balanceAmount, 4500, 'Balance Amount = 19000 - 14500 = 4500');
+  assert.strictEqual(extMonthsProj.rentalHistory?.length, 4);
   assert.strictEqual(extMonthsProj.rentalHistory?.[0]?.originalRemovalDate, '2026-12-04');
   assert.strictEqual(extMonthsProj.rentalHistory?.[0]?.previousRemovalDate, expectedDaysEnd);
   assert.strictEqual(extMonthsProj.rentalHistory?.[0]?.newRemovalDate, expectedMonthsEnd);
@@ -338,6 +359,15 @@ export async function runAddProjectDirectoryTests() {
   assert.ok(modalSrc.includes('isDateNotApplicableStatus(status)'), 'ProjectFormModal dynamically checks isDateNotApplicableStatus');
   assert.ok(modalSrc.includes('value="N/A"'), 'ProjectFormModal displays N/A for date fields when applicable');
   console.log('  ✓ PASS: 6. Conditional Date Fields (N/A for 4 statuses, date pickers for others) verified');
+
+  // 7. Rental Duration Selection – By Month / By Date
+  assert.strictEqual(calculateRemovalDateFromMonths('2026-12-01', 3), '2027-03-01', 'By Month: 2026-12-01 + 3 Months = 2027-03-01');
+  assert.strictEqual(calculateRemovalDateFromMonths('2026-12-01', 1.5), '2027-01-16', 'By Month decimal: 2026-12-01 + 1.5 Months = 2027-01-16');
+  const byDateBd = calculateRentalDurationBreakdown('2026-12-01', '2027-02-01');
+  assert.strictEqual(byDateBd.months, 2, 'By Date: 2026-12-01 to 2027-02-01 = 2 Months');
+  assert.strictEqual(byDateBd.days, 0);
+  assert.ok(modalSrc.includes('By Month') && modalSrc.includes('By Date'), 'ProjectFormModal has By Month and By Date controls');
+  console.log('  ✓ PASS: 7. Rental Duration Mode (By Month / By Date & decimal months) verified');
 
   console.log('---------------------------------------------------------------');
   console.log('Project Directory Add/Edit/Delete: All Tests Passed 100%');

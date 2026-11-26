@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 import { ProjectService } from '@/lib/services/project-service';
 import { siteInspectionSchema, addProjectSchema } from '@/lib/validations';
+import { isEligibleActiveProjectStatus } from '@/lib/formatters';
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,12 +10,26 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status');
     const customerId = searchParams.get('customerId');
     const supervisorId = searchParams.get('supervisorId');
+    const eligibleForChallan = searchParams.get('eligibleForChallan') === 'true';
     const search = searchParams.get('search')?.toLowerCase();
 
     let projects = dbStore.getProjects();
 
+    if (eligibleForChallan) {
+      projects = projects.filter(p => p.status !== 'CANCELLED' && isEligibleActiveProjectStatus(p.status));
+    }
+
     if (status && status !== 'ALL') {
-      projects = projects.filter(p => p.status === status);
+      if (status === 'OVERDUE_AMOUNT') {
+        projects = projects.filter(p => {
+          if (p.status === 'CANCELLED') return false;
+          const total = Number(p.totalAmount ?? p.agreedProjectPrice ?? p.quotationAmount ?? 0);
+          const received = Number(p.paymentReceived ?? p.advancePaidAmount ?? 0);
+          return Math.round((total - received) * 100) / 100 > 0;
+        });
+      } else {
+        projects = projects.filter(p => p.status === status);
+      }
     }
     if (customerId) {
       projects = projects.filter(p => p.customerId === customerId);

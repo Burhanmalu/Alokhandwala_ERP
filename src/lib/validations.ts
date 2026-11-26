@@ -150,6 +150,11 @@ export const installationSubmissionSchema = z.object({
 export const bufferRequestSchema = z.object({
   projectId: z.string().min(1, 'Project ID is required'),
   requestedBufferDays: z.coerce.number().int().min(1, 'Buffer days must be at least 1').max(3650).optional(),
+  bufferEndDate: z.string().optional(),
+  paymentStatus: z.enum(['PAID', 'UNPAID']).default('UNPAID'),
+  totalAmount: z.coerce.number().min(0, 'Total Agreed Price cannot be negative').optional(),
+  paymentReceived: z.coerce.number().min(0, 'Payment Received cannot be negative').optional(),
+  balanceAmount: z.coerce.number().optional(),
   reason: z.string().trim().min(2).default('Configured rental buffer period activated'),
   additionalCharges: z.coerce.number().min(0).default(0),
 });
@@ -162,6 +167,11 @@ export const extensionRequestSchema = z
     durationMonths: z.coerce.number().int().min(1).optional(),
     extensionReason: z.string().trim().max(500).optional().default('Rental extension approved'),
     monthlyRentalRate: z.coerce.number().min(0).optional(),
+    extensionAmount: z.coerce.number().positive('Extension Amount must be greater than zero').optional(),
+    paymentReceived: z.coerce.number().min(0, 'Payment Received cannot be negative').default(0),
+    projectTotalAmount: z.coerce.number().min(0, 'Total Agreed Price cannot be negative').optional(),
+    projectPaymentReceived: z.coerce.number().min(0, 'Total Payment Received cannot be negative').optional(),
+    projectBalanceAmount: z.coerce.number().min(0, 'Balance Amount cannot be negative').optional(),
     additionalCharges: z.coerce.number().min(0).default(0),
   })
   .refine(
@@ -169,47 +179,59 @@ export const extensionRequestSchema = z
       (val.extensionValue !== undefined && val.extensionValue >= 1) ||
       (val.durationMonths !== undefined && val.durationMonths >= 1),
     { message: 'Extension duration must be a positive number' }
+  )
+  .refine(
+    (val) => val.extensionAmount === undefined || val.paymentReceived <= val.extensionAmount,
+    { message: 'Payment Received cannot exceed Extension Amount' }
+  )
+  .refine(
+    (val) =>
+      val.projectTotalAmount === undefined ||
+      val.projectPaymentReceived === undefined ||
+      val.projectBalanceAmount === undefined ||
+      Math.abs((val.projectTotalAmount - val.projectPaymentReceived) - val.projectBalanceAmount) <= 0.01,
+    { message: 'Balance Amount must equal Total Agreed Price − Total Payment Received' }
   );
 
-export const shiftingRequestSchema = z.object({
-  projectId: z.string().min(1, 'Project ID is required'),
-  shiftingType: z.enum(['TYPE_A_UNCHANGED', 'TYPE_B_QUANTITY_CHANGE']),
-  destinationSiteId: z.string().optional(),
-  destinationAreaDescription: z.string().min(2, 'Destination area description is required'),
-  plannedShiftingDate: z.string().min(1, 'Shifting date is required'),
-  labourCharges: z.coerce.number().min(0).default(0),
-  transportCharges: z.coerce.number().min(0).default(0),
-  teamMembers: z.string().optional(),
-  remarks: z.string().optional(),
-  materialModifications: z.array(
-    z.object({
-      materialId: z.string().min(1),
-      newRequiredQuantity: z.coerce.number().int().min(0),
-    })
-  ).optional(),
-});
-
-export const removalDismantlingSchema = z.object({
-  projectId: z.string().min(1, 'Project ID is required'),
-  actualDismantlingDate: z.string().min(1, 'Dismantling date is required'),
-  warehouseId: z.string().min(1, 'Receiving warehouse is required'),
-  supervisorId: z.string().min(1, 'Supervisor is required'),
-  teamMembers: z.string().optional(),
-  transportDetails: z.string().optional(),
-  reconciliationNotes: z.string().optional(),
-  afterPhotoUrls: z.array(z.string()).default([]),
-  materialReturns: z.array(
-    z.object({
-      materialId: z.string().min(1),
-      expectedSiteQty: z.coerce.number().int().min(0),
-      collectedQty: z.coerce.number().int().min(0),
-      usableReturnedQty: z.coerce.number().int().min(0),
-      damagedQty: z.coerce.number().int().min(0).default(0),
-      missingQty: z.coerce.number().int().min(0).default(0),
-      remarks: z.string().optional(),
-    })
-  ).min(1, 'Return records are required for all allocated materials'),
-});
+export const removalDismantlingSchema = z
+  .object({
+    projectId: z.string().min(1, 'Project ID is required'),
+    actualDismantlingDate: z.string().min(1, 'Dismantling date is required'),
+    warehouseId: z.string().optional(),
+    supervisorId: z.string().min(1, 'Supervisor is required'),
+    teamMembers: z.string().optional(),
+    transportDetails: z.string().optional(),
+    reconciliationNotes: z.string().optional(),
+    afterPhotoUrls: z.array(z.string()).default([]),
+    projectTotalAmount: z.coerce.number().min(0, 'Total Agreed Price cannot be negative').optional(),
+    projectPaymentReceived: z.coerce.number().min(0, 'Total Payment Received cannot be negative').optional(),
+    projectBalanceAmount: z.coerce.number().min(0, 'Balance Amount cannot be negative').optional(),
+    outstandingPaymentNote: z.string().trim().max(500).optional(),
+    paymentDateType: z.enum(['EXPECTED', 'ACTUAL']).optional(),
+    outstandingPaymentDate: z.string().optional(),
+    materialReturns: z
+      .array(
+        z.object({
+          materialId: z.string().min(1),
+          expectedSiteQty: z.coerce.number().int().min(0),
+          collectedQty: z.coerce.number().int().min(0),
+          usableReturnedQty: z.coerce.number().int().min(0),
+          damagedQty: z.coerce.number().int().min(0).default(0),
+          missingQty: z.coerce.number().int().min(0).default(0),
+          remarks: z.string().optional(),
+        })
+      )
+      .optional()
+      .default([]),
+  })
+  .refine(
+    (val) =>
+      val.projectTotalAmount === undefined ||
+      val.projectPaymentReceived === undefined ||
+      val.projectBalanceAmount === undefined ||
+      Math.abs((val.projectTotalAmount - val.projectPaymentReceived) - val.projectBalanceAmount) <= 0.01,
+    { message: 'Balance Amount must equal Total Agreed Price − Total Payment Received' }
+  );
 
 export const invoiceGenerationSchema = z.object({
   customerId: z.string().min(1, 'Customer is required'),

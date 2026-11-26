@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
-import { getEffectiveRemovalDate, getRemainingDaysInfo } from '@/lib/formatters';
+import { getEffectiveRemovalDate, getRemainingDaysInfo, isEligibleActiveProjectStatus } from '@/lib/formatters';
 
 export async function GET(req: NextRequest) {
   try {
@@ -49,7 +49,30 @@ export async function GET(req: NextRequest) {
     const missingQty = materials.reduce((sum, m) => sum + m.missingQty, 0);
     const lowStockCount = materials.filter(m => (m.usableWarehouseQty - m.reservedQty) <= m.minimumStockThreshold).length;
 
-    // Financial metrics
+    // Financial metrics (Single Source of Truth from eligible active project financial records)
+    // Exclude Not Installed, Pending Approval, and Quotation Accepted projects
+    const financialProjects = projects
+      .filter((p) => isEligibleActiveProjectStatus(p.status))
+      .map((p) => {
+      const totalAgreedPrice = Math.round(Number(p.totalAmount ?? p.agreedProjectPrice ?? p.quotationAmount ?? 0) * 100) / 100;
+      const totalPaymentReceived = Math.round(Number(p.paymentReceived ?? p.advancePaidAmount ?? 0) * 100) / 100;
+      const balanceAmount = Math.round((totalAgreedPrice - totalPaymentReceived) * 100) / 100;
+      return {
+        id: p.id,
+        projectCode: p.projectCode,
+        siteName: p.siteName,
+        customerName: p.customerName,
+        status: p.status,
+        totalAgreedPrice,
+        totalPaymentReceived,
+        balanceAmount,
+      };
+    });
+
+    const totalProjectAmount = Math.round(financialProjects.reduce((sum, p) => sum + p.totalAgreedPrice, 0) * 100) / 100;
+    const totalProjectReceived = Math.round(financialProjects.reduce((sum, p) => sum + p.totalPaymentReceived, 0) * 100) / 100;
+    const totalProjectOverdue = Math.round(financialProjects.reduce((sum, p) => sum + Math.max(0, p.balanceAmount), 0) * 100) / 100;
+
     const totalInvoiced = invoices.reduce((sum, i) => sum + i.totalAmount, 0);
     const totalCollected = payments.reduce((sum, p) => sum + p.amount, 0);
     const outstandingReceivables = invoices.reduce((sum, i) => sum + i.outstandingAmount, 0);
@@ -125,7 +148,11 @@ export async function GET(req: NextRequest) {
           totalCollected,
           outstandingReceivables,
           monthlyRentalRunRate,
+          totalProjectAmount,
+          totalProjectReceived,
+          totalProjectOverdue,
         },
+        financialProjects,
         charts: {
           projectsByStatus: projectsByStatusData,
           categoryAllocation: categoryAllocationData,

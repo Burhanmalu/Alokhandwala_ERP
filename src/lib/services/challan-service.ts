@@ -1,6 +1,7 @@
 // ALOKHANDWALA - Challan Management Service (Material Issue, Return, Loss Reconciliation & Inventory Integration)
 
 import { dbStore } from '../db/store';
+import { isEligibleActiveProjectStatus } from '../formatters';
 import { hasPermission, PermissionKey } from '../auth';
 import {
   Challan,
@@ -554,6 +555,18 @@ export class ChallanService {
       const customer = state.customers.find(c => c.id === data.customerId);
       if (!customer) throw new Error('Selected customer not found.');
 
+      if (data.projectId) {
+        const linkedProject = state.projects.find(p => p.id === data.projectId);
+        if (!linkedProject) {
+          throw new Error('Selected project not found.');
+        }
+        if (!isEligibleActiveProjectStatus(linkedProject.status)) {
+          throw new Error(
+            `Cannot create challan for project ${linkedProject.projectCode} in status "${linkedProject.status}". Projects with status Not Installed, Pending Approval, or Quotation Accepted are not eligible for Delivery Challans.`
+          );
+        }
+      }
+
       const site = data.siteId
         ? state.sites.find(s => s.id === data.siteId)
         : state.sites.find(s => s.customerId === customer.id && s.siteName === data.siteName);
@@ -732,6 +745,18 @@ export class ChallanService {
 
       const customer = state.customers.find(c => c.id === data.customerId);
       if (!customer) throw new Error('Selected customer not found.');
+
+      if (data.projectId) {
+        const linkedProject = state.projects.find(p => p.id === data.projectId);
+        if (!linkedProject) {
+          throw new Error('Selected project not found.');
+        }
+        if (!isEligibleActiveProjectStatus(linkedProject.status)) {
+          throw new Error(
+            `Cannot create challan for project ${linkedProject.projectCode} in status "${linkedProject.status}". Projects with status Not Installed, Pending Approval, or Quotation Accepted are not eligible for Delivery Challans.`
+          );
+        }
+      }
 
       const site = data.siteId
         ? state.sites.find(s => s.id === data.siteId)

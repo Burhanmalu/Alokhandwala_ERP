@@ -31,3 +31,5 @@ yarn-error.log*
 
 # Local database store (if not meant for version control)
 # .data/
+
+.next-build/

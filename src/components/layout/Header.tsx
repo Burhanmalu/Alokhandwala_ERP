@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   Search, 
   Menu, 
   LogOut, 
-  X 
+  X,
+  Bell
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 
@@ -15,6 +16,31 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
   const { currentUser, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const loadUnread = () => {
+      fetch('/api/notifications')
+        .then((r) => r.json())
+        .then((json) => {
+          if (json.success) {
+            setUnreadCount(
+              typeof json.unreadCount === 'number'
+                ? json.unreadCount
+                : (json.data || []).filter((n: any) => !n.isRead).length
+            );
+          }
+        })
+        .catch(() => {});
+    };
+    loadUnread();
+    const timer = setInterval(loadUnread, 60_000);
+    window.addEventListener('notifications-updated', loadUnread);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('notifications-updated', loadUnread);
+    };
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +91,22 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {currentUser.role === 'ADMIN' && (
+          <Link
+            href="/notifications"
+            title="Notification Center"
+            className="relative p-2 rounded-lg text-[#4d301c] hover:bg-[#faf6ee] border border-transparent hover:border-[#e5dac8] transition shrink-0"
+            aria-label="Notifications"
+          >
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#24160c] text-[#c79e7c] text-[9px] font-mono font-bold flex items-center justify-center border border-white">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </Link>
+        )}
+
         {/* User Pill */}
         <div className="flex items-center gap-2 sm:gap-2.5">
           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#24150c] text-[#fdf8f4] flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 border border-[#4d301c]">

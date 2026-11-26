@@ -35,10 +35,35 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
   const isAccountsRoute = pathname.startsWith('/accounts');
   const isHRRoute = pathname.startsWith('/hr');
   const [inventoryExpanded, setInventoryExpanded] = useState<boolean>(() => isInventoryRoute);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     if (isInventoryRoute) setInventoryExpanded(true);
   }, [pathname, isInventoryRoute]);
+
+  useEffect(() => {
+    const loadUnread = () => {
+      fetch('/api/notifications')
+        .then((r) => r.json())
+        .then((json) => {
+          if (json.success) {
+            setUnreadNotifications(
+              typeof json.unreadCount === 'number'
+                ? json.unreadCount
+                : (json.data || []).filter((n: any) => !n.isRead).length
+            );
+          }
+        })
+        .catch(() => {});
+    };
+    loadUnread();
+    const timer = setInterval(loadUnread, 60_000);
+    window.addEventListener('notifications-updated', loadUnread);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('notifications-updated', loadUnread);
+    };
+  }, []);
 
   const isExact = (path: string) => pathname === path;
 
@@ -330,6 +355,11 @@ export function Sidebar({ onClose }: { onClose?: () => void } = {}) {
                   <Bell className={iconClass('/notifications')} />
                   <span>Notifications</span>
                 </div>
+                {unreadNotifications > 0 && (
+                  <span className="px-1.5 py-0.5 min-w-[18px] text-center rounded-full bg-[#c79e7c] text-[#24160c] text-[10px] font-mono font-bold leading-none">
+                    {unreadNotifications}
+                  </span>
+                )}
               </Link>
 
               <Link href="/settings" onClick={onClose} className={navLinkClass('/settings')}>

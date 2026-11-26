@@ -28,8 +28,10 @@ import { Customer, Project, ProjectStatus, UserProfile, CompanySettings } from '
 import { initialCompanySettings } from '@/lib/db/seed-data';
 import {
   formatINR,
+  formatDate,
   calculateScaffoldingArea,
   calculateRentalDurationBreakdown,
+  calculateRemovalDateFromMonths,
   getRemainingDaysInfo,
   getFollowUpStatus,
   getEffectiveRemovalDate,
@@ -110,6 +112,8 @@ export function ProjectFormModal({
 
   // Section B: Project Information
   const [status, setStatus] = useState<ProjectStatus>('NOT_INSTALLED');
+  const [rentalMode, setRentalMode] = useState<'BY_MONTH' | 'BY_DATE'>('BY_DATE');
+  const [rentalMonthsInput, setRentalMonthsInput] = useState<string>('');
   const [installationDate, setInstallationDate] = useState('');
   const [removalDate, setRemovalDate] = useState('');
 
@@ -179,6 +183,8 @@ export function ProjectFormModal({
     setDimHeight('');
     setDimUnit('FEET');
     setStatus('NOT_INSTALLED');
+    setRentalMode('BY_DATE');
+    setRentalMonthsInput('');
     setInstallationDate('');
     setRemovalDate('');
     setTotalAmountInput('0');
@@ -227,8 +233,26 @@ export function ProjectFormModal({
       setDimUnit(uVal);
 
       setStatus(editingProject.status || 'NOT_INSTALLED');
-      setInstallationDate(getProjectInstallDateStr(editingProject));
-      setRemovalDate(getEffectiveRemovalDate(editingProject));
+      const initInstall = getProjectInstallDateStr(editingProject);
+      const initRemoval = getEffectiveRemovalDate(editingProject);
+      setInstallationDate(initInstall);
+      setRemovalDate(initRemoval);
+      setRentalMode(editingProject.rentalMode || 'BY_DATE');
+      if (editingProject.rentalDurationMonths !== undefined && editingProject.rentalDurationMonths !== null) {
+        const d = editingProject.rentalDurationDays || 0;
+        const dec = d > 0 ? Math.round((editingProject.rentalDurationMonths + d / 30) * 100) / 100 : editingProject.rentalDurationMonths;
+        setRentalMonthsInput(dec > 0 ? String(dec) : '');
+      } else if (initInstall && initRemoval) {
+        const bd = calculateRentalDurationBreakdown(initInstall, initRemoval);
+        if (!bd.isInvalid && bd.display) {
+          const dec = bd.days > 0 ? Math.round((bd.months + bd.days / 30) * 100) / 100 : bd.months;
+          setRentalMonthsInput(dec > 0 ? String(dec) : '');
+        } else {
+          setRentalMonthsInput('');
+        }
+      } else {
+        setRentalMonthsInput('');
+      }
       const tAmt =
         editingProject.totalAmount ??
         editingProject.agreedProjectPrice ??
@@ -256,21 +280,51 @@ export function ProjectFormModal({
     [numericWidth, numericDepth, numericHeight, dimUnit]
   );
 
+  // Derived By-Month Removal Date
+  const computedByMonthRemovalDate = useMemo(
+    () => calculateRemovalDateFromMonths(installationDate, rentalMonthsInput),
+    [installationDate, rentalMonthsInput]
+  );
+
+  // Effective Removal Date based on selected rental mode
+  const activeRemovalDate = useMemo(
+    () => (rentalMode === 'BY_MONTH' ? computedByMonthRemovalDate : removalDate),
+    [rentalMode, computedByMonthRemovalDate, removalDate]
+  );
+
   // Derived Rental Duration Calculation: Rental Duration = Date of Removal - Date of Installation
   const rentalDuration = useMemo(
-    () => calculateRentalDurationBreakdown(installationDate, removalDate),
-    [installationDate, removalDate]
+    () => calculateRentalDurationBreakdown(installationDate, activeRemovalDate),
+    [installationDate, activeRemovalDate]
   );
 
   // Derived Remaining Days & Follow-Up Alerts
   const remainingDaysInfo = useMemo(
-    () => getRemainingDaysInfo(removalDate, status),
-    [removalDate, status]
+    () => getRemainingDaysInfo(activeRemovalDate, status),
+    [activeRemovalDate, status]
   );
   const followUpStatus = useMemo(
-    () => getFollowUpStatus(followUpDate, removalDate, status),
-    [followUpDate, removalDate, status]
+    () => getFollowUpStatus(followUpDate, activeRemovalDate, status),
+    [followUpDate, activeRemovalDate, status]
   );
+
+  const handleRentalModeChange = (nextMode: 'BY_MONTH' | 'BY_DATE') => {
+    if (nextMode === rentalMode) return;
+    if (nextMode === 'BY_MONTH') {
+      if (!rentalMonthsInput && installationDate && removalDate) {
+        const bd = calculateRentalDurationBreakdown(installationDate, removalDate);
+        if (!bd.isInvalid && (bd.months > 0 || bd.days > 0)) {
+          const dec = bd.days > 0 ? Math.round((bd.months + bd.days / 30) * 100) / 100 : bd.months;
+          setRentalMonthsInput(String(dec));
+        }
+      }
+    } else {
+      if (!removalDate && computedByMonthRemovalDate) {
+        setRemovalDate(computedByMonthRemovalDate);
+      }
+    }
+    setRentalMode(nextMode);
+  };
 
   // Derived Financial Calculations: Balance Amount = Total Amount - Payment Received
   const totalAmount = Math.max(0, Number(totalAmountInput) || 0);
@@ -418,7 +472,13 @@ export function ProjectFormModal({
       return `Payment Received (${formatINR(paymentReceived, false)}) cannot exceed Total Amount (${formatINR(totalAmount, false)}).`;
     }
     if (!isDateNotApplicableStatus(status)) {
-      if (rentalDuration.isInvalid || (installationDate && removalDate && removalDate < installationDate)) {
+      if (rentalMode === 'BY_MONTH' && rentalMonthsInput.trim() !== '') {
+        const mNum = Number(rentalMonthsInput);
+        if (isNaN(mNum) || mNum < 0) {
+          return 'Rental Duration (Months) cannot be negative.';
+        }
+      }
+      if (rentalDuration.isInvalid || (installationDate && activeRemovalDate && activeRemovalDate < installationDate)) {
         return 'Date of Removal cannot be earlier than Date of Installation.';
       }
     }
@@ -465,8 +525,9 @@ export function ProjectFormModal({
             height: numericHeight,
             unit: dimUnit,
             status,
+            rentalMode: isDateNotApplicableStatus(status) ? undefined : rentalMode,
             installationDate: isDateNotApplicableStatus(status) ? undefined : (installationDate || undefined),
-            removalDate: isDateNotApplicableStatus(status) ? undefined : (removalDate || undefined),
+            removalDate: isDateNotApplicableStatus(status) ? undefined : (activeRemovalDate || undefined),
             rentalDurationMonths: !isDateNotApplicableStatus(status) && installationDate ? rentalDuration.months : undefined,
             rentalDurationDays: !isDateNotApplicableStatus(status) && installationDate ? rentalDuration.days : undefined,
             rentalDurationDisplay: !isDateNotApplicableStatus(status) && installationDate ? (rentalDuration.display || undefined) : undefined,
@@ -512,8 +573,9 @@ export function ProjectFormModal({
             height: numericHeight,
             unit: dimUnit,
             status,
+            rentalMode: isDateNotApplicableStatus(status) ? undefined : rentalMode,
             installationDate: isDateNotApplicableStatus(status) ? undefined : (installationDate || undefined),
-            removalDate: isDateNotApplicableStatus(status) ? undefined : (removalDate || undefined),
+            removalDate: isDateNotApplicableStatus(status) ? undefined : (activeRemovalDate || undefined),
             rentalDurationMonths: !isDateNotApplicableStatus(status) && installationDate ? rentalDuration.months : undefined,
             rentalDurationDays: !isDateNotApplicableStatus(status) && installationDate ? rentalDuration.days : undefined,
             rentalDurationDisplay: !isDateNotApplicableStatus(status) && installationDate ? (rentalDuration.display || undefined) : undefined,
@@ -1032,8 +1094,8 @@ export function ProjectFormModal({
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Status */}
+            {/* Project Status */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block font-semibold text-[#4d301c] mb-1">
                   Project Status <span className="text-rose-600">*</span>
@@ -1051,12 +1113,54 @@ export function ProjectFormModal({
                 </select>
               </div>
 
-              {/* Date of Installation */}
-              <div>
-                <label className="block font-semibold text-[#4d301c] mb-1">
-                  Date of Installation
-                </label>
-                {isDateNotApplicableStatus(status) ? (
+              {/* Rental Duration Mode (Shown only when dates are applicable) */}
+              {!isDateNotApplicableStatus(status) && (
+                <div>
+                  <label className="block font-semibold text-[#4d301c] mb-1">
+                    Rental Duration Mode
+                  </label>
+                  <div
+                    role="group"
+                    aria-label="Rental Duration Mode"
+                    className="grid grid-cols-2 gap-1 p-1 bg-[#f4ece1] border border-[#d6c7b2] rounded-md"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleRentalModeChange('BY_MONTH')}
+                      className={`py-1.5 px-3 rounded text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                        rentalMode === 'BY_MONTH'
+                          ? 'bg-[#24150c] text-white shadow-xs'
+                          : 'text-[#59371d] hover:bg-[#ebdcc9]'
+                      }`}
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>By Month</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRentalModeChange('BY_DATE')}
+                      className={`py-1.5 px-3 rounded text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                        rentalMode === 'BY_DATE'
+                          ? 'bg-[#24150c] text-white shadow-xs'
+                          : 'text-[#59371d] hover:bg-[#ebdcc9]'
+                      }`}
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>By Date</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Date & Duration Fields */}
+            {isDateNotApplicableStatus(status) ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Date of Installation: N/A */}
+                <div>
+                  <label className="block font-semibold text-[#4d301c] mb-1">
+                    Date of Installation
+                  </label>
                   <div className="relative">
                     <input
                       type="text"
@@ -1070,22 +1174,13 @@ export function ProjectFormModal({
                       Not Applicable
                     </span>
                   </div>
-                ) : (
-                  <input
-                    type="date"
-                    value={installationDate}
-                    onChange={(e) => setInstallationDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] font-mono focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
-                  />
-                )}
-              </div>
+                </div>
 
-              {/* Date of Removal */}
-              <div>
-                <label className="block font-semibold text-[#4d301c] mb-1">
-                  Date of Removal
-                </label>
-                {isDateNotApplicableStatus(status) ? (
+                {/* Date of Removal: N/A */}
+                <div>
+                  <label className="block font-semibold text-[#4d301c] mb-1">
+                    Date of Removal
+                  </label>
                   <div className="relative">
                     <input
                       type="text"
@@ -1099,99 +1194,199 @@ export function ProjectFormModal({
                       Not Applicable
                     </span>
                   </div>
-                ) : (
-                  <input
-                    type="date"
-                    min={installationDate || undefined}
-                    value={removalDate}
-                    onChange={(e) => setRemovalDate(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-md font-mono focus:bg-white focus:outline-none ${
-                      rentalDuration.isInvalid
-                        ? 'bg-rose-50 border-2 border-rose-500 text-rose-900 focus:ring-1 focus:ring-rose-500'
-                        : 'bg-[#fbf9f5] border border-[#d6c7b2] text-[#24160c] focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541]'
-                    }`}
-                  />
-                )}
+                </div>
               </div>
-            </div>
+            ) : rentalMode === 'BY_MONTH' ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Date of Installation */}
+                  <div>
+                    <label className="block font-semibold text-[#4d301c] mb-1">
+                      Date of Installation
+                    </label>
+                    <input
+                      type="date"
+                      value={installationDate}
+                      onChange={(e) => setInstallationDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] font-mono focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                    />
+                  </div>
 
-            {/* Rental Duration (Auto-Calculated below Installation & Removal Dates) */}
-            <div className="pt-1">
-              <div className="flex items-center justify-between mb-1">
-                <label className="font-semibold text-[#4d301c] flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-[#8f6541]" />
-                  <span>Rental Duration</span>
-                  <span className="text-[10px] font-normal text-[#8c5e39]">
-                    {isDateNotApplicableStatus(status)
-                      ? '(Applicable once installation is scheduled)'
-                      : '(Auto: Date of Removal − Date of Installation)'}
-                  </span>
-                </label>
-              </div>
-              <div
-                className={`px-3.5 py-2.5 rounded-md border flex flex-wrap items-center justify-between gap-2 ${
-                  isDateNotApplicableStatus(status)
-                    ? 'bg-[#faf6ee]/60 border-[#e5dac8] text-[#9c826e]'
-                    : rentalDuration.isInvalid
-                      ? 'bg-rose-50 border-rose-300 text-rose-800'
-                      : rentalDuration.display
-                        ? 'bg-[#fbf9f5] border-[#d6c7b2] text-[#24160c]'
-                        : 'bg-[#faf6ee]/60 border-[#e5dac8] text-[#9c826e]'
-                }`}
-              >
-                <div className="flex items-center gap-2 font-mono font-bold text-xs">
-                  {isDateNotApplicableStatus(status) ? (
-                    <span className="font-sans font-normal italic text-[#9c826e]">
-                      N/A — Rental duration will be calculated once installation is scheduled
-                    </span>
-                  ) : rentalDuration.isInvalid ? (
-                    <>
-                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                      <span>{rentalDuration.display}</span>
-                    </>
-                  ) : rentalDuration.display ? (
-                    <>
-                      <span
-                        className={`w-2 h-2 rounded-full shrink-0 ${
-                          rentalDuration.isOngoing ? 'bg-emerald-600' : 'bg-[#8f6541]'
-                        }`}
+                  {/* Rental Duration (Months) */}
+                  <div>
+                    <label className="block font-semibold text-[#4d301c] mb-1">
+                      Rental Duration (Months)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      placeholder="e.g. 3 or 1.5"
+                      value={rentalMonthsInput}
+                      onChange={(e) => setRentalMonthsInput(e.target.value)}
+                      className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] font-mono font-semibold focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Date of Removal (Automatically Calculated) */}
+                  <div>
+                    <label className="block font-semibold text-[#4d301c] mb-1">
+                      Date of Removal <span className="text-[10px] font-normal text-[#8c5e39]">(Auto)</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        readOnly
+                        value={computedByMonthRemovalDate ? formatDate(computedByMonthRemovalDate) : '—'}
+                        aria-label="Calculated Date of Removal"
+                        className="w-full px-3 py-2 bg-[#faf6ee] border border-[#d6c7b2] rounded-md text-[#24160c] font-mono font-bold cursor-default focus:outline-none"
                       />
-                      <span>{rentalDuration.display}</span>
-                    </>
-                  ) : (
-                    <span className="font-sans font-normal italic">
-                      Enter Date of Installation to calculate rental duration
-                    </span>
-                  )}
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-sans font-semibold text-[#8c5e39] uppercase tracking-wider">
+                        {computedByMonthRemovalDate || 'Auto'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                {!isDateNotApplicableStatus(status) && rentalDuration.display && !rentalDuration.isInvalid && !rentalDuration.isScheduled && (
-                  <div className="flex items-center gap-3 text-[11px] font-mono text-[#7d6553]">
-                    <span>
-                      Months: <strong className="text-[#24160c]">{rentalDuration.months}</strong>
-                    </span>
-                    <span>
-                      Remaining Days: <strong className="text-[#24160c]">{rentalDuration.days}</strong>
-                    </span>
-                    <span className="hidden sm:inline text-[#9c826e]">
-                      ({rentalDuration.totalDays} total days)
-                    </span>
+                {/* Summary Box for By Month */}
+                {installationDate && computedByMonthRemovalDate && !rentalDuration.isInvalid && (
+                  <div className="pt-1 space-y-2">
+                    <div className="px-3.5 py-2.5 rounded-md border bg-[#fbf9f5] border-[#d6c7b2] text-[#24160c] flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 font-mono font-bold text-xs">
+                        <span className="w-2 h-2 rounded-full shrink-0 bg-[#8f6541]" />
+                        <span>{rentalDuration.display}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] font-mono text-[#7d6553]">
+                        <span>
+                          Months: <strong className="text-[#24160c]">{rentalDuration.months}</strong>
+                        </span>
+                        <span>
+                          Remaining Days: <strong className="text-[#24160c]">{rentalDuration.days}</strong>
+                        </span>
+                        <span className="hidden sm:inline text-[#9c826e]">
+                          ({rentalDuration.totalDays} total days)
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-md bg-[#faf6ee] border border-[#e5dac8] text-[11px]">
+                      <span className="text-[#714f36] font-semibold">
+                        Remaining Until Removal Date:
+                      </span>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded border font-bold ${remainingDaysInfo.badgeClass}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${remainingDaysInfo.dotClass}`} />
+                        <span>{remainingDaysInfo.label}</span>
+                      </span>
+                    </div>
                   </div>
                 )}
-              </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Date of Installation */}
+                  <div>
+                    <label className="block font-semibold text-[#4d301c] mb-1">
+                      Date of Installation
+                    </label>
+                    <input
+                      type="date"
+                      value={installationDate}
+                      onChange={(e) => setInstallationDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] font-mono focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                    />
+                  </div>
 
-              {!isDateNotApplicableStatus(status) && removalDate && !rentalDuration.isInvalid && (
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-md bg-[#faf6ee] border border-[#e5dac8] text-[11px]">
-                  <span className="text-[#714f36] font-semibold">
-                    Remaining Until Removal Date:
-                  </span>
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded border font-bold ${remainingDaysInfo.badgeClass}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${remainingDaysInfo.dotClass}`} />
-                    <span>{remainingDaysInfo.label}</span>
-                  </span>
+                  {/* Date of Removal */}
+                  <div>
+                    <label className="block font-semibold text-[#4d301c] mb-1">
+                      Date of Removal
+                    </label>
+                    <input
+                      type="date"
+                      min={installationDate || undefined}
+                      value={removalDate}
+                      onChange={(e) => setRemovalDate(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-md font-mono focus:bg-white focus:outline-none ${
+                        rentalDuration.isInvalid
+                          ? 'bg-rose-50 border-2 border-rose-500 text-rose-900 focus:ring-1 focus:ring-rose-500'
+                          : 'bg-[#fbf9f5] border border-[#d6c7b2] text-[#24160c] focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541]'
+                      }`}
+                    />
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* Rental Duration (Auto-Calculated below Installation & Removal Dates) */}
+                <div className="pt-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-semibold text-[#4d301c] flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-[#8f6541]" />
+                      <span>Rental Duration</span>
+                      <span className="text-[10px] font-normal text-[#8c5e39]">
+                        (Auto: Date of Removal − Date of Installation)
+                      </span>
+                    </label>
+                  </div>
+                  <div
+                    className={`px-3.5 py-2.5 rounded-md border flex flex-wrap items-center justify-between gap-2 ${
+                      rentalDuration.isInvalid
+                        ? 'bg-rose-50 border-rose-300 text-rose-800'
+                        : rentalDuration.display
+                          ? 'bg-[#fbf9f5] border-[#d6c7b2] text-[#24160c]'
+                          : 'bg-[#faf6ee]/60 border-[#e5dac8] text-[#9c826e]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-mono font-bold text-xs">
+                      {rentalDuration.isInvalid ? (
+                        <>
+                          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>{rentalDuration.display}</span>
+                        </>
+                      ) : rentalDuration.display ? (
+                        <>
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              rentalDuration.isOngoing ? 'bg-emerald-600' : 'bg-[#8f6541]'
+                            }`}
+                          />
+                          <span>{rentalDuration.display}</span>
+                        </>
+                      ) : (
+                        <span className="font-sans font-normal italic">
+                          Enter Date of Installation to calculate rental duration
+                        </span>
+                      )}
+                    </div>
+
+                    {rentalDuration.display && !rentalDuration.isInvalid && !rentalDuration.isScheduled && (
+                      <div className="flex items-center gap-3 text-[11px] font-mono text-[#7d6553]">
+                        <span>
+                          Months: <strong className="text-[#24160c]">{rentalDuration.months}</strong>
+                        </span>
+                        <span>
+                          Remaining Days: <strong className="text-[#24160c]">{rentalDuration.days}</strong>
+                        </span>
+                        <span className="hidden sm:inline text-[#9c826e]">
+                          ({rentalDuration.totalDays} total days)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {activeRemovalDate && !rentalDuration.isInvalid && (
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-md bg-[#faf6ee] border border-[#e5dac8] text-[11px]">
+                      <span className="text-[#714f36] font-semibold">
+                        Remaining Until Removal Date:
+                      </span>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded border font-bold ${remainingDaysInfo.badgeClass}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${remainingDaysInfo.dotClass}`} />
+                        <span>{remainingDaysInfo.label}</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </section>
 
           {/* SECTION C: FINANCIAL DETAILS */}

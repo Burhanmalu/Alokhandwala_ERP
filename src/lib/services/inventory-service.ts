@@ -6,7 +6,6 @@ import {
   InventoryTransaction, 
   Project, 
   ProjectMaterialRequirement,
-  ShiftingRequest,
   RemovalRequest
 } from '../schema';
 import { ProjectService } from './project-service';
@@ -625,164 +624,6 @@ export class InventoryService {
   }
 
   /**
-   * Shifting Management (Type A: Unchanged, Type B: Additional / Surplus)
-   */
-  public static async executeShifting(data: {
-    projectId: string;
-    shiftingType: 'TYPE_A_UNCHANGED' | 'TYPE_B_QUANTITY_CHANGE';
-    destinationSiteId?: string;
-    destinationAreaDescription: string;
-    plannedShiftingDate: string;
-    labourCharges?: number;
-    transportCharges?: number;
-    teamMembers?: string;
-    remarks?: string;
-    materialModifications?: { materialId: string; newRequiredQuantity: number }[];
-    actorId: string;
-    actorName: string;
-  }): Promise<{ shiftingRequest: ShiftingRequest; transaction?: InventoryTransaction }> {
-    return await dbStore.transaction(async (state) => {
-      const project = state.projects.find(p => p.id === data.projectId);
-      if (!project) throw new Error('Project not found');
-
-      const shiftingNumber = `SHF-${new Date().getFullYear()}-${(state.shiftingRequests.length + 1).toString().padStart(6, '0')}`;
-      const shiftingLines: NonNullable<ShiftingRequest['materialLines']> = [];
-      let transaction: InventoryTransaction | undefined = undefined;
-
-      if (data.shiftingType === 'TYPE_A_UNCHANGED') {
-        // Quantities remain unchanged - zero warehouse inventory deducted
-        project.status = 'ACTIVE_RENTAL';
-        project.shiftingCharges = (project.shiftingCharges || 0) + (data.labourCharges || 0) + (data.transportCharges || 0);
-
-        state.activityEvents.unshift({
-          id: `act-${Date.now()}`,
-          projectId: project.id,
-          eventType: 'SHIFTING_COMPLETED',
-          eventTitle: 'Shifting Completed (Unchanged Quantities)',
-          eventDescription: `Scaffolding relocated to ${data.destinationAreaDescription}. Existing material allocation maintained.`,
-          actorId: data.actorId,
-          actorName: data.actorName,
-          createdAt: new Date().toISOString(),
-        });
-      } else {
-        // TYPE B: Quantity changes
-        const txnLines: InventoryTransaction['lines'] = [];
-
-        for (const mod of data.materialModifications || []) {
-          const material = state.materials.find(m => m.id === mod.materialId);
-          if (!material) continue;
-
-          const projMat = project.materials?.find(m => m.materialId === mod.materialId);
-          const previousQty = projMat ? projMat.installedQuantity : 0;
-          const newQty = mod.newRequiredQuantity;
-          const delta = newQty - previousQty;
-
-          if (delta > 0) {
-            // Additional stock needed: check available
-            const available = material.usableWarehouseQty - material.reservedQty;
-            if (delta > available) {
-              throw new Error(`Insufficient stock to shift additional ${delta}x ${material.name} (Available: ${available})`);
-            }
-            // Issue additional
-            material.usableWarehouseQty -= delta;
-            material.siteAllocatedQty += delta;
-            material.availableToAllocate = material.usableWarehouseQty - material.reservedQty;
-
-            txnLines.push({
-              materialId: material.id,
-              materialName: material.name,
-              itemCode: material.itemCode,
-              quantity: delta,
-              condition: 'GOOD',
-              remarks: `Additional issue for shifting ${shiftingNumber}`,
-            });
-          } else if (delta < 0) {
-            // Surplus materials: DO NOT increase warehouse stock until physical return inspection!
-            // Surplus is marked pending return
-          }
-
-          if (projMat) {
-            projMat.installedQuantity = newQty;
-          }
-
-          shiftingLines.push({
-            materialId: material.id,
-            materialName: material.name,
-            itemCode: material.itemCode,
-            previousQuantity: previousQty,
-            newRequiredQuantity: newQty,
-            quantityDifference: delta,
-            additionalIssuedQty: delta > 0 ? delta : 0,
-            surplusReturnedQty: delta < 0 ? Math.abs(delta) : 0,
-            damagedQty: 0,
-            missingQty: 0,
-          });
-        }
-
-        if (txnLines.length > 0) {
-          const txnNumber = this.generateTransactionNumber(state.transactions);
-          transaction = {
-            id: `txn-${Date.now()}`,
-            transactionNumber: txnNumber,
-            movementType: 'SITE_TO_SITE_TRANSFER',
-            sourceLocation: 'Indore Central Scaffolding Yard',
-            destinationLocation: data.destinationAreaDescription,
-            projectId: project.id,
-            projectCode: project.projectCode,
-            referenceDocument: shiftingNumber,
-            actorId: data.actorId,
-            actorName: data.actorName,
-            remarks: `Shifting adjustment dispatch for ${project.projectCode}`,
-            lines: txnLines,
-            createdAt: new Date().toISOString(),
-          };
-          state.transactions.unshift(transaction);
-        }
-
-        project.status = 'ACTIVE_RENTAL';
-        project.shiftingCharges = (project.shiftingCharges || 0) + (data.labourCharges || 0) + (data.transportCharges || 0);
-
-        state.activityEvents.unshift({
-          id: `act-${Date.now()}`,
-          projectId: project.id,
-          eventType: 'SHIFTING_COMPLETED',
-          eventTitle: 'Shifting Completed with Material Adjustment',
-          eventDescription: `Relocated to ${data.destinationAreaDescription} with modified quantities.`,
-          actorId: data.actorId,
-          actorName: data.actorName,
-          createdAt: new Date().toISOString(),
-        });
-      }
-
-      const shiftingRequest: ShiftingRequest = {
-        id: `shf-${Date.now()}`,
-        shiftingNumber,
-        projectId: project.id,
-        projectCode: project.projectCode,
-        shiftingType: data.shiftingType,
-        currentSiteId: project.siteId,
-        currentSiteName: project.siteName,
-        destinationAreaDescription: data.destinationAreaDescription,
-        plannedShiftingDate: data.plannedShiftingDate,
-        actualCompletionDate: new Date().toISOString().split('T')[0],
-        supervisorId: data.actorId,
-        supervisorName: data.actorName,
-        teamMembers: data.teamMembers,
-        labourCharges: data.labourCharges || 0,
-        transportCharges: data.transportCharges || 0,
-        status: 'COMPLETED',
-        approvalStatus: 'APPROVED',
-        remarks: data.remarks,
-        materialLines: shiftingLines,
-        createdAt: new Date().toISOString(),
-      };
-      state.shiftingRequests.unshift(shiftingRequest);
-
-      return { shiftingRequest, transaction };
-    });
-  }
-
-  /**
    * Dismantling & Returns Reconciliation
    * Classifies condition: Usable -> increases warehouse stock
    * Damaged -> quarantine
@@ -792,13 +633,19 @@ export class InventoryService {
   public static async reconcileDismantling(data: {
     projectId: string;
     actualDismantlingDate: string;
-    warehouseId: string;
+    warehouseId?: string;
     supervisorId: string;
     teamMembers?: string;
     transportDetails?: string;
     reconciliationNotes?: string;
     afterPhotoUrls?: string[];
-    materialReturns: {
+    projectTotalAmount?: number;
+    projectPaymentReceived?: number;
+    projectBalanceAmount?: number;
+    outstandingPaymentNote?: string;
+    paymentDateType?: 'EXPECTED' | 'ACTUAL';
+    outstandingPaymentDate?: string;
+    materialReturns?: {
       materialId: string;
       expectedSiteQty: number;
       collectedQty: number;
@@ -814,14 +661,17 @@ export class InventoryService {
       const project = state.projects.find(p => p.id === data.projectId);
       if (!project) throw new Error('Project not found');
 
-      const warehouse = state.warehouses.find(w => w.id === data.warehouseId) || state.warehouses[0];
+      const warehouse =
+        (data.warehouseId ? state.warehouses.find(w => w.id === data.warehouseId) : undefined) ||
+        state.warehouses[0];
       const removalNumber = `RMV-${new Date().getFullYear()}-${(state.removalRequests.length + 1).toString().padStart(6, '0')}`;
       const txnNumber = this.generateTransactionNumber(state.transactions);
       const txnLines: InventoryTransaction['lines'] = [];
+      const materialReturns = data.materialReturns || [];
 
       let hasDiscrepancy = false;
 
-      for (const ret of data.materialReturns) {
+      for (const ret of materialReturns) {
         const material = state.materials.find(m => m.id === ret.materialId);
         if (!material) continue;
 
@@ -914,7 +764,7 @@ export class InventoryService {
         status: 'RECONCILED',
         warehouseReceiptAt: new Date().toISOString(),
         reconciliationNotes: data.reconciliationNotes,
-        returnLines: data.materialReturns.map(r => {
+        returnLines: materialReturns.map(r => {
           const mat = state.materials.find(m => m.id === r.materialId);
           return {
             materialId: r.materialId,
@@ -934,13 +784,111 @@ export class InventoryService {
       };
       state.removalRequests.unshift(removalRequest);
 
+      // Update project financial settlement if provided
+      const now = new Date().toISOString();
+      const prevTotal = Number(project.totalAmount ?? project.agreedProjectPrice ?? project.quotationAmount ?? 0);
+      const prevReceived = Number(project.paymentReceived ?? project.advancePaidAmount ?? 0);
+      const prevBalance = Number(
+        project.balanceAmount ?? Math.round((prevTotal - prevReceived) * 100) / 100
+      );
+
+      let nextTotal = prevTotal;
+      let nextReceived = prevReceived;
+      let nextBalance = prevBalance;
+
+      if (
+        data.projectTotalAmount !== undefined ||
+        data.projectPaymentReceived !== undefined ||
+        data.projectBalanceAmount !== undefined
+      ) {
+        nextTotal =
+          data.projectTotalAmount !== undefined
+            ? Math.round(Number(data.projectTotalAmount) * 100) / 100
+            : prevTotal;
+        nextReceived =
+          data.projectPaymentReceived !== undefined
+            ? Math.round(Number(data.projectPaymentReceived) * 100) / 100
+            : prevReceived;
+        nextBalance =
+          data.projectBalanceAmount !== undefined
+            ? Math.round(Number(data.projectBalanceAmount) * 100) / 100
+            : Math.round((nextTotal - nextReceived) * 100) / 100;
+
+        if (isNaN(nextTotal) || nextTotal < 0) {
+          throw new Error('Total Agreed Price cannot be negative.');
+        }
+        if (isNaN(nextReceived) || nextReceived < 0) {
+          throw new Error('Total Payment Received cannot be negative.');
+        }
+        if (isNaN(nextBalance) || nextBalance < 0) {
+          throw new Error('Balance Amount cannot be negative.');
+        }
+        if (Math.abs((nextTotal - nextReceived) - nextBalance) > 0.01) {
+          throw new Error('Balance Amount must equal Total Agreed Price − Total Payment Received.');
+        }
+
+        project.totalAmount = nextTotal;
+        project.agreedProjectPrice = nextTotal;
+        project.paymentReceived = nextReceived;
+        project.advancePaidAmount = nextReceived;
+        project.balanceAmount = nextBalance;
+        project.completionDueAmount = nextBalance;
+
+        const customer = state.customers.find(c => c.id === project.customerId);
+        if (customer) {
+          const balanceDelta = nextBalance - prevBalance;
+          customer.outstandingBalance = Math.max(
+            0,
+            Math.round(((customer.outstandingBalance || 0) + balanceDelta) * 100) / 100
+          );
+          customer.updatedAt = now;
+        }
+      }
+
+      // Preserve and append outstanding payment note & expected/actual date history
+      const cleanNote = (data.outstandingPaymentNote || '').trim();
+      const cleanDate = (data.outstandingPaymentDate || '').trim();
+      const paymentDelta = Math.round((nextReceived - prevReceived) * 100) / 100;
+
+      if (cleanNote || cleanDate || paymentDelta > 0) {
+        const dateType: 'EXPECTED' | 'ACTUAL' =
+          data.paymentDateType === 'ACTUAL' || paymentDelta > 0 ? 'ACTUAL' : 'EXPECTED';
+        const effectiveDate = cleanDate || now.split('T')[0];
+
+        if (cleanNote) {
+          project.outstandingPaymentNote = cleanNote;
+        }
+        if (dateType === 'EXPECTED' && cleanDate) {
+          project.expectedPaymentDate = cleanDate;
+        } else if (dateType === 'ACTUAL') {
+          project.actualPaymentDate = effectiveDate;
+        }
+
+        if (!project.outstandingPaymentHistory) {
+          project.outstandingPaymentHistory = [];
+        }
+        project.outstandingPaymentHistory.unshift({
+          id: `oph-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          note: cleanNote || undefined,
+          dateType,
+          paymentDate: effectiveDate,
+          amountPaid: paymentDelta > 0 ? paymentDelta : undefined,
+          totalAgreedPrice: nextTotal,
+          totalPaymentReceived: nextReceived,
+          balanceAmount: nextBalance,
+          recordedAt: now,
+          recordedByName: data.actorName,
+        });
+      }
+
       // Project status transition: RETURNED_RECONCILIATION -> or CLOSED
       project.actualDismantlingDate = data.actualDismantlingDate;
+      project.dismantleStatus = 'COMPLETED';
       project.status = hasDiscrepancy ? 'RETURNED_RECONCILIATION' : 'CLOSED';
       if (!hasDiscrepancy) {
-        project.closureDate = new Date().toISOString();
+        project.closureDate = now;
       }
-      project.updatedAt = new Date().toISOString();
+      project.updatedAt = now;
 
       // Timeline event
       state.activityEvents.unshift({

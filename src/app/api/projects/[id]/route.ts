@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 import { ProjectService } from '@/lib/services/project-service';
+import { ReminderService } from '@/lib/services/reminder-service';
 import {
   calculateScaffoldingArea,
   calculateRentalDurationBreakdown,
@@ -93,6 +94,8 @@ export async function PATCH(
 
         proj.photos.push(...newAttachments);
         proj.updatedAt = new Date().toISOString();
+        ReminderService.syncProjectReminderInState(state, proj);
+        ReminderService.syncProjectRentalExpiryInState(state, proj);
         return proj;
       });
 
@@ -230,6 +233,8 @@ export async function PATCH(
         }
 
         proj.updatedAt = new Date().toISOString();
+        ReminderService.syncProjectReminderInState(state, proj);
+        ReminderService.syncProjectRentalExpiryInState(state, proj);
         return proj;
       });
 
@@ -292,6 +297,9 @@ export async function PATCH(
         }
 
         if (body.status) proj.status = body.status;
+        if (body.rentalMode === 'BY_MONTH' || body.rentalMode === 'BY_DATE') {
+          proj.rentalMode = body.rentalMode;
+        }
 
         proj.installationDate = body.installationDate || undefined;
         proj.plannedInstallationDate = body.installationDate || proj.plannedInstallationDate;
@@ -417,6 +425,8 @@ export async function PATCH(
         }
 
         proj.updatedAt = new Date().toISOString();
+        ReminderService.syncProjectReminderInState(state, proj);
+        ReminderService.syncProjectRentalExpiryInState(state, proj);
 
         state.auditLogs.unshift({
           id: `aud-${Date.now()}`,

@@ -15,7 +15,11 @@ import {
   Truck,
   MapPin,
   TrendingUp,
-  ReceiptIndianRupee
+  ReceiptIndianRupee,
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -28,7 +32,8 @@ import {
   PieChart, 
   Pie, 
   Cell, 
-  Legend 
+  Legend,
+  LabelList
 } from 'recharts';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatINR, formatQuantity, formatDate, getStatusBadgeConfig } from '@/lib/formatters';
@@ -38,6 +43,9 @@ export default function DashboardOverviewPage() {
   const { currentUser, can } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeFinancialCard, setActiveFinancialCard] = useState<'TOTAL_AMOUNT' | 'TOTAL_RECEIVED' | 'TOTAL_OVERDUE' | null>(null);
+  const [financialSearch, setFinancialSearch] = useState('');
+  const [financialPage, setFinancialPage] = useState(1);
 
   useEffect(() => {
     if (currentUser?.role === 'WORKER') {
@@ -81,6 +89,13 @@ export default function DashboardOverviewPage() {
   const cards = data?.cards || {};
   const charts = data?.charts || {};
   const upcomingDeadlines = data?.upcomingDeadlines || [];
+  const financialProjects: any[] = data?.financialProjects || [];
+
+  const openFinancialModal = (type: 'TOTAL_AMOUNT' | 'TOTAL_RECEIVED' | 'TOTAL_OVERDUE') => {
+    setActiveFinancialCard(type);
+    setFinancialSearch('');
+    setFinancialPage(1);
+  };
 
   const STATUS_COLORS: Record<string, string> = {
     NOT_INSTALLED: '#64748b',
@@ -173,161 +188,120 @@ export default function DashboardOverviewPage() {
         </Link>
       </div>
 
-      {/* Secondary Metrics Bar - Clickable Inventory & Financial Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-        {/* 1. Warehouse Usable */}
-        <Link
-          href="/inventory?filter=usable"
-          className="bg-white p-3 rounded-lg border border-[#e8decb] hover:border-[#8c5e39] hover:shadow-xs transition duration-150 cursor-pointer block group"
-          title="Click to view Usable Warehouse Inventory"
+      {/* Financial Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* 1. TOTAL AMOUNT */}
+        <button
+          type="button"
+          onClick={() => openFinancialModal('TOTAL_AMOUNT')}
+          className="text-left bg-white p-5 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] hover:shadow-xs transition duration-150 cursor-pointer group flex flex-col justify-between"
+          title="Click to view all projects and their total agreed amounts"
         >
-          <div className="flex items-center justify-between text-[10px] text-[#7d6553] uppercase font-semibold group-hover:text-[#24160c]">
-            <span className="truncate">Warehouse Usable</span>
-            <ArrowUpRight className="w-3 h-3 text-[#9c826e] group-hover:text-[#8c5e39] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+          <div className="flex items-center justify-between text-xs text-[#7d6553] uppercase font-semibold tracking-wider group-hover:text-[#24160c]">
+            <span>TOTAL AMOUNT</span>
+            <ArrowUpRight className="w-4 h-4 text-[#9c826e] group-hover:text-[#8c5e39] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
           </div>
-          <div className="text-sm font-bold text-[#24160c] font-mono mt-0.5 truncate">
-            {formatQuantity(cards.usableWarehouseQty, 'Nos')}
+          <div className="text-2xl sm:text-3xl font-bold text-[#24160c] font-mono my-2 truncate">
+            {formatINR(cards.totalProjectAmount || 0, false)}
           </div>
-          <div className="text-[10px] text-[#8c7360] font-sans mt-0.5 truncate">
-            In yard storage
+          <div className="text-xs text-[#8c7360]">
+            Across all {financialProjects.length} {financialProjects.length === 1 ? 'project' : 'projects'}
           </div>
-        </Link>
+        </button>
 
-        {/* 2. Reserved for Sites */}
-        <Link
-          href="/inventory?filter=reserved"
-          className="bg-white p-3 rounded-lg border border-[#e8decb] hover:border-blue-500 hover:shadow-xs transition duration-150 cursor-pointer block group"
-          title="Click to view Reserved Stock for Confirmed Sites"
+        {/* 2. TOTAL AMOUNT RECEIVED */}
+        <button
+          type="button"
+          onClick={() => openFinancialModal('TOTAL_RECEIVED')}
+          className="text-left bg-white p-5 rounded-xl border border-[#e8decb] hover:border-emerald-600 hover:shadow-xs transition duration-150 cursor-pointer group flex flex-col justify-between"
+          title="Click to view projects with payments received"
         >
-          <div className="flex items-center justify-between text-[10px] text-[#7d6553] uppercase font-semibold group-hover:text-blue-800">
-            <span className="truncate">Reserved for Sites</span>
-            <ArrowUpRight className="w-3 h-3 text-[#9c826e] group-hover:text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+          <div className="flex items-center justify-between text-xs text-[#7d6553] uppercase font-semibold tracking-wider group-hover:text-emerald-800">
+            <span>TOTAL AMOUNT RECEIVED</span>
+            <ArrowUpRight className="w-4 h-4 text-[#9c826e] group-hover:text-emerald-600 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
           </div>
-          <div className="text-sm font-bold text-blue-700 font-mono mt-0.5 truncate">
-            {formatQuantity(cards.reservedQty, 'Nos')}
+          <div className="text-2xl sm:text-3xl font-bold text-emerald-700 font-mono my-2 truncate">
+            {formatINR(cards.totalProjectReceived || 0, false)}
           </div>
-          <div className="text-[10px] text-[#8c7360] font-sans mt-0.5 truncate">
-            Confirmed bookings
+          <div className="text-xs text-[#8c7360]">
+            {financialProjects.filter(p => p.totalPaymentReceived > 0).length} {financialProjects.filter(p => p.totalPaymentReceived > 0).length === 1 ? 'project' : 'projects'} with payments
           </div>
-        </Link>
+        </button>
 
-        {/* 3. Allocated on Sites */}
-        <Link
-          href="/inventory?filter=allocated"
-          className="bg-white p-3 rounded-lg border border-[#e8decb] hover:border-emerald-500 hover:shadow-xs transition duration-150 cursor-pointer block group"
-          title="Click to view Materials Allocated to Active Sites"
+        {/* 3. TOTAL OVERDUE AMOUNT */}
+        <button
+          type="button"
+          onClick={() => openFinancialModal('TOTAL_OVERDUE')}
+          className="text-left bg-white p-5 rounded-xl border border-[#e8decb] hover:border-amber-600 hover:shadow-xs transition duration-150 cursor-pointer group flex flex-col justify-between"
+          title="Click to view projects with outstanding balance"
         >
-          <div className="flex items-center justify-between text-[10px] text-[#7d6553] uppercase font-semibold group-hover:text-emerald-800">
-            <span className="truncate">Allocated on Sites</span>
-            <ArrowUpRight className="w-3 h-3 text-[#9c826e] group-hover:text-emerald-600 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+          <div className="flex items-center justify-between text-xs text-[#7d6553] uppercase font-semibold tracking-wider group-hover:text-amber-900">
+            <span>TOTAL OVERDUE AMOUNT</span>
+            <ArrowUpRight className="w-4 h-4 text-[#9c826e] group-hover:text-amber-700 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
           </div>
-          <div className="text-sm font-bold text-emerald-700 font-mono mt-0.5 truncate">
-            {formatQuantity(cards.siteAllocatedQty, 'Nos')}
+          <div className="text-2xl sm:text-3xl font-bold text-amber-800 font-mono my-2 truncate">
+            {formatINR(cards.totalProjectOverdue || 0, false)}
           </div>
-          <div className="text-[10px] text-[#8c7360] font-sans mt-0.5 truncate">
-            Active site rentals
+          <div className="text-xs text-[#8c7360]">
+            {financialProjects.filter(p => p.balanceAmount > 0).length} {financialProjects.filter(p => p.balanceAmount > 0).length === 1 ? 'project' : 'projects'} with balance due
           </div>
-        </Link>
-
-        {/* 4. Damage Material (Previously Quarantine (Damaged)) */}
-        <Link
-          href="/inventory?filter=damaged"
-          className="bg-white p-3 rounded-lg border border-[#e8decb] hover:border-amber-500 hover:shadow-xs transition duration-150 cursor-pointer block group"
-          title="Click to view Damaged Material Records"
-        >
-          <div className="flex items-center justify-between text-[10px] text-[#7d6553] uppercase font-semibold group-hover:text-amber-800">
-            <span className="truncate">Damage Material</span>
-            <ArrowUpRight className="w-3 h-3 text-[#9c826e] group-hover:text-amber-600 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
-          </div>
-          <div className="text-sm font-bold text-amber-700 font-mono mt-0.5 truncate">
-            {formatQuantity(cards.damagedQty, 'Nos')}
-          </div>
-          <div className="text-[10px] text-[#8c7360] font-sans mt-0.5 truncate">
-            Under inspection/repair
-          </div>
-        </Link>
-
-        {/* 5. Missing Material (Previously Unreconciled Missing) */}
-        <Link
-          href="/inventory?filter=missing"
-          className="bg-white p-3 rounded-lg border border-[#e8decb] hover:border-rose-500 hover:shadow-xs transition duration-150 cursor-pointer block group"
-          title="Click to view Unreconciled Missing Material Records"
-        >
-          <div className="flex items-center justify-between text-[10px] text-[#7d6553] uppercase font-semibold group-hover:text-rose-800">
-            <span className="truncate">Missing Material</span>
-            <ArrowUpRight className="w-3 h-3 text-[#9c826e] group-hover:text-rose-600 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
-          </div>
-          <div className="text-sm font-bold text-rose-700 font-mono mt-0.5 truncate">
-            {formatQuantity(cards.missingQty, 'Nos')}
-          </div>
-          <div className="text-[10px] text-[#8c7360] font-sans mt-0.5 truncate">
-            Recovery pending
-          </div>
-        </Link>
-
-        {/* 6. Outstanding Balance */}
-        <Link
-          href="/billing/outstanding"
-          className="bg-white p-3 rounded-lg border border-[#e8decb] hover:border-[#8c5e39] hover:shadow-xs transition duration-150 cursor-pointer block group"
-          title="Click to view Outstanding Payments & Receivables"
-        >
-          <div className="flex items-center justify-between text-[10px] text-[#7d6553] uppercase font-semibold group-hover:text-[#24160c]">
-            <span className="truncate">Outstanding Balance</span>
-            <ArrowUpRight className="w-3 h-3 text-[#9c826e] group-hover:text-[#8c5e39] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
-          </div>
-          <div className="text-sm font-bold text-[#24160c] font-mono mt-0.5 truncate">
-            {formatINR(cards.outstandingReceivables, false)}
-          </div>
-          <div className="text-[10px] text-[#8c7360] font-sans mt-0.5 truncate">
-            Pending collections
-          </div>
-        </Link>
+        </button>
       </div>
 
       {/* Visual Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Category Allocation Chart */}
+        {/* Project Financial Overview Chart */}
         <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs overflow-hidden">
           <div className="px-4 py-3 border-b border-[#ebdcc9] bg-[#fdfcf9] flex items-center justify-between">
             <div>
               <h2 className="text-xs font-bold text-[#24160c] uppercase tracking-wider">
-                Material Allocation by Category
+                Project Financial Overview
               </h2>
             </div>
             <Link 
-              href="/inventory" 
+              href="/projects" 
               className="text-xs font-medium text-[#6e482f] hover:text-[#24160c] flex items-center gap-1"
             >
-              <span>Inventory</span>
+              <span>Projects</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
           <div className="p-4 h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={charts.categoryAllocation || []} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+              <BarChart
+                data={[
+                  { name: 'Total Agreed Amount', amount: cards.totalProjectAmount || 0, fill: '#24160c' },
+                  { name: 'Total Amount Received', amount: cards.totalProjectReceived || 0, fill: '#047857' },
+                  { name: 'Total Overdue Amount', amount: cards.totalProjectOverdue || 0, fill: '#b45309' },
+                ]}
+                margin={{ top: 24, right: 16, left: 8, bottom: 12 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f2eadf" vertical={false} />
-                <XAxis 
-                  dataKey="category" 
-                  tick={{ fontSize: 10, fill: '#7d6553' }} 
-                  interval={0} 
-                  angle={-15} 
-                  textAnchor="end" 
-                  height={45} 
-                  tickFormatter={(val: string) => val.replace(/Cuplock\s+/gi, '')}
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: '#4d301c', fontWeight: 600 }}
+                  interval={0}
                 />
-                <YAxis tick={{ fontSize: 10, fill: '#7d6553' }} width={38} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#ffffff', borderColor: '#d8c8b4', borderRadius: '6px', fontSize: '11px' }} 
-                  formatter={(val: any) => [`${val.toLocaleString()} Nos`, '']}
+                <YAxis
+                  tick={{ fontSize: 10, fill: '#7d6553' }}
+                  width={68}
+                  tickFormatter={(val: number) => formatINR(val, false)}
                 />
-                <Legend 
-                  verticalAlign="top" 
-                  align="right" 
-                  wrapperStyle={{ paddingBottom: '10px', fontSize: '11px' }} 
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#ffffff', borderColor: '#d8c8b4', borderRadius: '6px', fontSize: '11px' }}
+                  formatter={(val: any) => [formatINR(Number(val) || 0, false), 'Amount']}
                 />
-                <Bar dataKey="warehouse" name="Yard Usable" fill="#24160c" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="onSite" name="On Client Sites" fill="#8c5e39" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="reserved" name="Reserved Plan" fill="#c79e7c" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={72}>
+                  <Cell fill="#24160c" />
+                  <Cell fill="#047857" />
+                  <Cell fill="#b45309" />
+                  <LabelList
+                    dataKey="amount"
+                    position="top"
+                    formatter={(val: any) => formatINR(Number(val) || 0, false)}
+                    style={{ fontSize: '11px', fontWeight: 700, fill: '#24160c' }}
+                  />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -527,6 +501,198 @@ export default function DashboardOverviewPage() {
           </table>
         </div>
       </div>
+      {/* Financial Summary Project List Modal */}
+      {activeFinancialCard && (() => {
+        const baseList =
+          activeFinancialCard === 'TOTAL_AMOUNT'
+            ? financialProjects
+            : activeFinancialCard === 'TOTAL_RECEIVED'
+            ? financialProjects.filter((p) => p.totalPaymentReceived > 0)
+            : financialProjects.filter((p) => p.balanceAmount > 0);
+
+        const q = financialSearch.trim().toLowerCase();
+        const filtered = q
+          ? baseList.filter(
+              (p) =>
+                (p.projectCode || '').toLowerCase().includes(q) ||
+                (p.siteName || '').toLowerCase().includes(q) ||
+                (p.customerName || '').toLowerCase().includes(q) ||
+                (p.status || '').toLowerCase().replace(/_/g, ' ').includes(q)
+            )
+          : baseList;
+
+        const PAGE_SIZE = 10;
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        const currentPage = Math.min(financialPage, totalPages);
+        const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+        const modalTitle =
+          activeFinancialCard === 'TOTAL_AMOUNT'
+            ? 'TOTAL AMOUNT — All Projects'
+            : activeFinancialCard === 'TOTAL_RECEIVED'
+            ? 'TOTAL AMOUNT RECEIVED — Paid Projects'
+            : 'TOTAL OVERDUE AMOUNT — Projects with Outstanding Balance';
+
+        const modalTotal =
+          activeFinancialCard === 'TOTAL_AMOUNT'
+            ? cards.totalProjectAmount || 0
+            : activeFinancialCard === 'TOTAL_RECEIVED'
+            ? cards.totalProjectReceived || 0
+            : cards.totalProjectOverdue || 0;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#140b06]/70 backdrop-blur-xs">
+            <div
+              className="fixed inset-0"
+              onClick={() => setActiveFinancialCard(null)}
+            />
+            <div className="relative z-10 w-full max-w-4xl bg-white rounded-xl shadow-2xl border border-[#d6c7b2] overflow-hidden text-stone-800 max-h-[90vh] flex flex-col">
+              {/* Modal Header */}
+              <div className="bg-[#24160c] px-5 py-4 text-white flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-md bg-[#382315] border border-[#523622] flex items-center justify-center text-[#c79e7c]">
+                    <ReceiptIndianRupee className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">{modalTitle}</h3>
+                    <p className="text-[11px] font-mono text-[#c79e7c]">
+                      {baseList.length} {baseList.length === 1 ? 'Project' : 'Projects'} · Total: {formatINR(modalTotal, false)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveFinancialCard(null)}
+                  className="p-1 text-stone-300 hover:text-white cursor-pointer"
+                  aria-label="Close modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="px-5 py-3 bg-[#fbf9f5] border-b border-[#e5dac8] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
+                <div className="relative flex-1">
+                  <Search className="w-3.5 h-3.5 text-[#9c826e] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={financialSearch}
+                    onChange={(e) => {
+                      setFinancialSearch(e.target.value);
+                      setFinancialPage(1);
+                    }}
+                    placeholder="Search by project ID, site name, customer, or status..."
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-[#d6c7b2] rounded-md text-[#24160c] focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                  />
+                </div>
+                <span className="text-[11px] text-[#7d6553] font-medium shrink-0">
+                  Showing {filtered.length} of {baseList.length}
+                </span>
+              </div>
+
+              {/* Project List Table */}
+              <div className="overflow-auto flex-1">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#faf6ee] text-[#7d6553] font-semibold uppercase tracking-wider text-[10px] border-b border-[#ebdcc9] sticky top-0">
+                    <tr>
+                      <th className="px-4 py-2.5">Project</th>
+                      <th className="px-4 py-2.5">Customer Name</th>
+                      <th className="px-4 py-2.5">Status</th>
+                      <th className="px-4 py-2.5 text-right">Total Agreed Price</th>
+                      <th className="px-4 py-2.5 text-right">Total Payment Received</th>
+                      <th className="px-4 py-2.5 text-right">Balance Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#f2eadf]">
+                    {pageItems.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-10 text-center text-[#9c826e]">
+                          No matching projects found.
+                        </td>
+                      </tr>
+                    ) : (
+                      pageItems.map((p) => {
+                        const badge = getStatusBadgeConfig(p.status);
+                        return (
+                          <tr key={p.id} className="hover:bg-[#faf6ee]/60 transition">
+                            <td className="px-4 py-2.5">
+                              <Link
+                                href={`/projects/${p.id}`}
+                                className="font-mono font-bold text-[#24160c] hover:text-[#8c5e39] hover:underline block"
+                              >
+                                {p.projectCode}
+                              </Link>
+                              <span className="text-[11px] text-[#7d6553] truncate block max-w-[200px]">
+                                {p.siteName}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 font-semibold text-[#24160c]">
+                              {p.customerName}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium border ${badge.className}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${badge.dotColor}`} />
+                                {badge.label}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 text-right font-mono font-bold text-[#24160c]">
+                              {formatINR(p.totalAgreedPrice, false)}
+                            </td>
+                            <td className="px-4 py-2.5 text-right font-mono font-bold text-emerald-700">
+                              {formatINR(p.totalPaymentReceived, false)}
+                            </td>
+                            <td className="px-4 py-2.5 text-right font-mono font-bold text-amber-800">
+                              {formatINR(p.balanceAmount, false)}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Footer with Pagination & Back to Dashboard */}
+              <div className="bg-[#fbf9f5] border-t border-[#e5dac8] px-5 py-3 flex items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-2">
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        disabled={currentPage <= 1}
+                        onClick={() => setFinancialPage((pg) => Math.max(1, pg - 1))}
+                        className="p-1.5 rounded border border-[#d6c7b2] bg-white text-[#24160c] hover:bg-[#faf6ee] disabled:opacity-40 cursor-pointer"
+                        aria-label="Previous page"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="text-[11px] font-mono text-[#7d6553] px-1">
+                        Page {currentPage} / {totalPages}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => setFinancialPage((pg) => Math.min(totalPages, pg + 1))}
+                        className="p-1.5 rounded border border-[#d6c7b2] bg-white text-[#24160c] hover:bg-[#faf6ee] disabled:opacity-40 cursor-pointer"
+                        aria-label="Next page"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveFinancialCard(null)}
+                  className="px-4 py-2 text-xs font-bold text-[#c79e7c] bg-[#24160c] hover:bg-[#382315] rounded-md transition cursor-pointer"
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

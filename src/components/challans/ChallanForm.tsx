@@ -20,7 +20,7 @@ import {
   PlusCircle,
 } from 'lucide-react';
 import { Challan, Customer, Material, Project, Site } from '@/lib/schema';
-import { extractProjectDimensions, formatDate, toDateOnlyString } from '@/lib/formatters';
+import { extractProjectDimensions, formatDate, isEligibleActiveProjectStatus, toDateOnlyString } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
 
 interface FormMaterialRow {
@@ -120,7 +120,7 @@ export function ChallanForm({
     Promise.all([
       fetch('/api/customers').then(r => r.json()),
       fetch('/api/sites').then(r => r.json()),
-      fetch('/api/projects').then(r => r.json()),
+      fetch('/api/projects?eligibleForChallan=true').then(r => r.json()),
       fetch('/api/inventory').then(r => r.json()),
     ])
       .then(([custJson, siteJson, projJson, invJson]) => {
@@ -142,9 +142,15 @@ export function ChallanForm({
     [sites, customerId]
   );
 
-  // Also derive sites from customer projects if a direct project created a site or has dimensions
+  // Only eligible active projects can be used for Delivery Challans
   const customerProjects = useMemo(
-    () => projects.filter(p => p.customerId === customerId && p.status !== 'CANCELLED'),
+    () =>
+      projects.filter(
+        p =>
+          p.customerId === customerId &&
+          p.status !== 'CANCELLED' &&
+          isEligibleActiveProjectStatus(p.status)
+      ),
     [projects, customerId]
   );
 

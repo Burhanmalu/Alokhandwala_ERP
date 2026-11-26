@@ -58,9 +58,38 @@ import {
 } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
 import { processAndUploadImage } from '@/lib/image-utils';
-import { generateConfirmationPdf, generateInstallationPdf } from '@/lib/pdf/project-pdf';
 import { OFFICIAL_TERMS_AND_CONDITIONS } from '@/lib/constants/terms-and-conditions';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
+import DismantleReconciliationPanel from '@/components/projects/DismantleReconciliationPanel';
+
+function getQuotationReferenceLabel(status?: string): string {
+  switch (status) {
+    case 'NOT_INSTALLED':
+    case 'QUOTATION_DRAFT':
+    case 'QUOTATION_SENT':
+    case 'SITE_CREATED':
+    case 'QUOTATION_REJECTED':
+      return 'Pending Confirmation';
+    case 'QUOTATION_ACCEPTED':
+      return 'Accepted';
+    case 'CONFIRMED_PROJECT':
+    case 'SCHEDULED':
+    case 'ACTIVE_RENTAL':
+    case 'INSTALLED':
+    case 'BUFFER_PERIOD':
+    case 'EXTENDED':
+    case 'EXTENSION_REQUESTED':
+    case 'SHIFTING_REQUESTED':
+    case 'SHIFTED':
+    case 'REMOVAL_PENDING':
+      return 'Confirmed';
+    case 'CLOSED':
+    case 'RETURNED_RECONCILIATION':
+      return 'Closed';
+    default:
+      return 'Pending Confirmation';
+  }
+}
 
 function formatLongDate(dateStr?: string | Date | null): string {
   if (!dateStr) return '—';
@@ -92,7 +121,7 @@ export default function ProjectWorkspacePage({
 
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'measurements' | 'photos' | 'materials' | 'rental' | 'billing' | 'timeline'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'measurements' | 'photos' | 'rental' | 'dismantle'>('overview');
   const [closing, setClosing] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState<any | null>(null);
@@ -108,6 +137,11 @@ export default function ProjectWorkspacePage({
   // Buffer Period Modal States
   const [bufferModalOpen, setBufferModalOpen] = useState(false);
   const [bufferDaysInput, setBufferDaysInput] = useState<string>('3');
+  const [bufferEndDateInput, setBufferEndDateInput] = useState<string>('');
+  const [bufferPaymentStatus, setBufferPaymentStatus] = useState<'UNPAID' | 'PAID'>('UNPAID');
+  const [bufferTotalAgreedInput, setBufferTotalAgreedInput] = useState<string>('0');
+  const [bufferPaymentReceivedInput, setBufferPaymentReceivedInput] = useState<string>('0');
+  const [bufferBalanceInput, setBufferBalanceInput] = useState<string>('0');
   const [bufferReason, setBufferReason] = useState<string>('');
   const [bufferSubmitting, setBufferSubmitting] = useState(false);
   const [bufferError, setBufferError] = useState<string | null>(null);
@@ -115,47 +149,12 @@ export default function ProjectWorkspacePage({
   const [extendModalOpen, setExtendModalOpen] = useState(false);
   const [extendType, setExtendType] = useState<'DAYS' | 'MONTHS'>('MONTHS');
   const [extendValueInput, setExtendValueInput] = useState<string>('1');
+  const [extendProjTotalInput, setExtendProjTotalInput] = useState<string>('0');
+  const [extendProjReceivedInput, setExtendProjReceivedInput] = useState<string>('0');
+  const [extendProjBalanceInput, setExtendProjBalanceInput] = useState<string>('0');
   const [extendReason, setExtendReason] = useState<string>('');
   const [extendSubmitting, setExtendSubmitting] = useState(false);
   const [extendError, setExtendError] = useState<string | null>(null);
-
-  // Overview Card 3 PDF Download States
-  const [downloadingConfPdf, setDownloadingConfPdf] = useState(false);
-  const [downloadingInstPdf, setDownloadingInstPdf] = useState(false);
-
-  const isConfirmed = Boolean(
-    project && (
-      (project.status !== 'NOT_INSTALLED' && project.status !== 'CANCELLED') ||
-      project.quotationNumber ||
-      (project.materials && project.materials.some((m: any) => (m.reservedQuantity || 0) > 0 || (m.installedQuantity || 0) > 0))
-    )
-  );
-
-  const handleDownloadConfirmationPdf = async () => {
-    if (!project || !isConfirmed) return;
-    setDownloadingConfPdf(true);
-    try {
-      await generateConfirmationPdf(project);
-    } catch (err: any) {
-      console.error('Failed to generate Confirmation PDF:', err);
-      alert('Failed to generate Confirmation PDF: ' + (err?.message || 'Unknown error occurred'));
-    } finally {
-      setDownloadingConfPdf(false);
-    }
-  };
-
-  const handleDownloadInstallationPdf = async () => {
-    if (!project || !isInstalled) return;
-    setDownloadingInstPdf(true);
-    try {
-      await generateInstallationPdf(project);
-    } catch (err: any) {
-      console.error('Failed to generate Installation PDF:', err);
-      alert('Failed to generate Installation PDF: ' + (err?.message || 'Unknown error occurred'));
-    } finally {
-      setDownloadingInstPdf(false);
-    }
-  };
 
   const isInstalled = Boolean(
     project && (
@@ -170,6 +169,18 @@ export default function ProjectWorkspacePage({
     !isInstalled &&
     ['SITE_CREATED', 'NOT_INSTALLED', 'QUOTATION_DRAFT', 'QUOTATION_SENT', 'QUOTATION_ACCEPTED', 'QUOTATION_REJECTED', 'CONFIRMED_PROJECT', 'SCHEDULED'].includes(project.status) &&
     project.status !== 'CANCELLED'
+  );
+
+  const isDismantleCompleted = Boolean(
+    project &&
+    (
+      project.dismantleStatus === 'COMPLETED' ||
+      project.status === 'CLOSED' ||
+      project.status === 'RETURNED_RECONCILIATION' ||
+      Boolean(project.actualDismantlingDate) ||
+      (Array.isArray(project.removalRequests) &&
+        project.removalRequests.some((r: any) => r.status === 'RECONCILED' || r.status === 'COMPLETED'))
+    )
   );
 
   // Cancellation Modal State
@@ -220,15 +231,23 @@ export default function ProjectWorkspacePage({
   };
 
   const handleOpenBufferModal = () => {
-    if (project?.status === 'BUFFER_PERIOD' || Boolean(project?.bufferEndDate)) {
-      setRentalBanner({
-        type: 'error',
-        text: 'Buffer period is already active for this project.',
-      });
-      return;
-    }
+    if (!project) return;
     const defaultDays = Number(project?.configuredBufferDays || configuredBufferDays || 3);
-    setBufferDaysInput(String(defaultDays > 0 ? defaultDays : 3));
+    const safeDays = defaultDays > 0 ? defaultDays : 3;
+    const baseRemovalStr =
+      toDateOnlyString(getEffectiveRemovalDate(project)) || toDateOnlyString(new Date());
+    const defaultEnd = calculateExtendedRemovalDate(baseRemovalStr, safeDays, 'DAYS');
+
+    const curTotal = Number(project.totalAmount ?? project.agreedProjectPrice ?? project.quotationAmount ?? 0);
+    const curReceived = Number(project.paymentReceived ?? project.advancePaidAmount ?? 0);
+    const curBalance = Math.round((curTotal - curReceived) * 100) / 100;
+
+    setBufferDaysInput(String(safeDays));
+    setBufferEndDateInput(defaultEnd);
+    setBufferPaymentStatus('UNPAID');
+    setBufferTotalAgreedInput(String(curTotal));
+    setBufferPaymentReceivedInput(String(curReceived));
+    setBufferBalanceInput(String(curBalance));
     setBufferReason('');
     setBufferError(null);
     setBufferModalOpen(true);
@@ -244,6 +263,39 @@ export default function ProjectWorkspacePage({
       return;
     }
 
+    if (!bufferEndDateInput) {
+      setBufferError('Buffer Period End Date is required.');
+      return;
+    }
+
+    const payload: Record<string, any> = {
+      requestedBufferDays: numDays,
+      bufferEndDate: bufferEndDateInput,
+      paymentStatus: bufferPaymentStatus,
+      reason:
+        bufferReason.trim() ||
+        `Configured ${numDays}-day rental buffer period (${bufferPaymentStatus === 'PAID' ? 'Paid' : 'Unpaid'}) activated`,
+      actorId: currentUser?.id || 'usr-admin-01',
+      actorName: currentUser?.fullName || 'Admin',
+    };
+
+    if (bufferPaymentStatus === 'PAID') {
+      const nextTotal = Number(bufferTotalAgreedInput);
+      const nextReceived = Number(bufferPaymentReceivedInput);
+      if (isNaN(nextTotal) || nextTotal < 0) {
+        setBufferError('Total Agreed Price cannot be negative.');
+        return;
+      }
+      if (isNaN(nextReceived) || nextReceived < 0) {
+        setBufferError('Payment Received cannot be negative.');
+        return;
+      }
+      const nextBalance = Math.round((nextTotal - nextReceived) * 100) / 100;
+      payload.totalAmount = nextTotal;
+      payload.paymentReceived = nextReceived;
+      payload.balanceAmount = nextBalance;
+    }
+
     setBufferSubmitting(true);
     setBufferError(null);
 
@@ -251,12 +303,7 @@ export default function ProjectWorkspacePage({
       const res = await fetch(`/api/projects/${project.id}/buffer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requestedBufferDays: numDays,
-          reason: bufferReason.trim() || `Configured ${numDays}-day rental buffer period activated`,
-          actorId: currentUser?.id || 'usr-admin-01',
-          actorName: currentUser?.fullName || 'Admin',
-        }),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (!res.ok || !json.success) {
@@ -282,8 +329,15 @@ export default function ProjectWorkspacePage({
   };
 
   const handleOpenExtendModal = () => {
+    const curTotal = Number(project?.totalAmount ?? project?.agreedProjectPrice ?? project?.quotationAmount ?? 0);
+    const curReceived = Number(project?.paymentReceived ?? project?.advancePaidAmount ?? 0);
+    const curBalance = Math.round((curTotal - curReceived) * 100) / 100;
+
     setExtendType('MONTHS');
     setExtendValueInput('1');
+    setExtendProjTotalInput(String(curTotal));
+    setExtendProjReceivedInput(String(curReceived));
+    setExtendProjBalanceInput(String(curBalance));
     setExtendReason('');
     setExtendError(null);
     setExtendModalOpen(true);
@@ -299,6 +353,26 @@ export default function ProjectWorkspacePage({
       return;
     }
 
+    const nextProjTotal = Number(extendProjTotalInput);
+    const nextProjReceived = Number(extendProjReceivedInput);
+    const nextProjBalance = Number(extendProjBalanceInput);
+    if (!extendProjTotalInput.trim() || isNaN(nextProjTotal) || nextProjTotal < 0) {
+      setExtendError('Total Agreed Price must be a valid non-negative number.');
+      return;
+    }
+    if (!extendProjReceivedInput.trim() || isNaN(nextProjReceived) || nextProjReceived < 0) {
+      setExtendError('Total Payment Received must be a valid non-negative number.');
+      return;
+    }
+    if (!extendProjBalanceInput.trim() || isNaN(nextProjBalance) || nextProjBalance < 0) {
+      setExtendError('Balance Amount must be a valid non-negative number.');
+      return;
+    }
+    if (Math.abs((nextProjTotal - nextProjReceived) - nextProjBalance) > 0.01) {
+      setExtendError('Balance Amount must equal Total Agreed Price − Total Payment Received.');
+      return;
+    }
+
     setExtendSubmitting(true);
     setExtendError(null);
 
@@ -309,6 +383,9 @@ export default function ProjectWorkspacePage({
         body: JSON.stringify({
           extensionType: extendType,
           extensionValue: numericDuration,
+          projectTotalAmount: nextProjTotal,
+          projectPaymentReceived: nextProjReceived,
+          projectBalanceAmount: nextProjBalance,
           extensionReason: extendReason.trim() || undefined,
           monthlyRentalRate: project.monthlyRentalRate || 0,
           actorId: currentUser?.id || 'usr-admin-01',
@@ -637,39 +714,6 @@ export default function ProjectWorkspacePage({
         <div className="flex flex-col sm:items-end justify-center gap-2.5 w-full lg:w-auto shrink-0">
           {/* Row 1: Workflow Lifecycle Actions */}
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
-            {/* Status SITE_CREATED / NOT_INSTALLED / QUOTATION_* -> Quotation & Confirm Actions */}
-            {['SITE_CREATED', 'NOT_INSTALLED', 'QUOTATION_DRAFT', 'QUOTATION_SENT', 'QUOTATION_ACCEPTED', 'QUOTATION_REJECTED'].includes(project.status) && (
-              <Link
-                href={`/quotation?projectId=${project.id}`}
-                className="w-full sm:w-auto h-9 px-3.5 bg-[#fbf9f5] hover:bg-[#f3ebe1] text-[#24160c] border border-[#ebdcc9] rounded-md text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5"
-              >
-                <FileText className="w-3.5 h-3.5 text-[#8c5e39]" />
-                <span>Commercial Quotation</span>
-              </Link>
-            )}
-
-            {/* Unconfirmed Project -> Confirm Action (Strictly eligible only when Quotation is Accepted) */}
-            {project.status === 'QUOTATION_ACCEPTED' && can('PROJECT_CONFIRM') && (
-              <Link
-                href={`/projects/${project.id}/confirm`}
-                className="w-full sm:w-auto h-9 px-4 bg-[#24160c] hover:bg-[#382315] text-[#c79e7c] border border-[#19100a] rounded-md text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Confirm Project & Reserve Stock</span>
-              </Link>
-            )}
-
-            {/* Status CONFIRMED_PROJECT -> Install Action */}
-            {(project.status === 'CONFIRMED_PROJECT' || project.status === 'SCHEDULED') && can('PROJECT_INSTALL_SUBMIT') && (
-              <Link
-                href={`/projects/${project.id}/install`}
-                className="w-full sm:w-auto h-9 px-4 bg-[#24160c] hover:bg-[#382315] text-white border border-[#19100a] rounded-md text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5"
-              >
-                <Boxes className="w-3.5 h-3.5 text-[#c79e7c]" />
-                <span>Record Installation & Activate Rental</span>
-              </Link>
-            )}
-
             {/* Cancel Project Button (Pre-installation only) */}
             {isPreInstallation && can('PROJECT_CLOSE') && (
               <button
@@ -688,31 +732,27 @@ export default function ProjectWorkspacePage({
               </button>
             )}
 
-            {/* Active Rental Operations: Buffer Period, Extend Rental, Shift Scaffolding, Dismantle */}
+            {/* Active Rental Operations: Buffer Period, Extend Rental, Dismantle */}
             {['INSTALLED', 'ACTIVE_RENTAL', 'BUFFER_PERIOD', 'EXTENDED', 'REMOVAL_PENDING'].includes(project.status) && (
               <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
                 {can('PROJECT_BUFFER_REQUEST') && (
-                  project.status === 'BUFFER_PERIOD' || Boolean(project.bufferEndDate) ? (
-                    <button
-                      type="button"
-                      disabled
-                      title="Buffer period is already active for this project"
-                      className="h-9 px-3 bg-amber-50 text-amber-800 border border-amber-300 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed opacity-90 shadow-2xs"
-                    >
-                      <Clock className="w-3.5 h-3.5 text-amber-700" />
-                      <span>Buffer Period Active (+{effectiveBufferDays} Days)</span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleOpenBufferModal}
-                      title="Open Buffer Period modal to configure additional days"
-                      className="h-9 px-3 bg-[#fbf7f0] hover:bg-[#f4ebe1] text-[#78350f] border border-[#ebdcc9] rounded-md text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                    >
-                      <Clock className="w-3.5 h-3.5 text-[#8f6541]" />
-                      <span>Buffer Period Active</span>
-                    </button>
-                  )
+                  <button
+                    type="button"
+                    onClick={handleOpenBufferModal}
+                    title="Open Buffer Period modal to configure or add buffer days"
+                    className={`h-9 px-3 rounded-md text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs ${
+                      project.status === 'BUFFER_PERIOD' || Boolean(project.bufferEndDate)
+                        ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold'
+                        : 'bg-[#fbf7f0] hover:bg-[#f4ebe1] text-[#78350f] border border-[#ebdcc9] font-semibold'
+                    }`}
+                  >
+                    <Clock className="w-3.5 h-3.5 text-[#8f6541]" />
+                    <span>
+                      {project.status === 'BUFFER_PERIOD' || Boolean(project.bufferEndDate)
+                        ? `Buffer Period Active (+${effectiveBufferDays} Days)`
+                        : 'Buffer Period Active'}
+                    </span>
+                  </button>
                 )}
 
                 {can('PROJECT_EXTEND') && (
@@ -724,16 +764,6 @@ export default function ProjectWorkspacePage({
                     <Repeat className="w-3.5 h-3.5 text-[#8f6541]" />
                     <span>Extend Rental</span>
                   </button>
-                )}
-
-                {can('PROJECT_SHIFT') && (
-                  <Link
-                    href={`/projects/${project.id}/shift`}
-                    className="h-9 px-3 bg-[#fbf7f0] hover:bg-[#f4ebe1] text-stone-800 border border-[#ebdcc9] rounded-md text-xs font-semibold transition flex items-center justify-center gap-1.5"
-                  >
-                    <ArrowRightLeft className="w-3.5 h-3.5 text-stone-600" />
-                    <span>Shift Scaffolding</span>
-                  </Link>
                 )}
 
                 {can('PROJECT_DISMANTLE_SUBMIT') && (
@@ -799,17 +829,6 @@ export default function ProjectWorkspacePage({
         </button>
 
         <button
-          onClick={() => setActiveTab('materials')}
-          className={`pb-3 px-3 transition-all flex items-center gap-1.5 border-b-2 whitespace-nowrap ${activeTab === 'materials'
-            ? 'border-[#8f6541] text-[#24160c] font-bold'
-            : 'border-transparent text-stone-500 hover:text-stone-800'
-            }`}
-        >
-          <Boxes className="w-3.5 h-3.5 text-[#8f6541]" />
-          <span>Materials & Site Stock ({project.materials?.length || 0})</span>
-        </button>
-
-        <button
           onClick={() => setActiveTab('rental')}
           className={`pb-3 px-3 transition-all flex items-center gap-1.5 border-b-2 whitespace-nowrap ${activeTab === 'rental'
             ? 'border-[#8f6541] text-[#24160c] font-bold'
@@ -820,29 +839,18 @@ export default function ProjectWorkspacePage({
           <span>Rental Schedule & Extensions</span>
         </button>
 
-        {can('BILLING_VIEW') && (
+        {isDismantleCompleted && (
           <button
-            onClick={() => setActiveTab('billing')}
-            className={`pb-3 px-3 transition-all flex items-center gap-1.5 border-b-2 whitespace-nowrap ${activeTab === 'billing'
+            onClick={() => setActiveTab('dismantle')}
+            className={`pb-3 px-3 transition-all flex items-center gap-1.5 border-b-2 whitespace-nowrap ${activeTab === 'dismantle'
               ? 'border-[#8f6541] text-[#24160c] font-bold'
               : 'border-transparent text-stone-500 hover:text-stone-800'
               }`}
           >
-            <ReceiptIndianRupee className="w-3.5 h-3.5 text-[#8f6541]" />
-            <span>Invoices & Billing ({project.invoices?.length || 0})</span>
+            <RotateCcw className="w-3.5 h-3.5 text-[#8f6541]" />
+            <span>Dismantle</span>
           </button>
         )}
-
-        <button
-          onClick={() => setActiveTab('timeline')}
-          className={`pb-3 px-3 transition-all flex items-center gap-1.5 border-b-2 whitespace-nowrap ${activeTab === 'timeline'
-            ? 'border-[#8f6541] text-[#24160c] font-bold'
-            : 'border-transparent text-stone-500 hover:text-stone-800'
-            }`}
-        >
-          <History className="w-3.5 h-3.5 text-[#8f6541]" />
-          <span>Audit Activity Timeline ({project.activity?.length || 0})</span>
-        </button>
       </div>
 
       {/* TAB CONTENT 1: OVERVIEW */}
@@ -863,75 +871,59 @@ export default function ProjectWorkspacePage({
               </button>
             </div>
             <div className="space-y-3 text-xs">
-              <div className="flex justify-between items-center py-1 border-b border-[#f0e8db]">
-                <span className="text-stone-500">Quotation Reference</span>
-                <span className="font-mono font-semibold text-stone-800">{project.quotationNumber || 'Pending Confirmation'}</span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b border-[#f0e8db]">
-                <span className="text-stone-500">
-                  Rental Cycle Rate
-                  <span className="text-[10px] text-stone-400 block font-normal">Term 2: 28 Days / Month</span>
-                </span>
-                <span className="font-mono font-bold text-[#714f36] text-sm">
-                  {project.monthlyRentalRate > 0 ? formatINR(project.monthlyRentalRate) : '-'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b border-[#f0e8db]">
-                <span className="text-stone-500">Total Agreed Price</span>
-                <span className="font-mono font-bold text-stone-900">
-                  {project.agreedProjectPrice > 0 ? formatINR(project.agreedProjectPrice) : '-'}
-                </span>
-              </div>
               {(() => {
+                const actualTotal = Number(project.totalAmount ?? project.agreedProjectPrice ?? project.quotationAmount ?? 0);
+                const actualReceived = Number(project.paymentReceived ?? project.advancePaidAmount ?? 0);
+                const actualBalance = Math.max(0, Math.round((actualTotal - actualReceived) * 100) / 100);
                 const dims = extractProjectDimensions(project);
-                if (dims.elevationAreaSqFt <= 0) return null;
                 return (
-                  <div className="flex justify-between items-center py-1.5 border-b border-[#f0e8db] bg-[#fbf9f5] px-2 rounded">
-                    <span className="text-stone-700 font-semibold">Billable Façade Area (Term 1)</span>
-                    <span className="font-mono font-bold text-stone-900">
-                      {dims.formattedArea} {project.ratePerSqFt ? `(@ ₹${project.ratePerSqFt}/sq. ft.)` : ''}
-                    </span>
-                  </div>
+                  <>
+                    <div className="flex justify-between items-center py-1 border-b border-[#f0e8db]">
+                      <span className="text-stone-500">Quotation Reference</span>
+                      <span className="font-mono font-semibold text-stone-800">{getQuotationReferenceLabel(project.status)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1 border-b border-[#f0e8db]">
+                      <span className="text-stone-500">
+                        Rental Cycle Rate
+                        <span className="text-[10px] text-stone-400 block font-normal">Term 2: 28 Days / Month</span>
+                      </span>
+                      <span className="font-mono font-bold text-[#714f36] text-sm">
+                        {project.monthlyRentalRate > 0 ? formatINR(project.monthlyRentalRate) : '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-1 border-b border-[#f0e8db]">
+                      <span className="text-stone-500">Total Agreed Price</span>
+                      <span className="font-mono font-bold text-stone-900">
+                        {actualTotal > 0 ? formatINR(actualTotal) : '-'}
+                      </span>
+                    </div>
+                    {dims.elevationAreaSqFt > 0 && (
+                      <div className="flex justify-between items-center py-1.5 border-b border-[#f0e8db] bg-[#fbf9f5] px-2 rounded">
+                        <span className="text-stone-700 font-semibold">Billable Façade Area (Term 1)</span>
+                        <span className="font-mono font-bold text-stone-900">
+                          {dims.formattedArea} {project.ratePerSqFt ? `(@ ₹${project.ratePerSqFt}/sq. ft.)` : ''}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center py-1.5 border-b border-[#f0e8db] bg-[#fbf7f0] px-2 rounded">
+                      <span className="text-[#714f36] font-semibold">Payment Received</span>
+                      <span className="font-mono font-bold text-emerald-700">
+                        {formatINR(actualReceived)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-1.5 border-b border-[#f0e8db] px-2">
+                      <span className="text-stone-600 font-semibold">Balance Amount</span>
+                      <span className={`font-mono font-bold ${actualBalance > 0 ? 'text-amber-800' : 'text-emerald-700'}`}>
+                        {formatINR(actualBalance)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-stone-500">Applicable GST Rate</span>
+                      <span className="font-mono font-semibold text-stone-800">{project.gstPercentage || 18}% (Standard CGST+SGST)</span>
+                    </div>
+                  </>
                 );
               })()}
-              <div className="flex justify-between items-center py-1.5 border-b border-[#f0e8db] bg-[#fbf7f0] px-2 rounded">
-                <span className="text-[#714f36] font-semibold">
-                  75% Advance (Term 7)
-                  <span className="text-[10px] text-stone-500 font-normal block">Required before installation</span>
-                </span>
-                <span className="font-mono font-bold text-[#24160c]">
-                  {formatINR(project.advanceRequiredAmount || Math.round((project.agreedProjectPrice || 0) * 0.75))}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-1.5 border-b border-[#f0e8db] px-2">
-                <span className="text-stone-600">
-                  25% Completion Balance
-                  <span className="text-[10px] text-stone-400 font-normal block">Payable after installation</span>
-                </span>
-                <span className="font-mono font-bold text-stone-800">
-                  {formatINR(project.completionDueAmount || Math.round((project.agreedProjectPrice || 0) * 0.25))}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b border-[#f0e8db]">
-                <span className="text-stone-500">
-                  Transportation (Term 3)
-                  <span className="text-[10px] text-stone-400 font-normal block">2-Way (Delivery & Return)</span>
-                </span>
-                <span className="font-mono text-stone-800">{formatINR((project.twoWayTransportCharges || project.transportCharges || 0) * 2)}</span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b border-[#f0e8db]">
-                <span className="text-stone-500">
-                  Walkway Jali (Term 4)
-                  <span className="text-[10px] text-stone-400 font-normal block">1 included per unit</span>
-                </span>
-                <span className="font-mono text-stone-800">
-                  {project.extraJaliQuantity > 0 ? `+${project.extraJaliQuantity} extra (₹${project.extraJaliCharges || project.extraJaliQuantity * 200})` : 'Standard Included'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-1">
-                <span className="text-stone-500">Applicable GST Rate</span>
-                <span className="font-mono font-semibold text-stone-800">{project.gstPercentage || 18}% (Standard CGST+SGST)</span>
-              </div>
             </div>
           </div>
 
@@ -1085,9 +1077,6 @@ export default function ProjectWorkspacePage({
                   <div className="text-[11px] text-[#8c5e39] font-mono font-semibold mt-0.5">
                     Elevation Area: {extractProjectDimensions(project).formattedArea}
                   </div>
-                  <div className="text-[11px] text-stone-500 mt-1">
-                    Type: {project.measurements?.measurementType?.replace(/_/g, ' ') || 'Façade Scaffold'}
-                  </div>
                 </div>
 
                 {project.siteRemarks && (
@@ -1096,53 +1085,6 @@ export default function ProjectWorkspacePage({
                     {project.siteRemarks}
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* Official Customer Handover PDF summary in Card 3 */}
-            <div className="pt-3 border-t border-[#f0e8db] space-y-2">
-              <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider flex items-center justify-between">
-                <span>Official Customer PDFs</span>
-                <span className="font-mono text-[10px] text-stone-400 font-normal">Direct Downloads</span>
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs p-2.5 rounded-md bg-[#fbf9f5] border border-[#ede3d4]">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-3.5 h-3.5 text-stone-600 shrink-0" />
-                    <span className="text-stone-800 font-medium">Confirmation PDF</span>
-                  </div>
-                  {isConfirmed ? (
-                    <button
-                      onClick={handleDownloadConfirmationPdf}
-                      disabled={downloadingConfPdf}
-                      className="px-2.5 py-1 bg-[#24160c] hover:bg-[#382315] text-[#c79e7c] rounded text-[11px] font-semibold flex items-center gap-1 shadow-2xs transition active:scale-95"
-                    >
-                      {downloadingConfPdf ? <Loader2 className="w-3 h-3 animate-spin text-[#c79e7c]" /> : <FileDown className="w-3 h-3 text-[#c79e7c]" />}
-                      <span>{downloadingConfPdf ? 'Generating...' : 'Download'}</span>
-                    </button>
-                  ) : (
-                    <span className="text-stone-400 text-[11px] font-medium bg-stone-100 px-2 py-0.5 rounded">Pending Confirmation</span>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between text-xs p-2.5 rounded-md bg-[#fbf7f0] border border-[#ebdcc9]">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-3.5 h-3.5 text-[#8f6541] shrink-0" />
-                    <span className="text-stone-900 font-medium">Installation PDF</span>
-                  </div>
-                  {isInstalled ? (
-                    <button
-                      onClick={handleDownloadInstallationPdf}
-                      disabled={downloadingInstPdf}
-                      className="px-2.5 py-1 bg-[#382315] hover:bg-[#4a301e] text-[#f7e7d7] rounded text-[11px] font-semibold flex items-center gap-1 shadow-2xs transition active:scale-95"
-                    >
-                      {downloadingInstPdf ? <Loader2 className="w-3 h-3 animate-spin text-[#c79e7c]" /> : <FileDown className="w-3 h-3 text-[#c79e7c]" />}
-                      <span>{downloadingInstPdf ? 'Generating...' : 'Download'}</span>
-                    </button>
-                  ) : (
-                    <span className="text-stone-400 text-[11px] font-medium bg-stone-100 px-2 py-0.5 rounded">Pending Installation</span>
-                  )}
-                </div>
               </div>
             </div>
           </div>
@@ -1457,172 +1399,7 @@ export default function ProjectWorkspacePage({
         </div>
       )}
 
-      {/* TAB CONTENT 4: MATERIALS */}
-      {activeTab === 'materials' && (
-        <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs overflow-hidden space-y-4 p-5 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#f0e8db] pb-4">
-            <div>
-              <h2 className="text-sm font-bold text-[#24160c]">Materials Allocation & Physical Inventory Count</h2>
-              <p className="text-xs text-stone-500">Reserved, installed on site, returned, damaged, and missing scaffolding inventory</p>
-            </div>
-            <div className="flex items-center gap-2">
-              {project.status === 'CONFIRMED_PROJECT' && can('PROJECT_CONFIRM') && (
-                <button
-                  type="button"
-                  onClick={handleReleaseReservation}
-                  disabled={releasingReservation}
-                  className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-md text-xs font-semibold shadow-xs transition"
-                >
-                  {releasingReservation ? 'Releasing...' : 'Release Stock Reservation'}
-                </button>
-              )}
-              {project.status === 'NOT_INSTALLED' && can('PROJECT_CONFIRM') && (
-                <Link
-                  href={`/projects/${project.id}/confirm`}
-                  className="px-3 py-1.5 bg-[#24160c] hover:bg-[#382315] text-[#c79e7c] border border-[#19100a] rounded-md text-xs font-semibold shadow-xs transition"
-                >
-                  + Add Material Requirements
-                </Link>
-              )}
-            </div>
-          </div>
-
-          {project.scaffoldingPlan && (
-            <div className="p-4 bg-[#fbf9f5] border border-[#ede3d4] rounded-md space-y-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-xs text-[#24160c]">{project.scaffoldingPlan.planName}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#ebdcc9] text-[#24160c]">
-                    {project.scaffoldingPlan.badge}
-                  </span>
-                </div>
-                <div className="text-xs font-mono font-bold text-[#714f36]">
-                  {project.scaffoldingPlan.configurationSummary.dimensions.length} × {project.scaffoldingPlan.configurationSummary.dimensions.width} × {project.scaffoldingPlan.configurationSummary.dimensions.height} {project.scaffoldingPlan.configurationSummary.dimensions.unit}
-                </div>
-              </div>
-              <p className="text-xs text-stone-600">{project.scaffoldingPlan.description}</p>
-              <div className="flex flex-wrap gap-4 pt-2 border-t border-[#ede3d4] text-xs font-mono">
-                <div>
-                  <span className="text-stone-500 font-sans">Bays × Lifts: </span>
-                  <strong className="text-stone-900">{project.scaffoldingPlan.configurationSummary.totalBays} Bays × {project.scaffoldingPlan.configurationSummary.totalLifts} Lifts</strong>
-                </div>
-                <div>
-                  <span className="text-stone-500 font-sans">Vertical Standards: </span>
-                  <strong className="text-stone-900">{project.scaffoldingPlan.configurationSummary.totalVerticalStandardsGrid} Lines</strong>
-                </div>
-                <div>
-                  <span className="text-stone-500 font-sans">Total Pieces: </span>
-                  <strong className="text-stone-900">{project.scaffoldingPlan.totals.totalPieces} NOS</strong>
-                </div>
-                <div>
-                  <span className="text-stone-500 font-sans">Tare Weight: </span>
-                  <strong className="text-stone-900">{(project.scaffoldingPlan.totals.totalWeightKg / 1000).toFixed(2)} Tonnes</strong>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Mobile Materials Card List */}
-          <div className="block md:hidden divide-y divide-[#f0e8db]">
-            {(project.materials || []).length === 0 ? (
-              <div className="py-6 text-center text-xs text-stone-400">
-                No materials assigned yet.
-              </div>
-            ) : (
-              project.materials.map((mat: any) => (
-                <div key={mat.id} className="py-3.5 space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#24160c]">{mat.materialName}</span>
-                    <span className="font-mono text-[11px] text-stone-500 font-bold">{mat.itemCode}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 bg-[#fbf9f5] p-2.5 rounded-md border border-[#ede3d4] text-center font-mono text-[11px]">
-                    <div>
-                      <span className="text-stone-400 font-sans block text-[10px]">Required</span>
-                      <span className="font-bold text-stone-800">{mat.requiredQuantity} {mat.unit}</span>
-                    </div>
-                    <div>
-                      <span className="text-stone-400 font-sans block text-[10px]">Reserved</span>
-                      <span className="font-bold text-[#714f36]">{mat.reservedQuantity}</span>
-                    </div>
-                    <div>
-                      <span className="text-stone-400 font-sans block text-[10px]">Installed</span>
-                      <span className="font-bold text-[#24160c]">{mat.installedQuantity}</span>
-                    </div>
-                    <div>
-                      <span className="text-stone-400 font-sans block text-[10px]">Returned</span>
-                      <span className="font-bold text-stone-700">{mat.returnedUsableQuantity}</span>
-                    </div>
-                    <div>
-                      <span className="text-stone-400 font-sans block text-[10px]">Damaged</span>
-                      <span className="font-bold text-amber-700">{mat.returnedDamagedQuantity}</span>
-                    </div>
-                    <div>
-                      <span className="text-stone-400 font-sans block text-[10px]">Missing</span>
-                      <span className="font-bold text-rose-700">{mat.missingQuantity}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] pt-1">
-                    <span className="text-stone-500">Monthly Rental:</span>
-                    <span className="font-mono font-bold text-stone-900">{formatINR(mat.monthlyRentalRate)}</span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Desktop Materials Table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#fbf9f5] text-stone-600 uppercase tracking-wider text-[10px] font-semibold border-b border-[#e8decb]">
-                <tr>
-                  <th className="px-4 py-2.5">Material Name</th>
-                  <th className="px-4 py-2.5">Item Code</th>
-                  <th className="px-4 py-2.5 text-center">Required</th>
-                  <th className="px-4 py-2.5 text-center">Reserved</th>
-                  <th className="px-4 py-2.5 text-center font-bold text-[#24160c]">Installed (On Site)</th>
-                  <th className="px-4 py-2.5 text-center">Returned Usable</th>
-                  <th className="px-4 py-2.5 text-center text-amber-700">Damaged</th>
-                  <th className="px-4 py-2.5 text-center text-rose-700">Missing</th>
-                  <th className="px-4 py-2.5 text-right">Rental Rate/mo</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f0e8db] font-mono">
-                {(project.materials || []).length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-stone-400 font-sans">
-                      No materials assigned yet. Materials will be allocated during Project Confirmation.
-                    </td>
-                  </tr>
-                ) : (
-                  project.materials.map((mat: any) => (
-                    <tr key={mat.id} className="hover:bg-[#fcfbf9] transition">
-                      <td className="px-4 py-3 font-sans font-medium text-stone-900">
-                        {mat.materialName}
-                      </td>
-                      <td className="px-4 py-3 text-stone-500 text-[11px]">
-                        {mat.itemCode}
-                      </td>
-                      <td className="px-4 py-3 text-center">{mat.requiredQuantity} {mat.unit}</td>
-                      <td className="px-4 py-3 text-center text-[#714f36]">{mat.reservedQuantity}</td>
-                      <td className="px-4 py-3 text-center font-bold text-[#24160c] bg-[#fbf7f0]">
-                        {mat.installedQuantity}
-                      </td>
-                      <td className="px-4 py-3 text-center text-stone-700">{mat.returnedUsableQuantity}</td>
-                      <td className="px-4 py-3 text-center text-amber-700">{mat.returnedDamagedQuantity}</td>
-                      <td className="px-4 py-3 text-center text-rose-700 font-bold">{mat.missingQuantity}</td>
-                      <td className="px-4 py-3 text-right text-stone-900 font-medium">
-                        {formatINR(mat.monthlyRentalRate)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* TAB CONTENT 5: RENTAL & DATES */}
+      {/* TAB CONTENT 4: RENTAL & DATES */}
       {activeTab === 'rental' && (
         <div className="bg-white p-5 sm:p-6 rounded-lg border border-[#e8decb] shadow-2xs space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f0e8db] pb-4">
@@ -1735,6 +1512,17 @@ export default function ProjectWorkspacePage({
                               +{unitText}
                             </span>
                           )}
+                          {isBuffer && entry.paymentStatus && (
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                                entry.paymentStatus === 'PAID'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                  : 'bg-stone-100 text-stone-700 border-stone-300'
+                              }`}
+                            >
+                              {entry.paymentStatus === 'PAID' ? 'Paid' : 'Unpaid'}
+                            </span>
+                          )}
                         </div>
                         <div className="text-stone-700 font-mono text-[11px]">
                           Previous: <span className="font-semibold">{formatDate(entry.previousRemovalDate)}</span>
@@ -1742,6 +1530,20 @@ export default function ProjectWorkspacePage({
                           New Effective Date: <span className="font-bold text-[#24160c]">{formatDate(entry.newRemovalDate)}</span>
                           <span className="text-stone-400 ml-2">(Original: {formatDate(entry.originalRemovalDate)})</span>
                         </div>
+                        {isBuffer && entry.paymentStatus === 'PAID' && entry.totalAgreedPrice !== undefined && (
+                          <div className="text-[11px] font-mono text-[#714f36] bg-[#faf6ee] px-2 py-1 rounded border border-[#ebdcc9] inline-flex flex-wrap gap-3">
+                            <span>Total: <strong>{formatINR(entry.totalAgreedPrice)}</strong></span>
+                            <span>Received: <strong className="text-emerald-700">{formatINR(entry.paymentReceived || 0)}</strong></span>
+                            <span>Balance: <strong className="text-amber-800">{formatINR(entry.balanceAmount || 0)}</strong></span>
+                          </div>
+                        )}
+                        {!isBuffer && !isManual && entry.extensionAmount !== undefined && (
+                          <div className="text-[11px] font-mono text-[#714f36] bg-[#faf6ee] px-2 py-1 rounded border border-[#ebdcc9] inline-flex flex-wrap gap-3">
+                            <span>Extension Charge: <strong>{formatINR(entry.extensionAmount)}</strong></span>
+                            <span>Received: <strong className="text-emerald-700">{formatINR(entry.paymentReceived || 0)}</strong></span>
+                            <span>Ext. Balance: <strong className="text-amber-800">{formatINR(entry.balanceAmount || 0)}</strong></span>
+                          </div>
+                        )}
                         {entry.reason && (
                           <div className="text-[11px] text-stone-500">Note: {entry.reason}</div>
                         )}
@@ -1778,153 +1580,18 @@ export default function ProjectWorkspacePage({
         </div>
       )}
 
-      {/* TAB CONTENT 6: BILLING & INVOICES */}
-      {activeTab === 'billing' && (
-        <div className="bg-white p-5 sm:p-6 rounded-lg border border-[#e8decb] shadow-2xs space-y-6">
-          <div className="flex items-center justify-between border-b border-[#f0e8db] pb-4">
-            <div>
-              <h2 className="text-sm font-bold text-[#24160c]">Project Tax Invoices & Payments</h2>
-              <p className="text-xs text-stone-500">GST-compliant rental charges, mobilization, and settled amounts</p>
-            </div>
-            {can('BILLING_CREATE_INVOICE') && (
-              <Link
-                href={`/billing?projectId=${project.id}&customerId=${project.customerId}`}
-                className="px-3.5 py-1.5 bg-[#24160c] hover:bg-[#382315] text-[#c79e7c] border border-[#19100a] rounded-md text-xs font-semibold shadow-xs transition"
-              >
-                + Issue New Invoice
-              </Link>
-            )}
-          </div>
-
-          {/* Mobile Invoices Card List */}
-          <div className="block md:hidden divide-y divide-[#f0e8db]">
-            {(project.invoices || []).length === 0 ? (
-              <div className="py-6 text-center text-xs text-stone-400">
-                No invoices issued for this project yet.
-              </div>
-            ) : (
-              project.invoices.map((inv: any) => (
-                <div key={inv.id} className="py-3.5 space-y-2.5 text-xs">
-                  <div className="flex items-center justify-between">
-                    <Link href={`/billing/${inv.id}/invoice-view`} className="font-mono font-bold text-[#24160c] text-sm hover:underline">
-                      {inv.invoiceNumber}
-                    </Link>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${inv.status === 'PAID' ? 'bg-[#fbf7f0] text-[#714f36] border-[#ebdcc9]' : 'bg-amber-100 text-amber-800 border-amber-200'
-                      }`}>
-                      {inv.status}
-                    </span>
-                  </div>
-
-                  <div className="text-stone-500 text-[11px] flex items-center justify-between">
-                    <span>{inv.invoiceType?.replace(/_/g, ' ')}</span>
-                    <span>Date: {formatDate(inv.invoiceDate)} (Due: {formatDate(inv.dueDate)})</span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 bg-[#fbf9f5] p-2.5 rounded-md border border-[#ede3d4] text-center font-mono text-[11px]">
-                    <div>
-                      <span className="text-stone-400 font-sans block text-[10px]">Total</span>
-                      <span className="font-bold text-stone-900">{formatINR(inv.totalAmount)}</span>
-                    </div>
-                    <div>
-                      <span className="text-stone-400 font-sans block text-[10px]">Paid</span>
-                      <span className="font-bold text-[#714f36]">{formatINR(inv.paidAmount)}</span>
-                    </div>
-                    <div>
-                      <span className="text-stone-400 font-sans block text-[10px]">Due</span>
-                      <span className="font-bold text-rose-700">{formatINR(inv.outstandingAmount)}</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-1">
-                    <Link
-                      href={`/billing/${inv.id}/invoice-view`}
-                      className="w-full flex items-center justify-center py-2 px-3 bg-[#f7f2eb] hover:bg-[#ebdcc9] text-[#24160c] font-semibold rounded-md border border-[#d6c7b2] transition min-h-[38px]"
-                    >
-                      View GST Invoice →
-                    </Link>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Desktop Invoices Table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#fbf9f5] text-stone-600 uppercase tracking-wider text-[10px] font-semibold border-b border-[#e8decb]">
-                <tr>
-                  <th className="px-4 py-2.5">Invoice #</th>
-                  <th className="px-4 py-2.5">Type</th>
-                  <th className="px-4 py-2.5">Invoice Date</th>
-                  <th className="px-4 py-2.5">Due Date</th>
-                  <th className="px-4 py-2.5 text-right">Taxable</th>
-                  <th className="px-4 py-2.5 text-right font-bold">Total (Incl GST)</th>
-                  <th className="px-4 py-2.5 text-right">Paid</th>
-                  <th className="px-4 py-2.5 text-right">Outstanding</th>
-                  <th className="px-4 py-2.5 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f0e8db] font-mono">
-                {(project.invoices || []).length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-stone-400 font-sans">
-                      No invoices issued for this project yet.
-                    </td>
-                  </tr>
-                ) : (
-                  project.invoices.map((inv: any) => (
-                    <tr key={inv.id} className="hover:bg-[#fcfbf9] transition">
-                      <td className="px-4 py-3 font-bold text-[#24160c]">
-                        <Link href={`/billing/${inv.id}/invoice-view`} className="hover:underline hover:text-[#8f6541]">
-                          {inv.invoiceNumber}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 font-sans text-stone-600">{inv.invoiceType?.replace(/_/g, ' ')}</td>
-                      <td className="px-4 py-3">{formatDate(inv.invoiceDate)}</td>
-                      <td className="px-4 py-3">{formatDate(inv.dueDate)}</td>
-                      <td className="px-4 py-3 text-right">{formatINR(inv.taxableValue)}</td>
-                      <td className="px-4 py-3 text-right font-bold text-stone-900">{formatINR(inv.totalAmount)}</td>
-                      <td className="px-4 py-3 text-right text-[#714f36]">{formatINR(inv.paidAmount)}</td>
-                      <td className="px-4 py-3 text-right font-bold text-rose-700">{formatINR(inv.outstandingAmount)}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-sans font-semibold border ${inv.status === 'PAID' ? 'bg-[#fbf7f0] text-[#714f36] border-[#ebdcc9]' : 'bg-amber-100 text-amber-800 border-amber-200'
-                          }`}>
-                          {inv.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* TAB CONTENT 7: ACTIVITY TIMELINE */}
-      {activeTab === 'timeline' && (
-        <div className="bg-white p-5 sm:p-6 rounded-lg border border-[#e8decb] shadow-2xs space-y-4">
-          <h2 className="text-sm font-bold text-[#24160c] border-b border-[#f0e8db] pb-3">Immutable Audit Timeline</h2>
-          <div className="relative pl-6 border-l-2 border-[#8f6541]/30 space-y-6">
-            {(project.activity || []).length === 0 ? (
-              <div className="text-xs text-stone-400 py-4">No events logged yet.</div>
-            ) : (
-              project.activity.map((event: any) => (
-                <div key={event.id} className="relative group">
-                  <div className="absolute -left-[31px] top-0.5 w-3.5 h-3.5 rounded-full bg-[#24160c] border-2 border-white shadow-xs" />
-                  <div className="text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#24160c]">{event.eventTitle}</span>
-                      <span className="text-[10px] font-mono text-stone-400">{formatDateTime(event.createdAt)}</span>
-                    </div>
-                    <div className="text-stone-600 mt-1">{event.eventDescription}</div>
-                    <div className="text-[10px] text-stone-400 mt-1">Actor: {event.actorName}</div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+      {/* TAB CONTENT 5: DISMANTLE (Visible only after dismantling is completed) */}
+      {activeTab === 'dismantle' && isDismantleCompleted && (
+        <DismantleReconciliationPanel
+          project={project}
+          currentUser={currentUser}
+          onSaved={(updatedProject) => {
+            if (updatedProject) {
+              setProject((prev: any) => ({ ...prev, ...updatedProject }));
+            }
+            fetchProjectDetails();
+          }}
+        />
       )}
 
       {/* Official 11 Terms & Conditions Modal */}
@@ -2125,18 +1792,41 @@ export default function ProjectWorkspacePage({
 
       {/* BUFFER PERIOD MODAL */}
       {bufferModalOpen && project && (() => {
-        const originalRemovalDateStr =
-          toDateOnlyString(project.originalRemovalDate || project.originalRentalEndDate || project.removalDate || project.rentalEndDate || effectiveRemovalDate) ||
-          toDateOnlyString(new Date());
+        const currentRemovalDateStr =
+          toDateOnlyString(effectiveRemovalDate) || toDateOnlyString(new Date());
         const numericBufferDays = Number(bufferDaysInput);
         const isValidBufferDays =
           bufferDaysInput.trim() !== '' &&
           Number.isInteger(numericBufferDays) &&
           numericBufferDays >= 1;
         const calculatedNewRemovalDate = isValidBufferDays
-          ? calculateExtendedRemovalDate(originalRemovalDateStr, numericBufferDays, 'DAYS')
-          : originalRemovalDateStr;
+          ? (bufferEndDateInput || calculateExtendedRemovalDate(currentRemovalDateStr, numericBufferDays, 'DAYS'))
+          : currentRemovalDateStr;
         const previewRemaining = getRemainingDaysInfo(calculatedNewRemovalDate, 'BUFFER_PERIOD');
+
+        const handleBufferDaysChange = (val: string) => {
+          setBufferDaysInput(val);
+          setBufferError(null);
+          const n = Number(val);
+          if (val.trim() !== '' && Number.isInteger(n) && n >= 1) {
+            setBufferEndDateInput(calculateExtendedRemovalDate(currentRemovalDateStr, n, 'DAYS'));
+          }
+        };
+
+        const handleBufferEndDateChange = (dateStr: string) => {
+          setBufferEndDateInput(dateStr);
+          setBufferError(null);
+          if (dateStr) {
+            const prevD = new Date(currentRemovalDateStr + 'T00:00:00Z');
+            const nextD = new Date(dateStr + 'T00:00:00Z');
+            const diff = Math.round((nextD.getTime() - prevD.getTime()) / (1000 * 60 * 60 * 24));
+            if (!isNaN(diff) && diff >= 1) {
+              setBufferDaysInput(String(diff));
+            } else {
+              setBufferDaysInput('0');
+            }
+          }
+        };
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#140b06]/70 backdrop-blur-xs animate-in fade-in duration-150">
@@ -2146,7 +1836,7 @@ export default function ProjectWorkspacePage({
             />
             <form
               onSubmit={handleConfirmBufferPeriod}
-              className="relative z-10 w-full max-w-lg bg-white rounded-xl shadow-2xl border border-[#d6c7b2] overflow-hidden text-stone-800 max-h-[92vh] flex flex-col"
+              className="relative z-10 w-full max-w-xl bg-white rounded-xl shadow-2xl border border-[#d6c7b2] overflow-hidden text-stone-800 max-h-[92vh] flex flex-col"
             >
               {/* Modal Header */}
               <div className="bg-[#24160c] px-5 py-4 text-white flex items-center justify-between shrink-0">
@@ -2180,52 +1870,106 @@ export default function ProjectWorkspacePage({
                   </div>
                 )}
 
-                {/* 1. Original Removal Date (Automatically fetched) */}
+                {/* 1. Current Removal Date */}
                 <div className="p-3.5 bg-white rounded-lg border border-[#e5dac8] shadow-2xs">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] uppercase tracking-wider font-semibold text-stone-500 flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-[#8f6541]" />
-                      <span>Original Removal Date</span>
+                      <span>Current Removal Date</span>
                     </span>
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#faf6ee] text-[#714f36] border border-[#ebdcc9]">
                       Existing Project Date
                     </span>
                   </div>
                   <div className="font-mono font-bold text-base text-[#24160c] mt-1.5">
-                    {formatLongDate(originalRemovalDateStr)}
+                    {formatLongDate(currentRemovalDateStr)}
                   </div>
-                  <div className="text-[11px] text-[#8c5e39] mt-0.5">
-                    Current project removal deadline fetched from records
+                  {project.originalRemovalDate && toDateOnlyString(project.originalRemovalDate) !== currentRemovalDateStr && (
+                    <div className="text-[11px] text-[#8c5e39] mt-0.5">
+                      Original Contract Removal Date: {formatLongDate(project.originalRemovalDate)}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Buffer Period Payment Status */}
+                <div className="p-3.5 bg-white rounded-lg border border-[#e5dac8] shadow-2xs space-y-2">
+                  <label className="block font-semibold text-[#4d301c]">
+                    Buffer Period Payment Status <span className="text-rose-600">*</span>
+                  </label>
+                  <div
+                    role="group"
+                    aria-label="Buffer Period Payment Status"
+                    className="grid grid-cols-2 gap-1.5 p-1 bg-[#f4ece1] border border-[#d6c7b2] rounded-md"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBufferPaymentStatus('UNPAID');
+                        setBufferError(null);
+                      }}
+                      className={`py-2 px-3 rounded text-xs font-bold transition cursor-pointer ${
+                        bufferPaymentStatus === 'UNPAID'
+                          ? 'bg-[#24160c] text-white shadow-2xs'
+                          : 'text-[#59371d] hover:bg-[#ebdcc9]'
+                      }`}
+                    >
+                      Unpaid
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBufferPaymentStatus('PAID');
+                        setBufferError(null);
+                      }}
+                      className={`py-2 px-3 rounded text-xs font-bold transition cursor-pointer ${
+                        bufferPaymentStatus === 'PAID'
+                          ? 'bg-[#24160c] text-[#c79e7c] shadow-2xs'
+                          : 'text-[#59371d] hover:bg-[#ebdcc9]'
+                      }`}
+                    >
+                      Paid
+                    </button>
                   </div>
                 </div>
 
-                {/* 2. Buffer Period (Days) Selection */}
-                <div className="p-3.5 bg-white rounded-lg border border-[#e5dac8] shadow-2xs space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="block font-semibold text-[#4d301c]">
-                      Buffer Period (Days) <span className="text-rose-600">*</span>
-                    </label>
-                    <span className="text-[11px] text-[#9c826e]">Enter additional grace days</span>
-                  </div>
+                {/* 3. Buffer Period (Days) & End Date Selection */}
+                <div className="p-3.5 bg-white rounded-lg border border-[#e5dac8] shadow-2xs space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold text-[#4d301c] mb-1">
+                        Buffer Period (Days) <span className="text-rose-600">*</span>
+                      </label>
+                      <div className="relative">
+                        <Clock className="w-3.5 h-3.5 text-[#9c826e] absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          required
+                          value={bufferDaysInput}
+                          onChange={(e) => handleBufferDaysChange(e.target.value)}
+                          placeholder="e.g. 3, 5, 7"
+                          className="w-full pl-8 pr-12 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] font-mono font-bold text-xs focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-stone-500 font-mono">
+                          Days
+                        </span>
+                      </div>
+                    </div>
 
-                  <div className="relative">
-                    <Clock className="w-4 h-4 text-[#9c826e] absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      required
-                      value={bufferDaysInput}
-                      onChange={(e) => {
-                        setBufferDaysInput(e.target.value);
-                        setBufferError(null);
-                      }}
-                      placeholder="e.g. 3, 5, 7"
-                      className="w-full pl-9 pr-14 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] font-mono font-bold text-sm focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500 font-mono">
-                      Days
-                    </span>
+                    <div>
+                      <label className="block font-semibold text-[#4d301c] mb-1">
+                        Buffer Period End Date <span className="text-rose-600">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        min={calculateExtendedRemovalDate(currentRemovalDateStr, 1, 'DAYS')}
+                        value={bufferEndDateInput}
+                        onChange={(e) => handleBufferEndDateChange(e.target.value)}
+                        className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] font-mono font-bold text-xs focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                      />
+                    </div>
                   </div>
 
                   {/* Quick Select Buttons */}
@@ -2235,10 +1979,7 @@ export default function ProjectWorkspacePage({
                       <button
                         key={d}
                         type="button"
-                        onClick={() => {
-                          setBufferDaysInput(String(d));
-                          setBufferError(null);
-                        }}
+                        onClick={() => handleBufferDaysChange(String(d))}
                         className={`px-2.5 py-0.5 rounded text-[11px] font-mono font-bold transition cursor-pointer ${
                           Number(bufferDaysInput) === d
                             ? 'bg-[#24160c] text-white shadow-2xs'
@@ -2251,7 +1992,87 @@ export default function ProjectWorkspacePage({
                   </div>
                 </div>
 
-                {/* 3. New Removal / Expiry Date (Automatically calculated) */}
+                {/* 4. Buffer Period Financial Details (Shown ONLY when Paid is selected) */}
+                {bufferPaymentStatus === 'PAID' && (
+                  <div className="p-3.5 bg-[#fbf7f0] rounded-lg border border-[#d6b692] space-y-3">
+                    <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-2">
+                      <span className="font-bold text-[#24160c] uppercase tracking-wider text-[11px]">
+                        Buffer Period Financial Details
+                      </span>
+                      <span className="text-[10px] text-[#714f36] font-mono">
+                        Balance = Total − Received
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                      <div>
+                        <label className="block font-semibold text-[#4d301c] mb-1 whitespace-nowrap">
+                          Total Agreed Price
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 font-mono font-semibold">₹</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={bufferTotalAgreedInput}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setBufferTotalAgreedInput(val);
+                              const t = Number(val) || 0;
+                              const r = Number(bufferPaymentReceivedInput) || 0;
+                              setBufferBalanceInput(String(Math.round((t - r) * 100) / 100));
+                              setBufferError(null);
+                            }}
+                            className="w-full pl-6 pr-2.5 py-2 bg-white border border-[#d6c7b2] rounded-md font-mono font-bold text-[#24160c] focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-[#4d301c] mb-1 whitespace-nowrap">
+                          Payment Received
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-600/70 font-mono font-semibold">₹</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={bufferPaymentReceivedInput}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setBufferPaymentReceivedInput(val);
+                              const t = Number(bufferTotalAgreedInput) || 0;
+                              const r = Number(val) || 0;
+                              setBufferBalanceInput(String(Math.round((t - r) * 100) / 100));
+                              setBufferError(null);
+                            }}
+                            className="w-full pl-6 pr-2.5 py-2 bg-white border border-[#d6c7b2] rounded-md font-mono font-bold text-emerald-700 focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-[#4d301c] mb-1 whitespace-nowrap">
+                          Balance Amount
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-amber-700/70 font-mono font-semibold">₹</span>
+                          <input
+                            type="number"
+                            step="any"
+                            value={bufferBalanceInput}
+                            onChange={(e) => setBufferBalanceInput(e.target.value)}
+                            className="w-full pl-6 pr-2.5 py-2 bg-white border border-[#d6c7b2] rounded-md font-mono font-bold text-amber-800 focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. New Removal / Expiry Date Preview */}
                 <div
                   className={`p-3.5 rounded-lg border transition-all ${
                     isValidBufferDays
@@ -2278,8 +2099,8 @@ export default function ProjectWorkspacePage({
                   <div className="text-[11px] text-amber-900/90 mt-1 flex flex-wrap items-center justify-between gap-1">
                     <span>
                       {isValidBufferDays
-                        ? `${formatLongDate(originalRemovalDateStr)} + ${numericBufferDays} Days = ${formatLongDate(calculatedNewRemovalDate)}`
-                        : 'Enter a valid positive number of days to calculate new removal date'}
+                        ? `${formatLongDate(currentRemovalDateStr)} + ${numericBufferDays} Days = ${formatLongDate(calculatedNewRemovalDate)}`
+                        : 'Select a valid buffer end date after the current removal date'}
                     </span>
                     {isValidBufferDays && (
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${previewRemaining.badgeClass}`}>
@@ -2302,17 +2123,6 @@ export default function ProjectWorkspacePage({
                     placeholder="e.g. Additional grace window granted for dismantling"
                     className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] text-xs focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
                   />
-                </div>
-
-                {/* Policy Notice */}
-                <div className="p-2.5 rounded-md bg-[#faf6ee] border border-[#ede3d4] text-[11px] text-[#7d6553] space-y-1">
-                  <div className="font-semibold text-[#24160c] flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Preserved Contract Terms</span>
-                  </div>
-                  <div>
-                    Buffer period extends the operational dismantling window without modifying original monthly rental charges or rental duration history.
-                  </div>
                 </div>
               </div>
 
@@ -2351,6 +2161,21 @@ export default function ProjectWorkspacePage({
           extendValueInput.trim() !== '' &&
           Number.isInteger(numericDuration) &&
           numericDuration >= 1;
+
+        const projTotalNum = Number(extendProjTotalInput);
+        const projReceivedNum = Number(extendProjReceivedInput);
+        const projBalanceNum = Number(extendProjBalanceInput);
+        const isValidFinancials =
+          extendProjTotalInput.trim() !== '' &&
+          extendProjReceivedInput.trim() !== '' &&
+          extendProjBalanceInput.trim() !== '' &&
+          !isNaN(projTotalNum) &&
+          projTotalNum >= 0 &&
+          !isNaN(projReceivedNum) &&
+          projReceivedNum >= 0 &&
+          !isNaN(projBalanceNum) &&
+          projBalanceNum >= 0;
+
         const baseDateForPreview = toDateOnlyString(effectiveRemovalDate) || toDateOnlyString(new Date());
         const previewNewRemovalDate = isValidDuration
           ? calculateExtendedRemovalDate(baseDateForPreview, numericDuration, extendType)
@@ -2366,7 +2191,7 @@ export default function ProjectWorkspacePage({
             />
             <form
               onSubmit={handleConfirmExtension}
-              className="relative z-10 w-full max-w-lg bg-white rounded-xl shadow-2xl border border-[#d6c7b2] overflow-hidden text-stone-800 max-h-[92vh] flex flex-col"
+              className="relative z-10 w-full max-w-xl bg-white rounded-xl shadow-2xl border border-[#d6c7b2] overflow-hidden text-stone-800 max-h-[92vh] flex flex-col"
             >
               {/* Modal Header */}
               <div className="bg-[#24160c] px-5 py-4 text-white flex items-center justify-between shrink-0">
@@ -2446,7 +2271,7 @@ export default function ProjectWorkspacePage({
 
                   <div>
                     <label className="block font-semibold text-[#4d301c] mb-1">
-                      Extension Duration ({extendType === 'DAYS' ? 'Days' : 'Months'}) <span className="text-rose-600">*</span>
+                      Additional Duration ({extendType === 'DAYS' ? 'Days' : 'Months'}) <span className="text-rose-600">*</span>
                     </label>
                     <input
                       type="number"
@@ -2462,6 +2287,94 @@ export default function ProjectWorkspacePage({
                       placeholder={extendType === 'DAYS' ? 'e.g. 15' : 'e.g. 2'}
                       className="w-full px-3 py-2 bg-white border border-[#d6c7b2] rounded-md font-mono font-bold text-[#24160c] focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
                     />
+                  </div>
+                </div>
+
+                {/* Mandatory Extension Payment Details */}
+                <div className="p-3.5 bg-[#fbf7f0] rounded-lg border border-[#d6b692] space-y-3.5">
+                  <div className="flex items-center justify-between border-b border-[#ebdcc9] pb-2">
+                    <span className="font-bold text-[#24160c] uppercase tracking-wider text-[11px]">
+                      Extension Charges & Payment (Mandatory)
+                    </span>
+                    <span className="text-[10px] text-[#714f36] font-mono">
+                      Balance = Total − Received
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                    <div>
+                      <label className="block font-semibold text-[#4d301c] mb-1 whitespace-nowrap">
+                        Total Agreed Price
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 font-mono font-semibold">₹</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          required
+                          disabled={extendSubmitting}
+                          value={extendProjTotalInput}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setExtendProjTotalInput(val);
+                            const t = Number(val) || 0;
+                            const r = Number(extendProjReceivedInput) || 0;
+                            setExtendProjBalanceInput(String(Math.round((t - r) * 100) / 100));
+                            setExtendError(null);
+                          }}
+                          className="w-full pl-6 pr-2.5 py-2 bg-white border border-[#d6c7b2] rounded-md font-mono font-bold text-[#24160c] focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-[#4d301c] mb-1 whitespace-nowrap">
+                        Total Payment Received
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-600/70 font-mono font-semibold">₹</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          required
+                          disabled={extendSubmitting}
+                          value={extendProjReceivedInput}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setExtendProjReceivedInput(val);
+                            const t = Number(extendProjTotalInput) || 0;
+                            const r = Number(val) || 0;
+                            setExtendProjBalanceInput(String(Math.round((t - r) * 100) / 100));
+                            setExtendError(null);
+                          }}
+                          className="w-full pl-6 pr-2.5 py-2 bg-white border border-[#d6c7b2] rounded-md font-mono font-bold text-emerald-700 focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-[#4d301c] mb-1 whitespace-nowrap">
+                        Balance Amount
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-amber-700/70 font-mono font-semibold">₹</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          required
+                          disabled={extendSubmitting}
+                          value={extendProjBalanceInput}
+                          onChange={(e) => {
+                            setExtendProjBalanceInput(e.target.value);
+                            setExtendError(null);
+                          }}
+                          className="w-full pl-6 pr-2.5 py-2 bg-white border border-[#d6c7b2] rounded-md font-mono font-bold text-amber-800 focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -2522,7 +2435,7 @@ export default function ProjectWorkspacePage({
                 </button>
                 <button
                   type="submit"
-                  disabled={extendSubmitting || !isValidDuration}
+                  disabled={extendSubmitting || !isValidDuration || !isValidFinancials}
                   className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-[#c79e7c] bg-[#24160c] hover:bg-[#382315] border border-[#19100a] rounded-md shadow-xs transition disabled:opacity-50 cursor-pointer"
                 >
                   {extendSubmitting ? (

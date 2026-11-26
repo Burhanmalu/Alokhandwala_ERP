@@ -20,6 +20,8 @@ import {
   ShiftingRequest,
   RemovalRequest,
   Notification,
+  InstallationReminder,
+  RentalExpiryReminderRecord,
   AuditLog,
   ProjectActivityEvent,
   ProjectStatus,
@@ -77,6 +79,8 @@ export interface DatabaseState {
   shiftingRequests: ShiftingRequest[];
   removalRequests: RemovalRequest[];
   notifications: Notification[];
+  installationReminders: InstallationReminder[];
+  rentalExpiryReminders: RentalExpiryReminderRecord[];
   auditLogs: AuditLog[];
   activityEvents: ProjectActivityEvent[];
   quotations: Quotation[];
@@ -226,6 +230,8 @@ class ERPDataStore {
       shiftingRequests: [],
       removalRequests: [],
       notifications: [],
+      installationReminders: [],
+      rentalExpiryReminders: [],
       auditLogs: [],
       activityEvents: [],
       quotations: [],
@@ -323,6 +329,8 @@ class ERPDataStore {
   public getShiftingRequests() { return this.getState().shiftingRequests; }
   public getRemovalRequests() { return this.getState().removalRequests; }
   public getNotifications() { return this.getState().notifications; }
+  public getInstallationReminders() { return this.getState().installationReminders || []; }
+  public getRentalExpiryReminders() { return this.getState().rentalExpiryReminders || []; }
   public getAuditLogs() { return this.getState().auditLogs; }
   public getQuotations() { return this.getState().quotations || []; }
   public getQuotationById(id: string) { 
@@ -372,6 +380,8 @@ class ERPDataStore {
       shiftingRequests: [],
       removalRequests: [],
       notifications: [],
+      installationReminders: [],
+      rentalExpiryReminders: [],
       auditLogs: [],
       activityEvents: [],
       quotations: [],
