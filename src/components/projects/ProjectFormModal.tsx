@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X,
   Building2,
   User,
-  Users,
   Calendar,
   IndianRupee,
   FileText,
@@ -22,6 +21,8 @@ import {
   Ruler,
   Clock,
   Receipt,
+  Search,
+  ChevronDown,
 } from 'lucide-react';
 import { Customer, Project, ProjectStatus, UserProfile, CompanySettings } from '@/lib/schema';
 import { initialCompanySettings } from '@/lib/db/seed-data';
@@ -33,6 +34,7 @@ import {
   getFollowUpStatus,
   getEffectiveRemovalDate,
   getProjectInstallDateStr,
+  isDateNotApplicableStatus,
 } from '@/lib/formatters';
 
 interface ProjectFormModalProps {
@@ -50,12 +52,25 @@ const PROJECT_STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
   { value: 'CONFIRMED_PROJECT', label: 'Confirmed (Reserved)' },
   { value: 'SCHEDULED', label: 'Scheduled for Installation' },
   { value: 'ACTIVE_RENTAL', label: 'Active Rental / Installed' },
-  { value: 'BUFFER_PERIOD', label: 'Buffer Period' },
-  { value: 'EXTENDED', label: 'Extended' },
-  { value: 'SHIFTING_IN_PROGRESS', label: 'Shifting' },
   { value: 'REMOVAL_PENDING', label: 'Removal Pending' },
   { value: 'CLOSED', label: 'Closed' },
 ];
+
+const ASSIGNED_SUPERVISOR_OPTIONS = [
+  { id: 'sup-ali', fullName: 'ALI' },
+  { id: 'sup-abdeali', fullName: 'ABDEALI' },
+  { id: 'sup-fakhri-mama', fullName: 'FAKHRI MAMA' },
+] as const;
+
+function pickRandomCustomers(allCustomers: Customer[], count = 3): Customer[] {
+  if (allCustomers.length <= count) return [...allCustomers];
+  const copy = [...allCustomers];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, count);
+}
 
 export function ProjectFormModal({
   isOpen,
@@ -74,6 +89,11 @@ export function ProjectFormModal({
 
   // Section A: Customer & Project Details
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [randomCustomers, setRandomCustomers] = useState<Customer[]>([]);
+  const customerDropdownRef = useRef<HTMLDivElement>(null);
+  const customerSearchInputRef = useRef<HTMLInputElement>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -145,6 +165,8 @@ export function ProjectFormModal({
   // Populate or reset form values when editingProject or modal open changes
   const resetForm = (defaultSupId?: string) => {
     setSelectedCustomerId('');
+    setCustomerDropdownOpen(false);
+    setCustomerSearchQuery('');
     setCustomerName('');
     setCustomerPhone('');
     setCustomerEmail('');
@@ -180,7 +202,13 @@ export function ProjectFormModal({
       setCustomerEmail(editingProject.customerEmail || '');
       setSiteName(editingProject.siteName || '');
       setSiteAddress(editingProject.siteAddress || '');
-      setAssignedSupervisorId(editingProject.assignedSupervisorId || '');
+      const matchedSup =
+        ASSIGNED_SUPERVISOR_OPTIONS.find(
+          s =>
+            s.id === editingProject.assignedSupervisorId ||
+            s.fullName.toUpperCase() === (editingProject.supervisorName || '').trim().toUpperCase()
+        );
+      setAssignedSupervisorId(matchedSup ? matchedSup.id : (editingProject.assignedSupervisorId || ''));
       setSelectedStaffIds(
         editingProject.staffIds ||
           editingProject.assignedWorkerIds ||
@@ -215,9 +243,7 @@ export function ProjectFormModal({
       setFollowUpNotes(editingProject.followUpNotes || '');
       setIncludeCompanyGst(editingProject.hasCompanyGst !== undefined ? Boolean(editingProject.hasCompanyGst) : true);
     } else {
-      const defaultSup =
-        users.find(u => u.role === 'SUPERVISOR') || users[0];
-      resetForm(defaultSup?.id || currentUser?.id || '');
+      resetForm(ASSIGNED_SUPERVISOR_OPTIONS[0].id);
     }
   }, [isOpen, editingProject]);
 
@@ -252,19 +278,8 @@ export function ProjectFormModal({
   const isOverpaid = paymentReceived > totalAmount;
   const balanceAmount = Math.round((totalAmount - paymentReceived) * 100) / 100;
 
-  // Supervisors & Staff lists from users
-  const supervisorOptions = useMemo(() => {
-    const filtered = users.filter(
-      u => u.isActive && (u.role === 'SUPERVISOR' || u.role === 'ADMIN')
-    );
-    return filtered.length > 0 ? filtered : users;
-  }, [users]);
-
-  const staffOptions = useMemo(() => {
-    return users.filter(
-      u => u.isActive && (u.role === 'WORKER' || u.role === 'SUPERVISOR')
-    );
-  }, [users]);
+  // Fixed 3 assigned supervisor options
+  const supervisorOptions = ASSIGNED_SUPERVISOR_OPTIONS;
 
   const handleSelectExistingCustomer = (custId: string) => {
     setSelectedCustomerId(custId);
@@ -281,6 +296,68 @@ export function ProjectFormModal({
         setSiteName(`${found.companyName} Site`);
       }
     }
+  };
+
+  // Initialize random 3 customers when customers list loads
+  useEffect(() => {
+    if (customers.length > 0 && randomCustomers.length === 0) {
+      setRandomCustomers(pickRandomCustomers(customers, 3));
+    }
+  }, [customers, randomCustomers.length]);
+
+  // Toggle dropdown and randomly rotate 3 displayed customers on each open
+  const toggleCustomerDropdown = () => {
+    if (loadingRefs || submitting) return;
+    const nextOpen = !customerDropdownOpen;
+    if (nextOpen) {
+      // Pick 3 new random distinct customers from full customer database
+      setRandomCustomers(pickRandomCustomers(customers, 3));
+      setCustomerSearchQuery('');
+      setTimeout(() => {
+        customerSearchInputRef.current?.focus();
+      }, 50);
+    }
+    setCustomerDropdownOpen(nextOpen);
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        customerDropdownRef.current &&
+        !customerDropdownRef.current.contains(event.target as Node)
+      ) {
+        setCustomerDropdownOpen(false);
+      }
+    };
+    if (customerDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [customerDropdownOpen]);
+
+  // Filtered customers: 3 random when not searching, or matching records across ALL customers in database
+  const displayedCustomers = useMemo(() => {
+    const query = customerSearchQuery.trim().toLowerCase();
+    if (!query) {
+      return randomCustomers;
+    }
+    return customers.filter((c) => {
+      const nameMatch = c.companyName?.toLowerCase().includes(query);
+      const codeMatch = c.customerCode?.toLowerCase().includes(query);
+      const phoneMatch = c.phone?.toLowerCase().includes(query);
+      const refMatch = c.referenceName?.toLowerCase().includes(query);
+      const contactMatch = c.contactPerson?.toLowerCase().includes(query);
+      return Boolean(nameMatch || codeMatch || phoneMatch || refMatch || contactMatch);
+    });
+  }, [customers, randomCustomers, customerSearchQuery]);
+
+  const handleSelectCustomerOption = (custId: string) => {
+    handleSelectExistingCustomer(custId);
+    setCustomerDropdownOpen(false);
+    setCustomerSearchQuery('');
   };
 
   // Selected Customer Resolution & Dual GST Identifiers
@@ -318,14 +395,6 @@ export function ProjectFormModal({
 
   const isCompanyGstAvailable = companyGstin !== 'Not Available';
 
-  const toggleStaffMember = (staffId: string) => {
-    setSelectedStaffIds(prev =>
-      prev.includes(staffId)
-        ? prev.filter(id => id !== staffId)
-        : [...prev, staffId]
-    );
-  };
-
   const validateForm = (): string | null => {
     if (!customerName.trim()) {
       return 'Customer Name is required.';
@@ -348,8 +417,10 @@ export function ProjectFormModal({
     if (isOverpaid) {
       return `Payment Received (${formatINR(paymentReceived, false)}) cannot exceed Total Amount (${formatINR(totalAmount, false)}).`;
     }
-    if (rentalDuration.isInvalid || (installationDate && removalDate && removalDate < installationDate)) {
-      return 'Date of Removal cannot be earlier than Date of Installation.';
+    if (!isDateNotApplicableStatus(status)) {
+      if (rentalDuration.isInvalid || (installationDate && removalDate && removalDate < installationDate)) {
+        return 'Date of Removal cannot be earlier than Date of Installation.';
+      }
     }
     return null;
   };
@@ -366,7 +437,9 @@ export function ProjectFormModal({
 
     setSubmitting(true);
     try {
-      const selectedSup = users.find(u => u.id === assignedSupervisorId);
+      const selectedSup =
+        ASSIGNED_SUPERVISOR_OPTIONS.find(s => s.id === assignedSupervisorId) ||
+        users.find(u => u.id === assignedSupervisorId);
       const selectedStaffNames = selectedStaffIds.map(
         id => users.find(u => u.id === id)?.fullName || id
       );
@@ -392,11 +465,11 @@ export function ProjectFormModal({
             height: numericHeight,
             unit: dimUnit,
             status,
-            installationDate: installationDate || undefined,
-            removalDate: removalDate || undefined,
-            rentalDurationMonths: installationDate ? rentalDuration.months : undefined,
-            rentalDurationDays: installationDate ? rentalDuration.days : undefined,
-            rentalDurationDisplay: rentalDuration.display || undefined,
+            installationDate: isDateNotApplicableStatus(status) ? undefined : (installationDate || undefined),
+            removalDate: isDateNotApplicableStatus(status) ? undefined : (removalDate || undefined),
+            rentalDurationMonths: !isDateNotApplicableStatus(status) && installationDate ? rentalDuration.months : undefined,
+            rentalDurationDays: !isDateNotApplicableStatus(status) && installationDate ? rentalDuration.days : undefined,
+            rentalDurationDisplay: !isDateNotApplicableStatus(status) && installationDate ? (rentalDuration.display || undefined) : undefined,
             totalAmount,
             paymentReceived,
             balanceAmount,
@@ -439,11 +512,11 @@ export function ProjectFormModal({
             height: numericHeight,
             unit: dimUnit,
             status,
-            installationDate: installationDate || undefined,
-            removalDate: removalDate || undefined,
-            rentalDurationMonths: installationDate ? rentalDuration.months : undefined,
-            rentalDurationDays: installationDate ? rentalDuration.days : undefined,
-            rentalDurationDisplay: rentalDuration.display || undefined,
+            installationDate: isDateNotApplicableStatus(status) ? undefined : (installationDate || undefined),
+            removalDate: isDateNotApplicableStatus(status) ? undefined : (removalDate || undefined),
+            rentalDurationMonths: !isDateNotApplicableStatus(status) && installationDate ? rentalDuration.months : undefined,
+            rentalDurationDays: !isDateNotApplicableStatus(status) && installationDate ? rentalDuration.days : undefined,
+            rentalDurationDisplay: !isDateNotApplicableStatus(status) && installationDate ? (rentalDuration.display || undefined) : undefined,
             totalAmount,
             paymentReceived,
             balanceAmount,
@@ -467,9 +540,7 @@ export function ProjectFormModal({
         onSaved(json.data, 'create', addAnother);
 
         if (addAnother) {
-          const defaultSup =
-            users.find(u => u.role === 'SUPERVISOR') || users[0];
-          resetForm(defaultSup?.id || currentUser?.id || '');
+          resetForm(ASSIGNED_SUPERVISOR_OPTIONS[0].id);
           setInlineToast(
             `✓ Project ${json.data.projectCode} saved! Ready for next entry.`
           );
@@ -561,24 +632,194 @@ export function ProjectFormModal({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Quick Customer Selector */}
-              <div className="md:col-span-2">
+              {/* Quick Customer Selector with 3-Random Rotation & Integrated Full Search */}
+              <div className="md:col-span-2" ref={customerDropdownRef}>
                 <label className="block font-semibold text-[#4d301c] mb-1">
                   Select Existing Customer (Optional — or enter new customer below)
                 </label>
-                <select
-                  value={selectedCustomerId}
-                  onChange={(e) => handleSelectExistingCustomer(e.target.value)}
-                  disabled={loadingRefs || submitting}
-                  className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
-                >
-                  <option value="">— New / Custom Customer Entry —</option>
-                  {customers.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.companyName} ({c.customerCode}) — {c.phone}
-                    </option>
-                  ))}
-                </select>
+
+                <div className="relative">
+                  {/* Dropdown Trigger Button */}
+                  <button
+                    type="button"
+                    disabled={loadingRefs || submitting}
+                    onClick={toggleCustomerDropdown}
+                    className={`w-full px-3 py-2 bg-[#fbf9f5] border rounded-md text-left text-xs sm:text-sm flex items-center justify-between gap-2 transition cursor-pointer select-none ${
+                      customerDropdownOpen
+                        ? 'bg-white border-[#8f6541] ring-1 ring-[#8f6541]'
+                        : 'border-[#d6c7b2] hover:bg-white hover:border-[#8f6541]'
+                    } ${(loadingRefs || submitting) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    title="Choose an existing customer or enter a new one"
+                  >
+                    <div className="flex-1 min-w-0 flex items-center gap-2">
+                      <User className="w-3.5 h-3.5 text-[#8f6541] shrink-0" />
+                      {selectedCustomer ? (
+                        <div className="truncate text-[#24160c] font-medium">
+                          <span className="font-bold">{selectedCustomer.companyName}</span>
+                          <span className="text-[#7d6553] ml-1.5 font-mono text-xs">
+                            ({selectedCustomer.customerCode || 'CUST'})
+                          </span>
+                          {selectedCustomer.phone && (
+                            <span className="text-[#9c826e] ml-1.5 font-mono text-xs">
+                              — {selectedCustomer.phone}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-[#7d6553] truncate font-medium">
+                          — New / Custom Customer Entry —
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0 text-[#9c826e]">
+                      {selectedCustomer && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectCustomerOption('');
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleSelectCustomerOption('');
+                            }
+                          }}
+                          className="p-0.5 rounded hover:bg-[#ebdcc9] hover:text-[#24160c] transition cursor-pointer"
+                          title="Clear customer selection"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform duration-200 ${
+                          customerDropdownOpen ? 'rotate-180 text-[#8f6541]' : ''
+                        }`}
+                      />
+                    </div>
+                  </button>
+
+                  {/* Dropdown Menu Panel */}
+                  {customerDropdownOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-md border border-[#d6c7b2] shadow-xl overflow-hidden flex flex-col max-h-72 animate-in fade-in-50 duration-100 text-xs">
+                      {/* Integrated Search Input at Top */}
+                      <div className="p-2 border-b border-[#ebdcc9] bg-[#fbf9f5] shrink-0">
+                        <div className="relative">
+                          <Search className="w-3.5 h-3.5 text-[#9c826e] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            ref={customerSearchInputRef}
+                            type="text"
+                            value={customerSearchQuery}
+                            onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                            placeholder="Search by customer name, code (CUST-0001), phone..."
+                            className="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-[#d8c8b4] rounded-md focus:outline-none focus:ring-1 focus:ring-[#8f6541] focus:border-[#8f6541] text-[#24160c] placeholder:text-[#9c826e]"
+                          />
+                          {customerSearchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCustomerSearchQuery('');
+                                customerSearchInputRef.current?.focus();
+                              }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                              title="Clear search"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Status bar */}
+                        <div className="flex items-center justify-between px-1 pt-1.5 text-[10px] text-[#7d6553]">
+                          {customerSearchQuery.trim() ? (
+                            <span>
+                              {displayedCustomers.length} matching result{displayedCustomers.length === 1 ? '' : 's'} across {customers.length} accounts
+                            </span>
+                          ) : (
+                            <div className="flex items-center justify-between w-full">
+                              <span className="font-semibold text-[#8f6541]">
+                                Showing 3 random accounts
+                              </span>
+                              <span className="text-[#9c826e] italic">
+                                Reopen to shuffle
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Dropdown Options List */}
+                      <div className="overflow-y-auto overscroll-contain flex-1 divide-y divide-[#f5efe6] max-h-52">
+                        {/* Option 1: New / Custom Customer Entry (Always at Top) */}
+                        <button
+                          type="button"
+                          onClick={() => handleSelectCustomerOption('')}
+                          className={`w-full px-3 py-2 text-left flex items-center justify-between transition cursor-pointer ${
+                            !selectedCustomerId
+                              ? 'bg-[#faf6ee] text-[#8f6541] font-semibold border-l-2 border-[#8f6541]'
+                              : 'text-[#4d301c] hover:bg-[#faf6ee]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Plus className="w-3.5 h-3.5 text-[#8f6541]" />
+                            <span>— New / Custom Customer Entry —</span>
+                          </div>
+                          {!selectedCustomerId && (
+                            <Check className="w-3.5 h-3.5 text-[#8f6541]" />
+                          )}
+                        </button>
+
+                        {/* Customer Options List */}
+                        {displayedCustomers.length === 0 ? (
+                          <div className="p-4 text-center text-[#7d6553] space-y-1">
+                            <div className="font-semibold text-[#24160c]">No customers found</div>
+                            <div className="text-[11px] text-[#9c826e]">
+                              No customer matched &quot;{customerSearchQuery}&quot;. You can use New / Custom Customer Entry above.
+                            </div>
+                          </div>
+                        ) : (
+                          displayedCustomers.map((c) => {
+                            const isSelected = c.id === selectedCustomerId;
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => handleSelectCustomerOption(c.id)}
+                                className={`w-full px-3 py-2 text-left flex items-center justify-between gap-2 transition cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-[#faf6ee] text-[#24160c] font-semibold border-l-2 border-[#8f6541]'
+                                    : 'text-[#4d301c] hover:bg-[#faf6ee]'
+                                }`}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-bold text-[#24160c] truncate">
+                                      {c.companyName}
+                                    </span>
+                                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-[#f4ebe1] text-[#59371d] border border-[#e5dac8]">
+                                      {c.customerCode || 'CUST'}
+                                    </span>
+                                  </div>
+                                  <div className="text-[11px] text-[#7d6553] flex items-center gap-2 mt-0.5">
+                                    {c.phone && <span className="font-mono">{c.phone}</span>}
+                                    {c.city && <span>• {c.city}</span>}
+                                  </div>
+                                </div>
+
+                                {isSelected && (
+                                  <Check className="w-3.5 h-3.5 text-[#8f6541] shrink-0" />
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Customer Name */}
@@ -665,7 +906,7 @@ export function ProjectFormModal({
                   <option value="">Select Supervisor...</option>
                   {supervisorOptions.map(sup => (
                     <option key={sup.id} value={sup.id}>
-                      {sup.fullName} ({sup.role})
+                      {sup.fullName}
                     </option>
                   ))}
                 </select>
@@ -686,54 +927,6 @@ export function ProjectFormModal({
                     placeholder="Enter complete site street, landmark, locality, and city..."
                     className="w-full pl-8 pr-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
                   />
-                </div>
-              </div>
-
-              {/* Assign Multiple Staff */}
-              <div className="md:col-span-2">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="font-semibold text-[#4d301c] flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-[#8f6541]" />
-                    <span>Assign Staff Members (Multi-Select)</span>
-                  </label>
-                  <span className="text-[11px] font-mono text-[#7d6553]">
-                    {selectedStaffIds.length} selected
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2 p-3 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md">
-                  {staffOptions.length === 0 ? (
-                    <span className="text-stone-400 italic">Loading staff members...</span>
-                  ) : (
-                    staffOptions.map(staff => {
-                      const active = selectedStaffIds.includes(staff.id);
-                      return (
-                        <button
-                          key={staff.id}
-                          type="button"
-                          onClick={() => toggleStaffMember(staff.id)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition cursor-pointer ${
-                            active
-                              ? 'bg-[#24150c] text-white border-[#4d301c] shadow-2xs'
-                              : 'bg-white text-[#4d301c] border-[#d6c7b2] hover:bg-[#f4ece1]'
-                          }`}
-                        >
-                          <span
-                            className={`w-3.5 h-3.5 rounded flex items-center justify-center border ${
-                              active
-                                ? 'bg-[#c79e7c] border-[#c79e7c] text-[#1c120c]'
-                                : 'border-[#c7b39b] bg-white'
-                            }`}
-                          >
-                            {active && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                          </span>
-                          <span>{staff.fullName}</span>
-                          <span className={`text-[10px] font-mono px-1 rounded ${active ? 'bg-[#382315] text-[#dfcbab]' : 'bg-[#faf6ee] text-[#8c5e39]'}`}>
-                            {staff.role}
-                          </span>
-                        </button>
-                      );
-                    })
-                  )}
                 </div>
               </div>
             </div>
@@ -863,12 +1056,28 @@ export function ProjectFormModal({
                 <label className="block font-semibold text-[#4d301c] mb-1">
                   Date of Installation
                 </label>
-                <input
-                  type="date"
-                  value={installationDate}
-                  onChange={(e) => setInstallationDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] font-mono focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
-                />
+                {isDateNotApplicableStatus(status) ? (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      readOnly
+                      disabled
+                      value="N/A"
+                      aria-label="Date of Installation"
+                      className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#714f36] font-mono font-bold cursor-not-allowed select-none focus:outline-none"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-sans font-medium text-[#9c826e] uppercase tracking-wider">
+                      Not Applicable
+                    </span>
+                  </div>
+                ) : (
+                  <input
+                    type="date"
+                    value={installationDate}
+                    onChange={(e) => setInstallationDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] font-mono focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                  />
+                )}
               </div>
 
               {/* Date of Removal */}
@@ -876,17 +1085,33 @@ export function ProjectFormModal({
                 <label className="block font-semibold text-[#4d301c] mb-1">
                   Date of Removal
                 </label>
-                <input
-                  type="date"
-                  min={installationDate || undefined}
-                  value={removalDate}
-                  onChange={(e) => setRemovalDate(e.target.value)}
-                  className={`w-full px-3 py-2 rounded-md font-mono focus:bg-white focus:outline-none ${
-                    rentalDuration.isInvalid
-                      ? 'bg-rose-50 border-2 border-rose-500 text-rose-900 focus:ring-1 focus:ring-rose-500'
-                      : 'bg-[#fbf9f5] border border-[#d6c7b2] text-[#24160c] focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541]'
-                  }`}
-                />
+                {isDateNotApplicableStatus(status) ? (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      readOnly
+                      disabled
+                      value="N/A"
+                      aria-label="Date of Removal"
+                      className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#714f36] font-mono font-bold cursor-not-allowed select-none focus:outline-none"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-sans font-medium text-[#9c826e] uppercase tracking-wider">
+                      Not Applicable
+                    </span>
+                  </div>
+                ) : (
+                  <input
+                    type="date"
+                    min={installationDate || undefined}
+                    value={removalDate}
+                    onChange={(e) => setRemovalDate(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-md font-mono focus:bg-white focus:outline-none ${
+                      rentalDuration.isInvalid
+                        ? 'bg-rose-50 border-2 border-rose-500 text-rose-900 focus:ring-1 focus:ring-rose-500'
+                        : 'bg-[#fbf9f5] border border-[#d6c7b2] text-[#24160c] focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541]'
+                    }`}
+                  />
+                )}
               </div>
             </div>
 
@@ -897,21 +1122,29 @@ export function ProjectFormModal({
                   <Clock className="w-3.5 h-3.5 text-[#8f6541]" />
                   <span>Rental Duration</span>
                   <span className="text-[10px] font-normal text-[#8c5e39]">
-                    (Auto: Date of Removal − Date of Installation)
+                    {isDateNotApplicableStatus(status)
+                      ? '(Applicable once installation is scheduled)'
+                      : '(Auto: Date of Removal − Date of Installation)'}
                   </span>
                 </label>
               </div>
               <div
                 className={`px-3.5 py-2.5 rounded-md border flex flex-wrap items-center justify-between gap-2 ${
-                  rentalDuration.isInvalid
-                    ? 'bg-rose-50 border-rose-300 text-rose-800'
-                    : rentalDuration.display
-                      ? 'bg-[#fbf9f5] border-[#d6c7b2] text-[#24160c]'
-                      : 'bg-[#faf6ee]/60 border-[#e5dac8] text-[#9c826e]'
+                  isDateNotApplicableStatus(status)
+                    ? 'bg-[#faf6ee]/60 border-[#e5dac8] text-[#9c826e]'
+                    : rentalDuration.isInvalid
+                      ? 'bg-rose-50 border-rose-300 text-rose-800'
+                      : rentalDuration.display
+                        ? 'bg-[#fbf9f5] border-[#d6c7b2] text-[#24160c]'
+                        : 'bg-[#faf6ee]/60 border-[#e5dac8] text-[#9c826e]'
                 }`}
               >
                 <div className="flex items-center gap-2 font-mono font-bold text-xs">
-                  {rentalDuration.isInvalid ? (
+                  {isDateNotApplicableStatus(status) ? (
+                    <span className="font-sans font-normal italic text-[#9c826e]">
+                      N/A — Rental duration will be calculated once installation is scheduled
+                    </span>
+                  ) : rentalDuration.isInvalid ? (
                     <>
                       <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                       <span>{rentalDuration.display}</span>
@@ -932,7 +1165,7 @@ export function ProjectFormModal({
                   )}
                 </div>
 
-                {rentalDuration.display && !rentalDuration.isInvalid && !rentalDuration.isScheduled && (
+                {!isDateNotApplicableStatus(status) && rentalDuration.display && !rentalDuration.isInvalid && !rentalDuration.isScheduled && (
                   <div className="flex items-center gap-3 text-[11px] font-mono text-[#7d6553]">
                     <span>
                       Months: <strong className="text-[#24160c]">{rentalDuration.months}</strong>
@@ -947,7 +1180,7 @@ export function ProjectFormModal({
                 )}
               </div>
 
-              {removalDate && !rentalDuration.isInvalid && (
+              {!isDateNotApplicableStatus(status) && removalDate && !rentalDuration.isInvalid && (
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-md bg-[#faf6ee] border border-[#e5dac8] text-[11px]">
                   <span className="text-[#714f36] font-semibold">
                     Remaining Until Removal Date:

@@ -36,12 +36,27 @@ import {
   Loader2,
   Trash2,
   Bell,
-  Plus
+  Plus,
+  ChevronLeft,
+  ArrowUpDown
 } from 'lucide-react';
 import { Project, ProjectStatus } from '@/lib/schema';
-import { formatINR, formatDate, getStatusBadgeConfig, getDaysDifference, extractProjectDimensions, calculateRentalDurationBreakdown, getRemainingDaysInfo, getFollowUpStatus, getEffectiveRemovalDate, getProjectInstallDateStr } from '@/lib/formatters';
+import { formatINR, formatDate, getStatusBadgeConfig, getDaysDifference, extractProjectDimensions, calculateRentalDurationBreakdown, getRemainingDaysInfo, getFollowUpStatus, getEffectiveRemovalDate, getProjectInstallDateStr, isDateNotApplicableStatus } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
+
+function getPageNumbers(currentPage: number, totalPages: number): (number | string)[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+  if (currentPage <= 4) {
+    return [1, 2, 3, 4, 5, '...', totalPages];
+  }
+  if (currentPage >= totalPages - 3) {
+    return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  }
+  return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+}
 
 const STATUS_TABS: { key: string; label: string }[] = [
   { key: 'ALL', label: 'All Active Projects' },
@@ -125,8 +140,14 @@ function ProjectsListContent() {
   const [siteFilter, setSiteFilter] = useState('ALL');
   const [supervisorFilter, setSupervisorFilter] = useState('ALL');
   const [installDateFilter, setInstallDateFilter] = useState('');
+  const [sortBy, setSortBy] = useState<string>('RECENT');
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const filterRef = React.useRef<HTMLDivElement>(null);
+
+  // Pagination State (separate per Active Directory and Cancelled Folder)
+  const PAGE_SIZE = 10;
+  const [activeCurrentPage, setActiveCurrentPage] = useState(1);
+  const [cancelledCurrentPage, setCancelledCurrentPage] = useState(1);
 
   // Add / Edit Project Form Modal State
   const [projectFormOpen, setProjectFormOpen] = useState(false);
@@ -302,6 +323,7 @@ function ProjectsListContent() {
   const handleProjectSaved = (savedProject: Project, mode: 'create' | 'edit', addAnother: boolean) => {
     if (mode === 'create') {
       setProjects(prev => [savedProject, ...prev]);
+      setActiveCurrentPage(1);
       setSuccessBanner(`✓ Project ${savedProject.projectCode} (${savedProject.customerName}) added successfully.`);
     } else {
       setProjects(prev => prev.map(p => (p.id === savedProject.id ? savedProject : p)));
@@ -317,6 +339,14 @@ function ProjectsListContent() {
   };
 
   const openDeleteModal = (p: Project) => {
+    if (currentUser?.role === 'WORKER' || currentUser?.role === 'CLIENT') {
+      setRestrictionModal({
+        open: true,
+        title: 'Delete Project Restricted',
+        message: 'Only Administrators and Supervisors can delete project records.',
+      });
+      return;
+    }
     setProjectToDelete(p);
     setDeleteError(null);
   };
@@ -580,7 +610,8 @@ function ProjectsListContent() {
     customerFilter !== 'ALL' ||
     siteFilter !== 'ALL' ||
     supervisorFilter !== 'ALL' ||
-    Boolean(installDateFilter);
+    Boolean(installDateFilter) ||
+    sortBy !== 'RECENT';
 
   const clearAllFilters = () => {
     setCurrentTab('ALL');
@@ -589,10 +620,13 @@ function ProjectsListContent() {
     setSiteFilter('ALL');
     setSupervisorFilter('ALL');
     setInstallDateFilter('');
+    setSortBy('RECENT');
+    setActiveCurrentPage(1);
+    setCancelledCurrentPage(1);
   };
 
   const filteredProjects = useMemo(() => {
-    return projects.filter(p => {
+    const list = projects.filter(p => {
       if (currentUser?.role === 'WORKER') {
         const hasWorked = (
           p.assignedWorkerIds?.includes(currentUser.id) ||
@@ -652,7 +686,37 @@ function ProjectsListContent() {
 
       return true;
     });
-  }, [projects, currentTab, searchQuery, customerFilter, siteFilter, supervisorFilter, installDateFilter, currentUser]);
+
+    // Apply Sorting before pagination
+    return list.sort((a, b) => {
+      switch (sortBy) {
+        case 'CODE_ASC':
+          return a.projectCode.localeCompare(b.projectCode);
+        case 'CODE_DESC':
+          return b.projectCode.localeCompare(a.projectCode);
+        case 'NAME_ASC':
+          return a.customerName.localeCompare(b.customerName);
+        case 'NAME_DESC':
+          return b.customerName.localeCompare(a.customerName);
+        case 'TOTAL_DESC': {
+          const aTotal = Number(a.totalAmount ?? a.agreedProjectPrice ?? 0);
+          const bTotal = Number(b.totalAmount ?? b.agreedProjectPrice ?? 0);
+          return bTotal - aTotal;
+        }
+        case 'BALANCE_DESC': {
+          const aBal = Number(a.balanceAmount ?? 0);
+          const bBal = Number(b.balanceAmount ?? 0);
+          return bBal - aBal;
+        }
+        case 'RECENT':
+        default: {
+          const aDate = a.createdAt || a.installationDate || '';
+          const bDate = b.createdAt || b.installationDate || '';
+          return bDate.localeCompare(aDate);
+        }
+      }
+    });
+  }, [projects, currentTab, searchQuery, customerFilter, siteFilter, supervisorFilter, installDateFilter, sortBy, currentUser]);
 
   const statusCounts = useMemo(() => {
     const activeProjects = projects.filter(p => p.status !== 'CANCELLED');
@@ -674,6 +738,45 @@ function ProjectsListContent() {
 
   const activeTabObj = STATUS_TABS.find(t => t.key === currentTab) || STATUS_TABS[0];
   const isCancelledView = currentTab === 'CANCELLED';
+  const currentPage = isCancelledView ? cancelledCurrentPage : activeCurrentPage;
+  const setCurrentPage = isCancelledView ? setCancelledCurrentPage : setActiveCurrentPage;
+
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE));
+
+  // Automatically move to previous available page if current page exceeds total pages (e.g. after deletion)
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages, setCurrentPage]);
+
+  // Reset to page 1 when search or filter values change
+  const prevFiltersRef = useRef({ searchQuery, customerFilter, siteFilter, supervisorFilter, installDateFilter, sortBy, currentTab });
+  useEffect(() => {
+    const prev = prevFiltersRef.current;
+    const isFilterOrSearchChanged =
+      prev.searchQuery !== searchQuery ||
+      prev.customerFilter !== customerFilter ||
+      prev.siteFilter !== siteFilter ||
+      prev.supervisorFilter !== supervisorFilter ||
+      prev.installDateFilter !== installDateFilter ||
+      prev.sortBy !== sortBy;
+
+    if (isFilterOrSearchChanged) {
+      if (isCancelledView) {
+        setCancelledCurrentPage(1);
+      } else {
+        setActiveCurrentPage(1);
+      }
+    }
+    prevFiltersRef.current = { searchQuery, customerFilter, siteFilter, supervisorFilter, installDateFilter, sortBy, currentTab };
+  }, [searchQuery, customerFilter, siteFilter, supervisorFilter, installDateFilter, sortBy, currentTab, isCancelledView]);
+
+  // Paginated slice for current page
+  const paginatedProjects = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    return filteredProjects.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filteredProjects, currentPage]);
 
   const exportToCSV = () => {
     const headers = isCancelledView
@@ -701,8 +804,8 @@ function ProjectsListContent() {
         `"${p.customerName}"`,
         `"${p.siteName}"`,
         `"${p.supervisorName || ''}"`,
-        getProjectInstallDate(p),
-        removalDateStr,
+        isDateNotApplicableStatus(p.status) || !getProjectInstallDate(p) ? 'N/A' : getProjectInstallDate(p),
+        isDateNotApplicableStatus(p.status) || !removalDateStr ? 'N/A' : removalDateStr,
         `"${remInfo.label}"`,
         p.status,
         fin.total,
@@ -960,8 +1063,8 @@ function ProjectsListContent() {
           </div>
         </div>
 
-        {/* Dedicated Attribute Filters: Customer, Site, Supervisor, Installation Date */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2.5 border-t border-[#f0e8db] text-xs">
+        {/* Dedicated Attribute Filters: Customer, Site, Supervisor, Installation Date, Sort By */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-2.5 border-t border-[#f0e8db] text-xs">
           <div>
             <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#9c826e] mb-1">
               Customer
@@ -1023,6 +1126,25 @@ function ProjectsListContent() {
               />
             </div>
           </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#9c826e] mb-1">
+              Sort By
+            </label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="w-full px-2.5 py-1.5 text-xs bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] focus:bg-white focus:border-[#8f6541] focus:outline-none cursor-pointer"
+            >
+              <option value="RECENT">Recently Updated</option>
+              <option value="CODE_ASC">Project ID (Ascending)</option>
+              <option value="CODE_DESC">Project ID (Descending)</option>
+              <option value="NAME_ASC">Customer Name (A–Z)</option>
+              <option value="NAME_DESC">Customer Name (Z–A)</option>
+              <option value="TOTAL_DESC">Highest Agreed Price</option>
+              <option value="BALANCE_DESC">Highest Outstanding Balance</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -1057,7 +1179,7 @@ function ProjectsListContent() {
               )}
             </div>
           ) : (
-            filteredProjects.map((p) => {
+            paginatedProjects.map((p) => {
               const badge = getStatusBadgeConfig(p.status);
               const preInstall = isPreInstallation(p.status, p.actualInstallationDate);
               const installDate = getProjectInstallDate(p);
@@ -1146,11 +1268,15 @@ function ProjectsListContent() {
                       </div>
                       <div>
                         <span className="text-stone-400 block">Installation Date:</span>
-                        <span className="font-mono text-stone-800">{installDate ? formatDate(installDate) : '—'}</span>
+                        <span className="font-mono text-stone-800">
+                          {isDateNotApplicableStatus(p.status) || !installDate ? 'N/A' : formatDate(installDate)}
+                        </span>
                       </div>
                       <div>
                         <span className="text-stone-400 block">Removal Date:</span>
-                        <span className="font-mono text-stone-800">{removalDate ? formatDate(removalDate) : '—'}</span>
+                        <span className="font-mono text-stone-800">
+                          {isDateNotApplicableStatus(p.status) || !removalDate ? 'N/A' : formatDate(removalDate)}
+                        </span>
                       </div>
                       {(() => {
                         const remInfo = getRemainingDaysInfo(p.bufferEndDate || removalDate, p.status);
@@ -1232,7 +1358,7 @@ function ProjectsListContent() {
                   <th className="px-4 py-3">Cancellation Date</th>
                   <th className="px-4 py-3">Mandatory Cancellation Reason</th>
                   <th className="px-4 py-3">Cancelled By</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3 whitespace-nowrap text-center min-w-[160px] w-[160px]">Actions</th>
                 </tr>
               ) : (
                 <tr>
@@ -1248,7 +1374,7 @@ function ProjectsListContent() {
                   <th className="px-3 py-3 whitespace-nowrap text-right">Payment Received</th>
                   <th className="px-3 py-3 whitespace-nowrap text-right">Balance Amount</th>
                   <th className="px-3 py-3 whitespace-nowrap">Follow-up Date</th>
-                  <th className="px-3 py-3 whitespace-nowrap text-right">Actions</th>
+                  <th className="px-4 py-3 whitespace-nowrap text-center min-w-[220px] w-[220px]">Actions</th>
                 </tr>
               )}
             </thead>
@@ -1296,7 +1422,7 @@ function ProjectsListContent() {
                   </td>
                 </tr>
               ) : (
-                filteredProjects.map((p) => {
+                paginatedProjects.map((p) => {
                   const badge = getStatusBadgeConfig(p.status);
                   const preInstall = isPreInstallation(p.status, p.actualInstallationDate);
                   const installDate = getProjectInstallDate(p);
@@ -1329,25 +1455,25 @@ function ProjectsListContent() {
                         <td className="px-4 py-3 text-stone-700 whitespace-nowrap">
                           {p.cancelledByName || 'Burhan Malu (Admin)'}
                         </td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap">
-                          <div className="inline-flex items-center gap-1.5">
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle min-w-[160px] w-[160px]">
+                          <div className="inline-flex items-center justify-center gap-2">
                             <Link
                               href={`/projects/${p.id}`}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-stone-800 bg-[#f7f2eb] hover:bg-[#ebdcc9] border border-[#d6c7b2] rounded-md transition"
+                              className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-[#24160c] bg-[#f7f2eb] hover:bg-[#ebdcc9] border border-[#d6c7b2] rounded-md transition shadow-2xs"
+                              title="View Project Details"
                             >
-                              <Eye className="w-3.5 h-3.5 text-[#8f6541]" />
+                              <Eye className="w-3.5 h-3.5 text-[#8f6541] shrink-0" />
                               <span>View</span>
                             </Link>
-                            {can('PROJECT_CLOSE') && (
-                              <button
-                                type="button"
-                                onClick={() => openDeleteModal(p)}
-                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-md transition cursor-pointer"
-                                title="Delete Project"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => openDeleteModal(p)}
+                              className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-md transition shadow-2xs cursor-pointer"
+                              title="Delete Project"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-rose-700 shrink-0" />
+                              <span>Delete</span>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -1386,16 +1512,26 @@ function ProjectsListContent() {
                         )}
                       </td>
                       <td className="px-3 py-3 text-stone-700 whitespace-nowrap font-mono">
-                        {installDate ? formatDate(installDate) : <span className="text-stone-400">—</span>}
+                        {isDateNotApplicableStatus(p.status) || !installDate ? (
+                          <span className="font-mono font-medium text-stone-500">N/A</span>
+                        ) : (
+                          formatDate(installDate)
+                        )}
                       </td>
                       <td className="px-3 py-3 text-stone-700 whitespace-nowrap font-mono">
-                        <div>{removalDate ? formatDate(removalDate) : <span className="text-stone-400">—</span>}</div>
+                        <div>
+                          {isDateNotApplicableStatus(p.status) || !removalDate ? (
+                            <span className="font-mono font-medium text-stone-500">N/A</span>
+                          ) : (
+                            formatDate(removalDate)
+                          )}
+                        </div>
                         {p.status === 'BUFFER_PERIOD' && p.bufferEndDate && (
                           <div className="text-[10px] font-sans font-semibold text-amber-800">
                             {p.bufferDaysApplied ? `Buffer Period Active (+${p.bufferDaysApplied}d)` : 'Buffer Period Active'}
                           </div>
                         )}
-                        {installDate && (() => {
+                        {!isDateNotApplicableStatus(p.status) && installDate && (() => {
                           const dur = calculateRentalDurationBreakdown(installDate, removalDate);
                           if (!dur.display || dur.isInvalid) return null;
                           return (
@@ -1493,51 +1629,36 @@ function ProjectsListContent() {
                           <span className="text-stone-400">—</span>
                         )}
                       </td>
-                      <td className="px-3 py-3 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1">
+                      <td className="px-4 py-3 whitespace-nowrap text-center align-middle min-w-[220px] w-[220px]">
+                        <div className="inline-flex items-center justify-center gap-2">
                           <Link
                             href={`/projects/${p.id}`}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-[#24160c] bg-[#f7f2eb] hover:bg-[#ebdcc9] border border-[#d6c7b2] rounded transition"
+                            className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-[#24160c] bg-[#f7f2eb] hover:bg-[#ebdcc9] border border-[#d6c7b2] rounded-md transition shadow-2xs"
                             title="View Project Details"
                           >
-                            <Eye className="w-3 h-3 text-[#8f6541]" />
+                            <Eye className="w-3.5 h-3.5 text-[#8f6541] shrink-0" />
                             <span>View</span>
                           </Link>
 
-                          {can('PROJECT_CREATE_INSPECTION') && (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenEditModal(p)}
-                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-[#4d301c] bg-white hover:bg-[#faf6ee] border border-[#d6c7b2] rounded transition cursor-pointer"
-                              title="Edit Project"
-                            >
-                              <Edit3 className="w-3 h-3 text-[#8f6541]" />
-                              <span>Edit</span>
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditModal(p)}
+                            className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-[#4d301c] bg-white hover:bg-[#faf6ee] border border-[#d6c7b2] rounded-md transition shadow-2xs cursor-pointer"
+                            title="Edit Project"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-[#8f6541] shrink-0" />
+                            <span>Edit</span>
+                          </button>
 
-                          {can('PROJECT_CLOSE') && (
-                            <button
-                              type="button"
-                              onClick={() => openDeleteModal(p)}
-                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded transition cursor-pointer"
-                              title="Delete Project"
-                            >
-                              <Trash2 className="w-3 h-3 text-rose-700" />
-                              <span>Delete</span>
-                            </button>
-                          )}
-
-                          {preInstall && can('PROJECT_CLOSE') && (
-                            <button
-                              type="button"
-                              onClick={() => openCancelModal(p)}
-                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded transition cursor-pointer"
-                              title="Cancel Pre-installation Project"
-                            >
-                              <Ban className="w-3 h-3" />
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => openDeleteModal(p)}
+                            className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-md transition shadow-2xs cursor-pointer"
+                            title="Delete Project"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-700 shrink-0" />
+                            <span>Delete</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1548,6 +1669,87 @@ function ProjectsListContent() {
           </table>
         </div>
       </div>
+
+      {/* PAGINATION CONTROLS */}
+      {!loading && filteredProjects.length > 0 && (
+        <div className="bg-white border border-[#e8decb] rounded-lg p-3 sm:px-4 sm:py-3 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          {/* Summary status */}
+          <div className="text-[#7d6553] text-[11px] font-medium">
+            Showing <span className="font-bold font-mono text-[#24160c]">{(currentPage - 1) * PAGE_SIZE + 1}</span>–
+            <span className="font-bold font-mono text-[#24160c]">{Math.min(currentPage * PAGE_SIZE, filteredProjects.length)}</span> of{' '}
+            <span className="font-bold font-mono text-[#24160c]">{filteredProjects.length}</span> {isCancelledView ? 'cancelled projects' : 'projects'}
+            {filteredProjects.length < (isCancelledView ? (statusCounts.CANCELLED || 0) : (statusCounts.ALL || 0)) && (
+              <span className="text-[#9c826e]"> (filtered from {isCancelledView ? (statusCounts.CANCELLED || 0) : (statusCounts.ALL || 0)} total)</span>
+            )}
+          </div>
+
+          {/* Navigation Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1.5 select-none">
+              {/* Previous Button */}
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-md border transition shadow-2xs ${
+                  currentPage <= 1
+                    ? 'bg-[#faf6ee] text-[#b09b88] border-[#e8decb] cursor-not-allowed opacity-50'
+                    : 'bg-white text-[#4d301c] border-[#d8c8b4] hover:bg-[#faf6ee] hover:text-[#24160c] cursor-pointer'
+                }`}
+                title="Previous Page"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Previous</span>
+              </button>
+
+              {/* Dynamic Page Numbers */}
+              <div className="flex items-center gap-1">
+                {getPageNumbers(currentPage, totalPages).map((pageNum, idx) => {
+                  if (pageNum === '...') {
+                    return (
+                      <span key={`dots-${idx}`} className="px-2 py-1 text-xs font-mono text-[#9c826e]">
+                        ...
+                      </span>
+                    );
+                  }
+                  const isSelected = pageNum === currentPage;
+                  return (
+                    <button
+                      key={`page-${pageNum}`}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum as number)}
+                      className={`min-w-[30px] h-[30px] text-xs font-mono font-bold rounded-md transition flex items-center justify-center cursor-pointer shadow-2xs ${
+                        isSelected
+                          ? 'bg-[#24150c] text-white border border-[#24150c] shadow-xs'
+                          : 'bg-white text-[#4d301c] border border-[#d8c8b4] hover:bg-[#faf6ee] hover:text-[#24160c]'
+                      }`}
+                      title={`Page ${pageNum}`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Next Button */}
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-md border transition shadow-2xs ${
+                  currentPage >= totalPages
+                    ? 'bg-[#faf6ee] text-[#b09b88] border-[#e8decb] cursor-not-allowed opacity-50'
+                    : 'bg-white text-[#4d301c] border-[#d8c8b4] hover:bg-[#faf6ee] hover:text-[#24160c] cursor-pointer'
+                }`}
+                title="Next Page"
+              >
+                <span>Next</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* CANCEL PROJECT CONFIRMATION MODAL */}
       {projectToCancel && (

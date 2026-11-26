@@ -41,12 +41,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const liveUsers: UserProfile[] = json.data;
         setAvailableUsers(liveUsers);
 
-        const savedUserId = localStorage.getItem('alokhandwala_active_user');
+        const savedUserId = sessionStorage.getItem('alokhandwala_active_user');
         if (savedUserId) {
           const matched = liveUsers.find(u => u.id === savedUserId);
           if (matched) {
             setCurrentUser(matched);
-            localStorage.setItem('alokhandwala_user_profile', JSON.stringify(matched));
+            sessionStorage.setItem('alokhandwala_user_profile', JSON.stringify(matched));
           }
         }
         return liveUsers;
@@ -63,11 +63,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initAuth = async () => {
       try {
-        const loggedIn = localStorage.getItem('alokhandwala_logged_in');
-        const savedUserId = localStorage.getItem('alokhandwala_active_user');
-        const cachedUserJson = localStorage.getItem('alokhandwala_user_profile');
+        // Clear any legacy persistent localStorage login so opening the app always starts at /login
+        localStorage.removeItem('alokhandwala_logged_in');
+        localStorage.removeItem('alokhandwala_active_user');
+        localStorage.removeItem('alokhandwala_user_profile');
 
-        // Step 1: Immediately hydrate from cached profile to avoid role reversion or UI flicker
+        const loggedIn = sessionStorage.getItem('alokhandwala_logged_in');
+        const savedUserId = sessionStorage.getItem('alokhandwala_active_user');
+        const cachedUserJson = sessionStorage.getItem('alokhandwala_user_profile');
+
+        // Step 1: Immediately hydrate from cached session profile to avoid role reversion or UI flicker
         if (loggedIn === 'true' && savedUserId) {
           if (cachedUserJson) {
             try {
@@ -77,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   setCurrentUser(cached);
                   setIsAuthenticated(true);
                 }
-                document.cookie = `alokhandwala_session=${cached.id}; path=/; max-age=86400; SameSite=Lax`;
+                document.cookie = `alokhandwala_session=${cached.id}; path=/; SameSite=Lax`;
               }
             } catch (e) {}
           } else {
@@ -110,13 +115,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (matched) {
               setCurrentUser(matched);
               setIsAuthenticated(true);
-              localStorage.setItem('alokhandwala_user_profile', JSON.stringify(matched));
-              document.cookie = `alokhandwala_session=${matched.id}; path=/; max-age=86400; SameSite=Lax`;
+              sessionStorage.setItem('alokhandwala_user_profile', JSON.stringify(matched));
+              document.cookie = `alokhandwala_session=${matched.id}; path=/; SameSite=Lax`;
             } else {
               setIsAuthenticated(false);
-              localStorage.removeItem('alokhandwala_logged_in');
-              localStorage.removeItem('alokhandwala_active_user');
-              localStorage.removeItem('alokhandwala_user_profile');
+              sessionStorage.removeItem('alokhandwala_logged_in');
+              sessionStorage.removeItem('alokhandwala_active_user');
+              sessionStorage.removeItem('alokhandwala_user_profile');
               document.cookie = 'alokhandwala_session=; path=/; max-age=0; SameSite=Lax';
             }
           }
@@ -183,13 +188,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
-    // Set authenticated state and synchronize to persistent storage
+    // Set authenticated state and synchronize to session storage (cleared when tab/browser closes)
     setCurrentUser(user);
     setIsAuthenticated(true);
-    localStorage.setItem('alokhandwala_logged_in', 'true');
-    localStorage.setItem('alokhandwala_active_user', user.id);
-    localStorage.setItem('alokhandwala_user_profile', JSON.stringify(user));
-    document.cookie = `alokhandwala_session=${user.id}; path=/; max-age=86400; SameSite=Lax`;
+    sessionStorage.setItem('alokhandwala_logged_in', 'true');
+    sessionStorage.setItem('alokhandwala_active_user', user.id);
+    sessionStorage.setItem('alokhandwala_user_profile', JSON.stringify(user));
+    document.cookie = `alokhandwala_session=${user.id}; path=/; SameSite=Lax`;
 
     return { success: true };
   };
@@ -199,15 +204,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       setCurrentUser(user);
       setIsAuthenticated(true);
-      localStorage.setItem('alokhandwala_logged_in', 'true');
-      localStorage.setItem('alokhandwala_active_user', user.id);
-      localStorage.setItem('alokhandwala_user_profile', JSON.stringify(user));
-      document.cookie = `alokhandwala_session=${user.id}; path=/; max-age=86400; SameSite=Lax`;
+      sessionStorage.setItem('alokhandwala_logged_in', 'true');
+      sessionStorage.setItem('alokhandwala_active_user', user.id);
+      sessionStorage.setItem('alokhandwala_user_profile', JSON.stringify(user));
+      document.cookie = `alokhandwala_session=${user.id}; path=/; SameSite=Lax`;
     }
   };
 
   const logout = () => {
     setIsAuthenticated(false);
+    sessionStorage.removeItem('alokhandwala_logged_in');
+    sessionStorage.removeItem('alokhandwala_active_user');
+    sessionStorage.removeItem('alokhandwala_user_profile');
     localStorage.removeItem('alokhandwala_logged_in');
     localStorage.removeItem('alokhandwala_active_user');
     localStorage.removeItem('alokhandwala_user_profile');
@@ -219,9 +227,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const found = availableUsers.find(u => u.id === userId) || initialUsers.find(u => u.id === userId);
     if (found) {
       setCurrentUser(found);
-      localStorage.setItem('alokhandwala_active_user', found.id);
-      localStorage.setItem('alokhandwala_user_profile', JSON.stringify(found));
-      document.cookie = `alokhandwala_session=${found.id}; path=/; max-age=86400; SameSite=Lax`;
+      sessionStorage.setItem('alokhandwala_active_user', found.id);
+      sessionStorage.setItem('alokhandwala_user_profile', JSON.stringify(found));
+      document.cookie = `alokhandwala_session=${found.id}; path=/; SameSite=Lax`;
     }
   };
 
@@ -244,7 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (currentUser && currentUser.id === userId) {
           const fresh = { ...currentUser, role: newRole };
           setCurrentUser(fresh);
-          localStorage.setItem('alokhandwala_user_profile', JSON.stringify(fresh));
+          sessionStorage.setItem('alokhandwala_user_profile', JSON.stringify(fresh));
         }
         return true;
       }

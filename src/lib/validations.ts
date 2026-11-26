@@ -149,7 +149,7 @@ export const installationSubmissionSchema = z.object({
 
 export const bufferRequestSchema = z.object({
   projectId: z.string().min(1, 'Project ID is required'),
-  requestedBufferDays: z.coerce.number().int().min(1).max(30).optional(),
+  requestedBufferDays: z.coerce.number().int().min(1, 'Buffer days must be at least 1').max(3650).optional(),
   reason: z.string().trim().min(2).default('Configured rental buffer period activated'),
   additionalCharges: z.coerce.number().min(0).default(0),
 });

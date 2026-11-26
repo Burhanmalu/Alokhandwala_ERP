@@ -271,6 +271,23 @@ export function calculateExtendedRemovalDate(
 }
 
 /**
+ * Project statuses where Date of Installation and Date of Removal are not applicable:
+ * 1. Not Installed (NOT_INSTALLED)
+ * 2. Pending Approval (Draft Quotation) (QUOTATION_DRAFT)
+ * 3. Quotation Accepted (QUOTATION_ACCEPTED)
+ * 4. Confirmed (Reserved) (CONFIRMED_PROJECT)
+ */
+export function isDateNotApplicableStatus(status?: string | null): boolean {
+  if (!status) return false;
+  return (
+    status === 'NOT_INSTALLED' ||
+    status === 'QUOTATION_DRAFT' ||
+    status === 'QUOTATION_ACCEPTED' ||
+    status === 'CONFIRMED_PROJECT'
+  );
+}
+
+/**
  * Single source of truth for Effective Removal Date across Directory, Project Details, Edit Form, & Dashboard
  */
 export function getEffectiveRemovalDate(project: {

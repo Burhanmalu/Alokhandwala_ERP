@@ -15,11 +15,8 @@ export function middleware(request: NextRequest) {
 
   const session = request.cookies.get('alokhandwala_session')?.value;
 
-  // If already authenticated and accessing login page, redirect to dashboard
+  // Always allow accessing the login page (client login/page.tsx handles redirect if active session exists)
   if (pathname === '/login') {
-    if (session) {
-      return NextResponse.redirect(new URL('/', request.url));
-    }
     return NextResponse.next();
   }
 

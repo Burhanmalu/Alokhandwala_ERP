@@ -54,12 +54,32 @@ import {
   getEffectiveRemovalDate,
   getProjectInstallDateStr,
   toDateOnlyString,
+  isDateNotApplicableStatus,
 } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
 import { processAndUploadImage } from '@/lib/image-utils';
 import { generateConfirmationPdf, generateInstallationPdf } from '@/lib/pdf/project-pdf';
 import { OFFICIAL_TERMS_AND_CONDITIONS } from '@/lib/constants/terms-and-conditions';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
+
+function formatLongDate(dateStr?: string | Date | null): string {
+  if (!dateStr) return '—';
+  const str = typeof dateStr === 'string' ? dateStr.slice(0, 10) : dateStr.toISOString().slice(0, 10);
+  const parts = str.split('-');
+  if (parts.length === 3) {
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    if (m >= 0 && m < 12 && !isNaN(d) && !isNaN(y)) {
+      return `${String(d).padStart(2, '0')} ${monthNames[m]} ${y}`;
+    }
+  }
+  return formatDate(dateStr);
+}
 
 export default function ProjectWorkspacePage({
   params,
@@ -84,6 +104,13 @@ export default function ProjectWorkspacePage({
   const [configuredBufferDays, setConfiguredBufferDays] = useState<number>(3);
   const [activatingBuffer, setActivatingBuffer] = useState(false);
   const [rentalBanner, setRentalBanner] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Buffer Period Modal States
+  const [bufferModalOpen, setBufferModalOpen] = useState(false);
+  const [bufferDaysInput, setBufferDaysInput] = useState<string>('3');
+  const [bufferReason, setBufferReason] = useState<string>('');
+  const [bufferSubmitting, setBufferSubmitting] = useState(false);
+  const [bufferError, setBufferError] = useState<string | null>(null);
 
   const [extendModalOpen, setExtendModalOpen] = useState(false);
   const [extendType, setExtendType] = useState<'DAYS' | 'MONTHS'>('MONTHS');
@@ -192,24 +219,41 @@ export default function ProjectWorkspacePage({
     }
   };
 
-  const handleActivateBufferPeriod = async () => {
-    if (!project || activatingBuffer) return;
-    if (project.status === 'BUFFER_PERIOD' || Boolean(project.bufferEndDate)) {
+  const handleOpenBufferModal = () => {
+    if (project?.status === 'BUFFER_PERIOD' || Boolean(project?.bufferEndDate)) {
       setRentalBanner({
         type: 'error',
         text: 'Buffer period is already active for this project.',
       });
       return;
     }
+    const defaultDays = Number(project?.configuredBufferDays || configuredBufferDays || 3);
+    setBufferDaysInput(String(defaultDays > 0 ? defaultDays : 3));
+    setBufferReason('');
+    setBufferError(null);
+    setBufferModalOpen(true);
+  };
 
-    setActivatingBuffer(true);
-    setRentalBanner(null);
+  const handleConfirmBufferPeriod = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!project || bufferSubmitting) return;
+
+    const numDays = Number(bufferDaysInput);
+    if (!bufferDaysInput.trim() || !Number.isInteger(numDays) || numDays < 1) {
+      setBufferError('Please enter a valid positive number of additional days (minimum 1 day).');
+      return;
+    }
+
+    setBufferSubmitting(true);
+    setBufferError(null);
 
     try {
       const res = await fetch(`/api/projects/${project.id}/buffer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          requestedBufferDays: numDays,
+          reason: bufferReason.trim() || `Configured ${numDays}-day rental buffer period activated`,
           actorId: currentUser?.id || 'usr-admin-01',
           actorName: currentUser?.fullName || 'Admin',
         }),
@@ -220,22 +264,20 @@ export default function ProjectWorkspacePage({
       }
 
       const updated = json.data?.project;
-      const daysApplied = json.data?.bufferRequest?.requestedBufferDays || updated?.bufferDaysApplied || configuredBufferDays;
+      const daysApplied = json.data?.bufferRequest?.requestedBufferDays || updated?.bufferDaysApplied || numDays;
       if (updated) {
         setProject((prev: any) => ({ ...prev, ...updated }));
       }
       await fetchProjectDetails();
+      setBufferModalOpen(false);
       setRentalBanner({
         type: 'success',
-        text: `Buffer Period Active (+${daysApplied} days). Updated effective removal date: ${formatDate(updated?.bufferEndDate || updated?.removalDate)}.`,
+        text: `Buffer Period Active (+${daysApplied} Days). Updated effective removal date: ${formatLongDate(updated?.bufferEndDate || updated?.removalDate)}.`,
       });
     } catch (err: any) {
-      setRentalBanner({
-        type: 'error',
-        text: err.message || 'Unable to activate buffer period.',
-      });
+      setBufferError(err.message || 'Unable to activate buffer period.');
     } finally {
-      setActivatingBuffer(false);
+      setBufferSubmitting(false);
     }
   };
 
@@ -584,6 +626,9 @@ export default function ProjectWorkspacePage({
             <div className="flex items-center gap-1.5">
               <UserCheck className="w-4 h-4 text-stone-400 shrink-0" />
               <span>Supervisor: {project.supervisorName}</span>
+              {project.supervisorPhone && (
+                <span className="font-mono text-stone-500 text-xs">({project.supervisorPhone})</span>
+              )}
             </div>
           </div>
         </div>
@@ -652,25 +697,20 @@ export default function ProjectWorkspacePage({
                       type="button"
                       disabled
                       title="Buffer period is already active for this project"
-                      className="h-9 px-3 bg-amber-50 text-amber-800 border border-amber-300 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed opacity-90"
+                      className="h-9 px-3 bg-amber-50 text-amber-800 border border-amber-300 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed opacity-90 shadow-2xs"
                     >
                       <Clock className="w-3.5 h-3.5 text-amber-700" />
-                      <span>Buffer Period Active</span>
+                      <span>Buffer Period Active (+{effectiveBufferDays} Days)</span>
                     </button>
                   ) : (
                     <button
                       type="button"
-                      onClick={handleActivateBufferPeriod}
-                      disabled={activatingBuffer}
-                      title={`Activate configured ${effectiveBufferDays}-day buffer period`}
-                      className="h-9 px-3 bg-[#fbf7f0] hover:bg-[#f4ebe1] text-[#78350f] border border-[#ebdcc9] rounded-md text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                      onClick={handleOpenBufferModal}
+                      title="Open Buffer Period modal to configure additional days"
+                      className="h-9 px-3 bg-[#fbf7f0] hover:bg-[#f4ebe1] text-[#78350f] border border-[#ebdcc9] rounded-md text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                     >
-                      {activatingBuffer ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#8f6541]" />
-                      ) : (
-                        <Clock className="w-3.5 h-3.5 text-[#8f6541]" />
-                      )}
-                      <span>{activatingBuffer ? 'Activating...' : 'Buffer Period'}</span>
+                      <Clock className="w-3.5 h-3.5 text-[#8f6541]" />
+                      <span>Buffer Period Active</span>
                     </button>
                   )
                 )}
@@ -915,26 +955,46 @@ export default function ProjectWorkspacePage({
             <div className="space-y-3 text-xs">
               <div className="flex justify-between items-center py-1 border-b border-[#f0e8db]">
                 <span className="text-stone-500">Planned Installation</span>
-                <span className="font-mono text-stone-800">{formatDate(project.plannedInstallationDate || project.installationDate)}</span>
+                <span className="font-mono text-stone-800">
+                  {isDateNotApplicableStatus(project.status) || !(project.plannedInstallationDate || project.installationDate)
+                    ? 'N/A'
+                    : formatDate(project.plannedInstallationDate || project.installationDate)}
+                </span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-[#f0e8db]">
                 <span className="text-stone-500">Actual Installation</span>
-                <span className="font-mono text-stone-800">{formatDate(project.actualInstallationDate || project.installationDate)}</span>
+                <span className="font-mono text-stone-800">
+                  {isDateNotApplicableStatus(project.status) || !(project.actualInstallationDate || project.installationDate)
+                    ? 'N/A'
+                    : formatDate(project.actualInstallationDate || project.installationDate)}
+                </span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-[#f0e8db]">
                 <span className="text-stone-500">Rental Start Date</span>
-                <span className="font-mono font-semibold text-[#714f36]">{formatDate(project.rentalStartDate || project.installationDate)}</span>
+                <span className="font-mono font-semibold text-[#714f36]">
+                  {isDateNotApplicableStatus(project.status) || !(project.rentalStartDate || project.installationDate)
+                    ? 'N/A'
+                    : formatDate(project.rentalStartDate || project.installationDate)}
+                </span>
               </div>
               {(project.originalRemovalDate || project.originalRentalEndDate) &&
                 toDateOnlyString(project.originalRemovalDate || project.originalRentalEndDate) !== toDateOnlyString(effectiveRemovalDate) && (
                   <div className="flex justify-between items-center py-1 border-b border-[#f0e8db]">
                     <span className="text-stone-500">Original Removal Date</span>
-                    <span className="font-mono text-stone-600">{formatDate(project.originalRemovalDate || project.originalRentalEndDate)}</span>
+                    <span className="font-mono text-stone-600">
+                      {isDateNotApplicableStatus(project.status)
+                        ? 'N/A'
+                        : formatDate(project.originalRemovalDate || project.originalRentalEndDate)}
+                    </span>
                   </div>
                 )}
               <div className="flex justify-between items-center py-1 border-b border-[#f0e8db]">
                 <span className="text-stone-500">Removal / Expiry Date</span>
-                <span className="font-mono font-semibold text-stone-900">{formatDate(effectiveRemovalDate)}</span>
+                <span className="font-mono font-semibold text-stone-900">
+                  {isDateNotApplicableStatus(project.status) || !effectiveRemovalDate
+                    ? 'N/A'
+                    : formatDate(effectiveRemovalDate)}
+                </span>
               </div>
               <div className="flex justify-between items-center py-1.5 border-b border-[#f0e8db]">
                 <span className="text-stone-500">Remaining Days</span>
@@ -1576,11 +1636,10 @@ export default function ProjectWorkspacePage({
                 can('PROJECT_BUFFER_REQUEST') && (
                   <button
                     type="button"
-                    onClick={handleActivateBufferPeriod}
-                    disabled={activatingBuffer}
-                    className="px-3.5 py-1.5 bg-[#fbf7f0] hover:bg-[#f4ebe1] text-[#78350f] border border-[#ebdcc9] rounded-md text-xs font-semibold transition cursor-pointer disabled:opacity-60"
+                    onClick={handleOpenBufferModal}
+                    className="px-3.5 py-1.5 bg-[#fbf7f0] hover:bg-[#f4ebe1] text-[#78350f] border border-[#ebdcc9] rounded-md text-xs font-semibold transition cursor-pointer"
                   >
-                    {activatingBuffer ? 'Activating Buffer...' : `Activate Buffer (+${effectiveBufferDays}d)`}
+                    Activate Buffer
                   </button>
                 )}
               {['ACTIVE_RENTAL', 'INSTALLED', 'EXTENDED', 'BUFFER_PERIOD', 'REMOVAL_PENDING'].includes(project.status) &&
@@ -1599,17 +1658,25 @@ export default function ProjectWorkspacePage({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
             <div className="p-4 bg-[#fbf9f5] rounded-md border border-[#ede3d4]">
               <div className="text-stone-500 font-medium">Installation / Start Date</div>
-              <div className="text-base font-bold font-mono text-stone-900 mt-1">{formatDate(installDate)}</div>
+              <div className="text-base font-bold font-mono text-stone-900 mt-1">
+                {isDateNotApplicableStatus(project.status) || !installDate ? 'N/A' : formatDate(installDate)}
+              </div>
             </div>
             <div className="p-4 bg-[#fbf9f5] rounded-md border border-[#ede3d4]">
               <div className="text-stone-500 font-medium">Original Removal Date</div>
               <div className="text-base font-bold font-mono text-stone-700 mt-1">
-                {formatDate(project.originalRemovalDate || project.originalRentalEndDate || effectiveRemovalDate)}
+                {isDateNotApplicableStatus(project.status)
+                  ? 'N/A'
+                  : (project.originalRemovalDate || project.originalRentalEndDate || effectiveRemovalDate)
+                    ? formatDate(project.originalRemovalDate || project.originalRentalEndDate || effectiveRemovalDate)
+                    : 'N/A'}
               </div>
             </div>
             <div className="p-4 bg-[#fbf9f5] rounded-md border border-[#ede3d4]">
               <div className="text-stone-500 font-medium">Effective Removal Date</div>
-              <div className="text-base font-bold font-mono text-[#714f36] mt-1">{formatDate(effectiveRemovalDate)}</div>
+              <div className="text-base font-bold font-mono text-[#714f36] mt-1">
+                {isDateNotApplicableStatus(project.status) || !effectiveRemovalDate ? 'N/A' : formatDate(effectiveRemovalDate)}
+              </div>
               {project.status === 'BUFFER_PERIOD' && project.bufferEndDate && (
                 <div className="text-[11px] font-semibold text-amber-800 mt-1">
                   Buffer Period Active (+{effectiveBufferDays} Days)
@@ -1619,7 +1686,7 @@ export default function ProjectWorkspacePage({
             <div className="p-4 bg-[#fbf9f5] rounded-md border border-[#ede3d4]">
               <div className="text-stone-500 font-medium">Rental Duration & Remaining</div>
               <div className="text-sm font-bold font-mono text-[#24160c] mt-1">
-                {effectiveDuration.display || '—'}
+                {isDateNotApplicableStatus(project.status) ? 'N/A' : (effectiveDuration.display || '—')}
               </div>
               <div className="mt-1.5">
                 <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold border ${remainingDaysInfo.badgeClass}`}>
@@ -2055,6 +2122,227 @@ export default function ProjectWorkspacePage({
           </div>
         </div>
       )}
+
+      {/* BUFFER PERIOD MODAL */}
+      {bufferModalOpen && project && (() => {
+        const originalRemovalDateStr =
+          toDateOnlyString(project.originalRemovalDate || project.originalRentalEndDate || project.removalDate || project.rentalEndDate || effectiveRemovalDate) ||
+          toDateOnlyString(new Date());
+        const numericBufferDays = Number(bufferDaysInput);
+        const isValidBufferDays =
+          bufferDaysInput.trim() !== '' &&
+          Number.isInteger(numericBufferDays) &&
+          numericBufferDays >= 1;
+        const calculatedNewRemovalDate = isValidBufferDays
+          ? calculateExtendedRemovalDate(originalRemovalDateStr, numericBufferDays, 'DAYS')
+          : originalRemovalDateStr;
+        const previewRemaining = getRemainingDaysInfo(calculatedNewRemovalDate, 'BUFFER_PERIOD');
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#140b06]/70 backdrop-blur-xs animate-in fade-in duration-150">
+            <div
+              className="fixed inset-0"
+              onClick={() => !bufferSubmitting && setBufferModalOpen(false)}
+            />
+            <form
+              onSubmit={handleConfirmBufferPeriod}
+              className="relative z-10 w-full max-w-lg bg-white rounded-xl shadow-2xl border border-[#d6c7b2] overflow-hidden text-stone-800 max-h-[92vh] flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="bg-[#24160c] px-5 py-4 text-white flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-md bg-[#382315] border border-[#523622] flex items-center justify-center text-[#c79e7c]">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Buffer Period Selection</h3>
+                    <p className="text-[11px] font-mono text-[#c79e7c]">
+                      {project.projectCode} · {project.customerName}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={bufferSubmitting}
+                  onClick={() => setBufferModalOpen(false)}
+                  className="p-1 text-stone-300 hover:text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-5 space-y-4 overflow-y-auto text-xs bg-[#fbf9f5]/50">
+                {bufferError && (
+                  <div className="p-3 bg-rose-50 border border-rose-300 rounded-md text-rose-800 font-semibold flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{bufferError}</span>
+                  </div>
+                )}
+
+                {/* 1. Original Removal Date (Automatically fetched) */}
+                <div className="p-3.5 bg-white rounded-lg border border-[#e5dac8] shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] uppercase tracking-wider font-semibold text-stone-500 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-[#8f6541]" />
+                      <span>Original Removal Date</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#faf6ee] text-[#714f36] border border-[#ebdcc9]">
+                      Existing Project Date
+                    </span>
+                  </div>
+                  <div className="font-mono font-bold text-base text-[#24160c] mt-1.5">
+                    {formatLongDate(originalRemovalDateStr)}
+                  </div>
+                  <div className="text-[11px] text-[#8c5e39] mt-0.5">
+                    Current project removal deadline fetched from records
+                  </div>
+                </div>
+
+                {/* 2. Buffer Period (Days) Selection */}
+                <div className="p-3.5 bg-white rounded-lg border border-[#e5dac8] shadow-2xs space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block font-semibold text-[#4d301c]">
+                      Buffer Period (Days) <span className="text-rose-600">*</span>
+                    </label>
+                    <span className="text-[11px] text-[#9c826e]">Enter additional grace days</span>
+                  </div>
+
+                  <div className="relative">
+                    <Clock className="w-4 h-4 text-[#9c826e] absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      required
+                      value={bufferDaysInput}
+                      onChange={(e) => {
+                        setBufferDaysInput(e.target.value);
+                        setBufferError(null);
+                      }}
+                      placeholder="e.g. 3, 5, 7"
+                      className="w-full pl-9 pr-14 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] font-mono font-bold text-sm focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500 font-mono">
+                      Days
+                    </span>
+                  </div>
+
+                  {/* Quick Select Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] uppercase font-semibold text-stone-500 mr-1">Quick Select:</span>
+                    {[2, 3, 5, 7, 10, 15].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => {
+                          setBufferDaysInput(String(d));
+                          setBufferError(null);
+                        }}
+                        className={`px-2.5 py-0.5 rounded text-[11px] font-mono font-bold transition cursor-pointer ${
+                          Number(bufferDaysInput) === d
+                            ? 'bg-[#24160c] text-white shadow-2xs'
+                            : 'bg-[#faf6ee] text-[#714f36] border border-[#d6c7b2] hover:bg-[#ebdcc9]'
+                        }`}
+                      >
+                        +{d} Days
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. New Removal / Expiry Date (Automatically calculated) */}
+                <div
+                  className={`p-3.5 rounded-lg border transition-all ${
+                    isValidBufferDays
+                      ? 'bg-amber-50/70 border-amber-300'
+                      : 'bg-rose-50/70 border-rose-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] uppercase tracking-wider font-semibold text-amber-900 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-amber-700" />
+                      <span>New Removal / Expiry Date</span>
+                    </span>
+                    {isValidBufferDays && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 font-mono">
+                        +{numericBufferDays} {numericBufferDays === 1 ? 'Day' : 'Days'}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="font-mono font-bold text-base text-amber-950 mt-1.5">
+                    {isValidBufferDays ? formatLongDate(calculatedNewRemovalDate) : '—'}
+                  </div>
+
+                  <div className="text-[11px] text-amber-900/90 mt-1 flex flex-wrap items-center justify-between gap-1">
+                    <span>
+                      {isValidBufferDays
+                        ? `${formatLongDate(originalRemovalDateStr)} + ${numericBufferDays} Days = ${formatLongDate(calculatedNewRemovalDate)}`
+                        : 'Enter a valid positive number of days to calculate new removal date'}
+                    </span>
+                    {isValidBufferDays && (
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${previewRemaining.badgeClass}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${previewRemaining.dotClass}`} />
+                        <span>{previewRemaining.label}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Optional Reason / Remarks */}
+                <div>
+                  <label className="block font-semibold text-[#4d301c] mb-1">
+                    Buffer Reason / Activity Note (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={bufferReason}
+                    onChange={(e) => setBufferReason(e.target.value)}
+                    placeholder="e.g. Additional grace window granted for dismantling"
+                    className="w-full px-3 py-2 bg-[#fbf9f5] border border-[#d6c7b2] rounded-md text-[#24160c] text-xs focus:bg-white focus:border-[#8f6541] focus:ring-1 focus:ring-[#8f6541] focus:outline-none"
+                  />
+                </div>
+
+                {/* Policy Notice */}
+                <div className="p-2.5 rounded-md bg-[#faf6ee] border border-[#ede3d4] text-[11px] text-[#7d6553] space-y-1">
+                  <div className="font-semibold text-[#24160c] flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Preserved Contract Terms</span>
+                  </div>
+                  <div>
+                    Buffer period extends the operational dismantling window without modifying original monthly rental charges or rental duration history.
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="bg-white border-t border-[#e5dac8] px-5 py-3.5 flex items-center justify-end gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  disabled={bufferSubmitting}
+                  onClick={() => setBufferModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-stone-700 bg-white hover:bg-[#faf6ee] border border-[#d6c7b2] rounded-md transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={bufferSubmitting || !isValidBufferDays}
+                  className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-[#c79e7c] bg-[#24160c] hover:bg-[#382315] border border-[#19100a] rounded-md shadow-xs transition disabled:opacity-50 cursor-pointer"
+                >
+                  {bufferSubmitting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>{bufferSubmitting ? 'Confirming...' : 'Confirm Buffer Period'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        );
+      })()}
 
       {/* EXTEND RENTAL MODAL */}
       {extendModalOpen && project && (() => {

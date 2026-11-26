@@ -10,6 +10,7 @@ import {
   Mail, 
   MapPin, 
   ChevronRight, 
+  ChevronLeft,
   FolderKanban,
   ReceiptIndianRupee,
   Users,
@@ -43,6 +44,8 @@ type ViewMode = 'grid' | 'table';
 type FilterTab = 'ALL' | 'ACTIVE_RENTALS' | 'OUTSTANDING' | 'GST';
 type SortField = 'NAME_ASC' | 'NAME_DESC' | 'OUTSTANDING_DESC' | 'PROJECTS_DESC' | 'RECENT';
 
+const PAGE_SIZE = 10;
+
 function isCustomerGstRegistered(c?: Customer | null): boolean {
   if (!c || !c.gstin) return false;
   const val = c.gstin.trim();
@@ -50,6 +53,19 @@ function isCustomerGstRegistered(c?: Customer | null): boolean {
     return false;
   }
   return isValidGSTIN(val);
+}
+
+function getPageNumbers(currentPage: number, totalPages: number): (number | string)[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+  if (currentPage <= 4) {
+    return [1, 2, 3, 4, 5, '...', totalPages];
+  }
+  if (currentPage >= totalPages - 3) {
+    return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  }
+  return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
 }
 
 export default function CustomersPage() {
@@ -63,6 +79,7 @@ export default function CustomersPage() {
   const [filterTab, setFilterTab] = useState<FilterTab>('ALL');
   const [sortBy, setSortBy] = useState<SortField>('NAME_ASC');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Quick Register Form State
   const [companyName, setCompanyName] = useState('');
@@ -346,6 +363,8 @@ export default function CustomersPage() {
         (c.referenceName && c.referenceName.toLowerCase().includes(q)) ||
         (c.contactPerson && c.contactPerson.toLowerCase().includes(q)) ||
         (c.phone && c.phone.includes(q)) ||
+        (c.alternatePhone && c.alternatePhone.includes(q)) ||
+        (c.billingAddress && c.billingAddress.toLowerCase().includes(q)) ||
         (c.email && c.email.toLowerCase().includes(q)) ||
         (c.city && c.city.toLowerCase().includes(q)) ||
         (isCustomerGstRegistered(c) && c.gstin!.toLowerCase().includes(q))
@@ -372,6 +391,27 @@ export default function CustomersPage() {
 
     return result;
   }, [customers, filterTab, searchQuery, sortBy]);
+
+  // Reset to page 1 when search query, filter tab, or sort order changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterTab, sortBy]);
+
+  // Dynamic Pagination Calculations
+  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / PAGE_SIZE));
+
+  // If the current page becomes out of bounds (e.g. after customer deletion or list shrinkage), move to the previous available page
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  // Paginated customers for current page
+  const paginatedCustomers = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    return filteredCustomers.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filteredCustomers, currentPage]);
 
   // Export CSV function
   const exportToCSV = () => {
@@ -665,7 +705,9 @@ export default function CustomersPage() {
           </div>
 
           <div className="text-[11px] text-[#7d6553] font-medium">
-            Showing <span className="font-bold text-[#24160c] font-mono">{filteredCustomers.length}</span> of {customers.length} accounts
+            Showing <span className="font-bold text-[#24160c] font-mono">
+              {filteredCustomers.length > 0 ? `${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, filteredCustomers.length)}` : '0'}
+            </span> of <span className="font-bold text-[#24160c] font-mono">{filteredCustomers.length}</span> accounts
           </div>
         </div>
       </div>
@@ -697,7 +739,7 @@ export default function CustomersPage() {
       ) : viewMode === 'grid' ? (
         /* REFINED CARD GRID VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredCustomers.map((c) => {
+          {paginatedCustomers.map((c) => {
             const hasOutstanding = (c.outstandingBalance || 0) > 0;
             const hasRentals = (c.activeRentalsCount || 0) > 0;
             const initials = getCompanyInitials(c.companyName);
@@ -758,14 +800,27 @@ export default function CustomersPage() {
 
                     <div className="flex items-center gap-2">
                       <Phone className="w-3.5 h-3.5 text-[#9c826e] shrink-0" />
-                      <a 
-                        href={`tel:${c.phone}`} 
-                        className="truncate font-mono text-xs hover:text-[#8c5e39] hover:underline"
-                        title="Click to dial"
-                      >
-                        {c.phone}
-                      </a>
+                      <div className="flex items-center gap-1.5 truncate">
+                        <a 
+                          href={`tel:${c.phone}`} 
+                          className="truncate font-mono text-xs hover:text-[#8c5e39] hover:underline"
+                          title="Click to dial primary number"
+                        >
+                          {c.phone}
+                        </a>
+                        {c.alternatePhone && (
+                          <span className="font-mono text-[10px] text-[#8c5e39] bg-[#faf6ee] px-1.5 py-0.5 rounded border border-[#ebdcc9] shrink-0" title="Alternate number">
+                            / {c.alternatePhone}
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    {c.reviewFlag && (
+                      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-1 rounded">
+                        <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                        <span className="truncate" title={c.reviewFlag}>{c.reviewFlag}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -841,7 +896,7 @@ export default function CustomersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f2eadf]">
-                {filteredCustomers.map((c) => {
+                {paginatedCustomers.map((c) => {
                   const hasOutstanding = (c.outstandingBalance || 0) > 0;
                   const initials = getCompanyInitials(c.companyName);
 
@@ -939,7 +994,86 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {/* 5. CUSTOMER PROFILE DOSSIER MODAL */}
+      {/* 5. PAGINATION CONTROLS */}
+      {!loading && filteredCustomers.length > PAGE_SIZE && (
+        <div className="bg-white border border-[#e8decb] rounded-lg p-3 sm:px-4 sm:py-3 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          {/* Summary status */}
+          <div className="text-[#7d6553] text-[11px] font-medium">
+            Showing <span className="font-bold font-mono text-[#24160c]">{(currentPage - 1) * PAGE_SIZE + 1}</span>–
+            <span className="font-bold font-mono text-[#24160c]">{Math.min(currentPage * PAGE_SIZE, filteredCustomers.length)}</span> of{' '}
+            <span className="font-bold font-mono text-[#24160c]">{filteredCustomers.length}</span> customers
+            {filteredCustomers.length < customers.length && (
+              <span className="text-[#9c826e]"> (filtered from {customers.length} total)</span>
+            )}
+          </div>
+
+          {/* Navigation Controls */}
+          <div className="flex items-center gap-1.5 select-none">
+            {/* Previous Button */}
+            <button
+              type="button"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-md border transition shadow-2xs ${
+                currentPage <= 1
+                  ? 'bg-[#faf6ee] text-[#b09b88] border-[#e8decb] cursor-not-allowed opacity-50'
+                  : 'bg-white text-[#4d301c] border-[#d8c8b4] hover:bg-[#faf6ee] hover:text-[#24160c] cursor-pointer'
+              }`}
+              title="Previous Page"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Previous</span>
+            </button>
+
+            {/* Dynamic Page Numbers */}
+            <div className="flex items-center gap-1">
+              {getPageNumbers(currentPage, totalPages).map((pageNum, idx) => {
+                if (pageNum === '...') {
+                  return (
+                    <span key={`dots-${idx}`} className="px-2 py-1 text-xs font-mono text-[#9c826e]">
+                      ...
+                    </span>
+                  );
+                }
+                const isSelected = pageNum === currentPage;
+                return (
+                  <button
+                    key={`page-${pageNum}`}
+                    type="button"
+                    onClick={() => setCurrentPage(pageNum as number)}
+                    className={`min-w-[30px] h-[30px] text-xs font-mono font-bold rounded-md transition flex items-center justify-center cursor-pointer shadow-2xs ${
+                      isSelected
+                        ? 'bg-[#24150c] text-white border border-[#24150c] shadow-xs'
+                        : 'bg-white text-[#4d301c] border border-[#d8c8b4] hover:bg-[#faf6ee] hover:text-[#24160c]'
+                    }`}
+                    title={`Page ${pageNum}`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Next Button */}
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-md border transition shadow-2xs ${
+                currentPage >= totalPages
+                  ? 'bg-[#faf6ee] text-[#b09b88] border-[#e8decb] cursor-not-allowed opacity-50'
+                  : 'bg-white text-[#4d301c] border-[#d8c8b4] hover:bg-[#faf6ee] hover:text-[#24160c] cursor-pointer'
+              }`}
+              title="Next Page"
+            >
+              <span>Next</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 6. CUSTOMER PROFILE DOSSIER MODAL */}
       {selectedCustomer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#140b06]/70 backdrop-blur-xs animate-in fade-in duration-200">
           <div 
@@ -1012,6 +1146,20 @@ export default function CustomersPage() {
                         {selectedCustomer.phone}
                       </a>
                     </div>
+                    {selectedCustomer.alternatePhone && (
+                      <div>
+                        <span className="text-[#9c826e] block text-[10px]">Alternate Phone:</span>
+                        <a href={`tel:${selectedCustomer.alternatePhone}`} className="font-mono text-[#8c5e39] hover:underline font-semibold">
+                          {selectedCustomer.alternatePhone}
+                        </a>
+                      </div>
+                    )}
+                    {selectedCustomer.reviewFlag && (
+                      <div className="p-2 bg-amber-50 border border-amber-200 rounded text-[11px] text-amber-900 flex items-start gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                        <span><strong>Review Flag:</strong> {selectedCustomer.reviewFlag}</span>
+                      </div>
+                    )}
                     {selectedCustomer.referenceName && (
                       <div>
                         <span className="text-[#9c826e] block text-[10px]">Reference Name:</span>

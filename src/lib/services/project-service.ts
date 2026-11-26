@@ -537,6 +537,9 @@ export class ProjectService {
     depth?: number;
     height?: number;
     unit?: 'FEET' | 'METERS';
+    scaffoldingType?: string;
+    actualDismantlingDate?: string;
+    monthlyRentalRate?: number;
     status: ProjectStatus;
     installationDate?: string;
     removalDate?: string;
@@ -693,8 +696,9 @@ export class ProjectService {
         staffNames,
         installationWorkers: resolvedStaff.length > 0 ? resolvedStaff : undefined,
         status: data.status || 'NOT_INSTALLED',
+        scaffoldingType: data.scaffoldingType || undefined,
         pricingModel: 'LUMP_SUM',
-        monthlyRentalRate: 0,
+        monthlyRentalRate: data.monthlyRentalRate !== undefined ? data.monthlyRentalRate : 0,
         agreedProjectPrice: totalAmount,
         depositAmount: 0,
         transportCharges: 0,
@@ -722,6 +726,7 @@ export class ProjectService {
         rentalEndDate: data.removalDate || undefined,
         originalRemovalDate: data.removalDate || undefined,
         originalRentalEndDate: data.removalDate || undefined,
+        actualDismantlingDate: data.status === 'CLOSED' ? (data.actualDismantlingDate || data.removalDate || undefined) : undefined,
         durationMonths: data.installationDate ? Math.max(1, rentalDuration.months || 0) : undefined,
         rentalDurationMonths: data.installationDate ? rentalDuration.months : undefined,
         rentalDurationDays: data.installationDate ? rentalDuration.days : undefined,

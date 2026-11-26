@@ -21,11 +21,13 @@ export interface Customer {
   referenceName?: string;
   contactPerson: string;
   phone: string;
+  alternatePhone?: string;
   email?: string;
   billingAddress: string;
   city?: string;
   state?: string;
   gstin?: string;
+  reviewFlag?: string;
   status: 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
   creditLimit: number;
   outstandingBalance: number;
@@ -270,6 +272,7 @@ export interface Project {
   referralName?: string;
   assignedSupervisorId: string;
   supervisorName: string;
+  supervisorPhone?: string;
   status: ProjectStatus;
   pricingModel: 'MONTHLY_RENTAL' | 'LUMP_SUM' | 'METRIC_RATE';
   monthlyRentalRate: number;
@@ -374,6 +377,7 @@ export interface Project {
   clientGstNumber?: string;
   hasCompanyGst?: boolean;
   companyGstNumber?: string;
+  scaffoldingType?: string;
   scaffoldingPlan?: ScaffoldingMaterialPlanOption;
   siteDimensions?: {
     length: number;

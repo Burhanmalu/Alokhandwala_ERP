@@ -11,6 +11,7 @@ import {
   getEffectiveRemovalDate,
   getRemainingDaysInfo,
   getFollowUpStatus,
+  isDateNotApplicableStatus,
 } from '../src/lib/formatters';
 
 export async function runAddProjectDirectoryTests() {
@@ -319,6 +320,24 @@ export async function runAddProjectDirectoryTests() {
   const afterDelete = dbStore.getProjects().find(p => p.id === created.id);
   assert.strictEqual(afterDelete, undefined, 'Deleted project no longer in dbStore');
   console.log('  ✓ PASS: 5. Project deletion removes record and logs audit trail');
+
+  // 6. Conditional Date Fields Based on Project Status
+  assert.strictEqual(isDateNotApplicableStatus('NOT_INSTALLED'), true, 'NOT_INSTALLED has N/A dates');
+  assert.strictEqual(isDateNotApplicableStatus('QUOTATION_DRAFT'), true, 'QUOTATION_DRAFT has N/A dates');
+  assert.strictEqual(isDateNotApplicableStatus('QUOTATION_ACCEPTED'), true, 'QUOTATION_ACCEPTED has N/A dates');
+  assert.strictEqual(isDateNotApplicableStatus('CONFIRMED_PROJECT'), true, 'CONFIRMED_PROJECT has N/A dates');
+  assert.strictEqual(isDateNotApplicableStatus('SCHEDULED'), false, 'SCHEDULED uses active date pickers');
+  assert.strictEqual(isDateNotApplicableStatus('ACTIVE_RENTAL'), false, 'ACTIVE_RENTAL uses active date pickers');
+  assert.strictEqual(isDateNotApplicableStatus('REMOVAL_PENDING'), false, 'REMOVAL_PENDING uses active date pickers');
+  assert.strictEqual(isDateNotApplicableStatus('CLOSED'), false, 'CLOSED uses active date pickers');
+
+  const modalSrc = fs.readFileSync(
+    path.join(process.cwd(), 'src/components/projects/ProjectFormModal.tsx'),
+    'utf8'
+  );
+  assert.ok(modalSrc.includes('isDateNotApplicableStatus(status)'), 'ProjectFormModal dynamically checks isDateNotApplicableStatus');
+  assert.ok(modalSrc.includes('value="N/A"'), 'ProjectFormModal displays N/A for date fields when applicable');
+  console.log('  ✓ PASS: 6. Conditional Date Fields (N/A for 4 statuses, date pickers for others) verified');
 
   console.log('---------------------------------------------------------------');
   console.log('Project Directory Add/Edit/Delete: All Tests Passed 100%');
