@@ -115,22 +115,22 @@ export default function DashboardOverviewPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Primary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+    <div className="space-y-4">
+      {/* Row 1: Compact Primary KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Active Rentals */}
         <Link 
           href="/projects?status=ACTIVE_RENTAL" 
-          className="bg-white p-5 sm:p-6 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between"
+          className="bg-white px-4 py-3.5 sm:px-5 sm:py-4 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between min-h-[116px]"
         >
-          <div className="flex items-center justify-between text-[#7d6553] text-xs sm:text-sm font-semibold uppercase tracking-wider">
-            <span>Active Rentals</span>
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+          <div className="flex items-center justify-between text-[#7d6553] text-[11px] font-semibold uppercase tracking-wider">
+            <span className="truncate">Active Rentals</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           </div>
-          <div className="text-3xl sm:text-4xl font-bold text-[#24160c] my-2 font-mono">
+          <div className="text-2xl sm:text-[26px] leading-tight font-bold text-[#24160c] my-1 font-mono">
             {cards.activeRentalCount || 0}
           </div>
-          <div className="text-xs text-[#574830] font-medium flex items-center gap-1.5">
+          <div className="text-[11px] text-[#574830] font-medium flex items-center gap-1.5 truncate">
             <span className="font-semibold text-emerald-700">{formatINR(cards.monthlyRentalRunRate, false)}</span>
             <span className="text-[#9c826e]">/mo revenue</span>
           </div>
@@ -139,16 +139,16 @@ export default function DashboardOverviewPage() {
         {/* Awaiting Confirmation */}
         <Link 
           href="/projects?status=NOT_INSTALLED" 
-          className="bg-white p-5 sm:p-6 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between"
+          className="bg-white px-4 py-3.5 sm:px-5 sm:py-4 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between min-h-[116px]"
         >
-          <div className="flex items-center justify-between text-[#7d6553] text-xs sm:text-sm font-semibold uppercase tracking-wider">
-            <span>Awaiting Confirmation</span>
-            <FolderKanban className="w-5 h-5 text-blue-600" />
+          <div className="flex items-center justify-between text-[#7d6553] text-[11px] font-semibold uppercase tracking-wider">
+            <span className="truncate">Awaiting Confirmation</span>
+            <FolderKanban className="w-4 h-4 text-blue-600 shrink-0" />
           </div>
-          <div className="text-3xl sm:text-4xl font-bold text-[#24160c] my-2 font-mono">
+          <div className="text-2xl sm:text-[26px] leading-tight font-bold text-[#24160c] my-1 font-mono">
             {cards.notInstalledCount || 0}
           </div>
-          <div className="text-xs text-[#7d6553]">
+          <div className="text-[11px] text-[#7d6553] truncate">
             Site records awaiting commercial terms
           </div>
         </Link>
@@ -156,16 +156,16 @@ export default function DashboardOverviewPage() {
         {/* Buffer Period */}
         <Link 
           href="/projects?status=BUFFER_PERIOD" 
-          className="bg-white p-5 sm:p-6 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between"
+          className="bg-white px-4 py-3.5 sm:px-5 sm:py-4 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between min-h-[116px]"
         >
-          <div className="flex items-center justify-between text-[#7d6553] text-xs sm:text-sm font-semibold uppercase tracking-wider">
-            <span>Buffer Period Active</span>
-            <Clock className="w-5 h-5 text-amber-600" />
+          <div className="flex items-center justify-between text-[#7d6553] text-[11px] font-semibold uppercase tracking-wider">
+            <span className="truncate">Buffer Period Active</span>
+            <Clock className="w-4 h-4 text-amber-600 shrink-0" />
           </div>
-          <div className="text-3xl sm:text-4xl font-bold text-amber-700 my-2 font-mono">
+          <div className="text-2xl sm:text-[26px] leading-tight font-bold text-amber-700 my-1 font-mono">
             {cards.bufferCount || 0}
           </div>
-          <div className="text-xs text-amber-800">
+          <div className="text-[11px] text-amber-800 truncate">
             Within 2-3 day dismantling grace window
           </div>
         </Link>
@@ -173,38 +173,38 @@ export default function DashboardOverviewPage() {
         {/* Removal Pending */}
         <Link 
           href="/projects?status=REMOVAL_PENDING" 
-          className="bg-white p-5 sm:p-6 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between"
+          className="bg-white px-4 py-3.5 sm:px-5 sm:py-4 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] transition shadow-2xs group flex flex-col justify-between min-h-[116px]"
         >
-          <div className="flex items-center justify-between text-[#7d6553] text-xs sm:text-sm font-semibold uppercase tracking-wider">
-            <span>Pending Removal</span>
-            <AlertCircle className="w-5 h-5 text-rose-600" />
+          <div className="flex items-center justify-between text-[#7d6553] text-[11px] font-semibold uppercase tracking-wider">
+            <span className="truncate">Pending Removal</span>
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           </div>
-          <div className="text-3xl sm:text-4xl font-bold text-rose-700 my-2 font-mono">
+          <div className="text-2xl sm:text-[26px] leading-tight font-bold text-rose-700 my-1 font-mono">
             {cards.removalCount || 0}
           </div>
-          <div className="text-xs text-rose-800 font-medium">
+          <div className="text-[11px] text-rose-800 font-medium truncate">
             {cards.overdueRemovalsCount > 0 ? `${cards.overdueRemovalsCount} overdue removals` : 'All removals scheduled'}
           </div>
         </Link>
       </div>
 
-      {/* Financial Summary Cards */}
+      {/* Row 2: Compact Financial Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* 1. TOTAL AMOUNT */}
         <button
           type="button"
           onClick={() => openFinancialModal('TOTAL_AMOUNT')}
-          className="text-left bg-white p-5 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] hover:shadow-xs transition duration-150 cursor-pointer group flex flex-col justify-between"
+          className="text-left bg-white px-4 py-3.5 sm:px-5 sm:py-4 rounded-xl border border-[#e8decb] hover:border-[#8c5e39] hover:shadow-xs transition duration-150 cursor-pointer group flex flex-col justify-between min-h-[106px]"
           title="Click to view all projects and their total agreed amounts"
         >
-          <div className="flex items-center justify-between text-xs text-[#7d6553] uppercase font-semibold tracking-wider group-hover:text-[#24160c]">
-            <span>TOTAL AMOUNT</span>
+          <div className="flex items-center justify-between text-[11px] text-[#7d6553] uppercase font-semibold tracking-wider group-hover:text-[#24160c]">
+            <span className="truncate">TOTAL AMOUNT</span>
             <ArrowUpRight className="w-4 h-4 text-[#9c826e] group-hover:text-[#8c5e39] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-[#24160c] font-mono my-2 truncate">
+          <div className="text-xl sm:text-2xl leading-tight font-bold text-[#24160c] font-mono my-1 truncate">
             {formatINR(cards.totalProjectAmount || 0, false)}
           </div>
-          <div className="text-xs text-[#8c7360]">
+          <div className="text-[11px] text-[#8c7360] truncate">
             Across all {financialProjects.length} {financialProjects.length === 1 ? 'project' : 'projects'}
           </div>
         </button>
@@ -213,17 +213,17 @@ export default function DashboardOverviewPage() {
         <button
           type="button"
           onClick={() => openFinancialModal('TOTAL_RECEIVED')}
-          className="text-left bg-white p-5 rounded-xl border border-[#e8decb] hover:border-emerald-600 hover:shadow-xs transition duration-150 cursor-pointer group flex flex-col justify-between"
+          className="text-left bg-white px-4 py-3.5 sm:px-5 sm:py-4 rounded-xl border border-[#e8decb] hover:border-emerald-600 hover:shadow-xs transition duration-150 cursor-pointer group flex flex-col justify-between min-h-[106px]"
           title="Click to view projects with payments received"
         >
-          <div className="flex items-center justify-between text-xs text-[#7d6553] uppercase font-semibold tracking-wider group-hover:text-emerald-800">
-            <span>TOTAL AMOUNT RECEIVED</span>
+          <div className="flex items-center justify-between text-[11px] text-[#7d6553] uppercase font-semibold tracking-wider group-hover:text-emerald-800">
+            <span className="truncate">TOTAL AMOUNT RECEIVED</span>
             <ArrowUpRight className="w-4 h-4 text-[#9c826e] group-hover:text-emerald-600 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-emerald-700 font-mono my-2 truncate">
+          <div className="text-xl sm:text-2xl leading-tight font-bold text-emerald-700 font-mono my-1 truncate">
             {formatINR(cards.totalProjectReceived || 0, false)}
           </div>
-          <div className="text-xs text-[#8c7360]">
+          <div className="text-[11px] text-[#8c7360] truncate">
             {financialProjects.filter(p => p.totalPaymentReceived > 0).length} {financialProjects.filter(p => p.totalPaymentReceived > 0).length === 1 ? 'project' : 'projects'} with payments
           </div>
         </button>
@@ -232,27 +232,27 @@ export default function DashboardOverviewPage() {
         <button
           type="button"
           onClick={() => openFinancialModal('TOTAL_OVERDUE')}
-          className="text-left bg-white p-5 rounded-xl border border-[#e8decb] hover:border-amber-600 hover:shadow-xs transition duration-150 cursor-pointer group flex flex-col justify-between"
+          className="text-left bg-white px-4 py-3.5 sm:px-5 sm:py-4 rounded-xl border border-[#e8decb] hover:border-amber-600 hover:shadow-xs transition duration-150 cursor-pointer group flex flex-col justify-between min-h-[106px]"
           title="Click to view projects with outstanding balance"
         >
-          <div className="flex items-center justify-between text-xs text-[#7d6553] uppercase font-semibold tracking-wider group-hover:text-amber-900">
-            <span>TOTAL OVERDUE AMOUNT</span>
+          <div className="flex items-center justify-between text-[11px] text-[#7d6553] uppercase font-semibold tracking-wider group-hover:text-amber-900">
+            <span className="truncate">TOTAL OVERDUE AMOUNT</span>
             <ArrowUpRight className="w-4 h-4 text-[#9c826e] group-hover:text-amber-700 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-amber-800 font-mono my-2 truncate">
+          <div className="text-xl sm:text-2xl leading-tight font-bold text-amber-800 font-mono my-1 truncate">
             {formatINR(cards.totalProjectOverdue || 0, false)}
           </div>
-          <div className="text-xs text-[#8c7360]">
+          <div className="text-[11px] text-[#8c7360] truncate">
             {financialProjects.filter(p => p.balanceAmount > 0).length} {financialProjects.filter(p => p.balanceAmount > 0).length === 1 ? 'project' : 'projects'} with balance due
           </div>
         </button>
       </div>
 
-      {/* Visual Analytics */}
+      {/* Row 3: Visual Analytics (50/50 Compact Charts) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Project Financial Overview Chart */}
-        <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs overflow-hidden">
-          <div className="px-4 py-3 border-b border-[#ebdcc9] bg-[#fdfcf9] flex items-center justify-between">
+        <div className="bg-white rounded-xl border border-[#e8decb] shadow-2xs overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-[#ebdcc9] bg-[#fdfcf9] flex items-center justify-between">
             <div>
               <h2 className="text-xs font-bold text-[#24160c] uppercase tracking-wider">
                 Project Financial Overview
@@ -266,7 +266,7 @@ export default function DashboardOverviewPage() {
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
-          <div className="p-4 h-72">
+          <div className="px-3 py-2.5 h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={[
@@ -274,7 +274,7 @@ export default function DashboardOverviewPage() {
                   { name: 'Total Amount Received', amount: cards.totalProjectReceived || 0, fill: '#047857' },
                   { name: 'Total Overdue Amount', amount: cards.totalProjectOverdue || 0, fill: '#b45309' },
                 ]}
-                margin={{ top: 24, right: 16, left: 8, bottom: 12 }}
+                margin={{ top: 20, right: 12, left: 4, bottom: 4 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f2eadf" vertical={false} />
                 <XAxis
@@ -284,14 +284,14 @@ export default function DashboardOverviewPage() {
                 />
                 <YAxis
                   tick={{ fontSize: 10, fill: '#7d6553' }}
-                  width={68}
+                  width={64}
                   tickFormatter={(val: number) => formatINR(val, false)}
                 />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#ffffff', borderColor: '#d8c8b4', borderRadius: '6px', fontSize: '11px' }}
                   formatter={(val: any) => [formatINR(Number(val) || 0, false), 'Amount']}
                 />
-                <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={72}>
+                <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={64}>
                   <Cell fill="#24160c" />
                   <Cell fill="#047857" />
                   <Cell fill="#b45309" />
@@ -308,8 +308,8 @@ export default function DashboardOverviewPage() {
         </div>
 
         {/* Status Distribution Chart */}
-        <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs overflow-hidden">
-          <div className="px-4 py-3 border-b border-[#ebdcc9] bg-[#fdfcf9] flex items-center justify-between">
+        <div className="bg-white rounded-xl border border-[#e8decb] shadow-2xs overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-[#ebdcc9] bg-[#fdfcf9] flex items-center justify-between">
             <div>
               <h2 className="text-xs font-bold text-[#24160c] uppercase tracking-wider">
                 Projects by Operational Status
@@ -323,11 +323,11 @@ export default function DashboardOverviewPage() {
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
-          <div className="p-4 h-72 flex items-center justify-center">
+          <div className="px-3 py-2.5 h-[240px] flex items-center justify-center">
             {(charts.projectsByStatus || []).length === 0 ? (
-              <div className="text-center p-6 text-slate-400">
-                <FolderKanban className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                <p className="font-medium text-slate-600 text-xs">No active project records</p>
+              <div className="text-center p-4 text-[#9c826e]">
+                <FolderKanban className="w-7 h-7 mx-auto mb-1.5 text-[#c7b39d]" />
+                <p className="font-medium text-[#574830] text-xs">No active project records</p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -337,9 +337,9 @@ export default function DashboardOverviewPage() {
                     dataKey="count"
                     nameKey="name"
                     cx="50%"
-                    cy="45%"
-                    outerRadius={70}
-                    innerRadius={38}
+                    cy="46%"
+                    outerRadius={64}
+                    innerRadius={36}
                     paddingAngle={2}
                   >
                     {(charts.projectsByStatus || []).map((entry: any, index: number) => (
@@ -360,9 +360,9 @@ export default function DashboardOverviewPage() {
         </div>
       </div>
 
-      {/* Critical Expiry & Deadlines Table */}
-      <div className="bg-white rounded-lg border border-[#e8decb] shadow-2xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#ebdcc9] bg-[#fdfcf9] flex items-center justify-between">
+      {/* Row 4: Critical Expiry & Deadlines Table */}
+      <div className="bg-white rounded-xl border border-[#e8decb] shadow-2xs overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-[#ebdcc9] bg-[#fdfcf9] flex items-center justify-between">
           <div>
             <h2 className="text-xs font-bold text-[#24160c] uppercase tracking-wider">
               Critical Deadlines & Buffer Removals
@@ -445,7 +445,7 @@ export default function DashboardOverviewPage() {
             <tbody className="divide-y divide-[#f2eadf]">
               {upcomingDeadlines.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-[#9c826e]">
+                  <td colSpan={7} className="px-4 py-4 text-center text-[#9c826e]">
                     No deadlines requiring attention within 30 days.
                   </td>
                 </tr>
