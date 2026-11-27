@@ -1296,7 +1296,7 @@
       "projectsCount": 0,
       "activeRentalsCount": 0,
       "createdAt": "2026-11-26T19:18:33.568Z",
-      "updatedAt": "2026-11-27T11:58:54.117Z"
+      "updatedAt": "2026-11-27T12:19:04.850Z"
     },
     {
       "id": "cust-1795720713656",
@@ -1315,7 +1315,7 @@
       "projectsCount": 0,
       "activeRentalsCount": 0,
       "createdAt": "2026-11-26T19:18:33.656Z",
-      "updatedAt": "2026-11-27T11:58:54.115Z"
+      "updatedAt": "2026-11-27T12:19:04.847Z"
     },
     {
       "id": "cust-1795720755407",
@@ -3199,6 +3199,47 @@
   ],
   "bufferRequests": [
     {
+      "id": "buf-1795781944838-315",
+      "projectId": "proj-1795781944832",
+      "projectCode": "AW-SCF-000015",
+      "currentRentalEndDate": "2026-12-07",
+      "requestedBufferDays": 2,
+      "proposedRemovalDeadline": "2026-12-09",
+      "bufferEndDate": "2026-12-09",
+      "paymentStatus": "PAID",
+      "totalAgreedPrice": 12000,
+      "paymentReceived": 10000,
+      "balanceAmount": 2000,
+      "reason": "Configured 2-day rental buffer period (Paid) activated",
+      "additionalCharges": 0,
+      "approvalStatus": "APPROVED",
+      "approvedBy": "usr-admin-01",
+      "approverName": "Burhan Malu (Admin)",
+      "approvedAt": "2026-11-27T12:19:04.838Z",
+      "createdBy": "usr-admin-01",
+      "creatorName": "Burhan Malu (Admin)",
+      "createdAt": "2026-11-27T12:19:04.838Z"
+    },
+    {
+      "id": "buf-1795781944835-1",
+      "projectId": "proj-1795781944832",
+      "projectCode": "AW-SCF-000015",
+      "currentRentalEndDate": "2026-12-04",
+      "requestedBufferDays": 3,
+      "proposedRemovalDeadline": "2026-12-07",
+      "bufferEndDate": "2026-12-07",
+      "paymentStatus": "UNPAID",
+      "reason": "Configured 3-day rental buffer period (Unpaid) activated",
+      "additionalCharges": 0,
+      "approvalStatus": "APPROVED",
+      "approvedBy": "usr-admin-01",
+      "approverName": "Burhan Malu (Admin)",
+      "approvedAt": "2026-11-27T12:19:04.835Z",
+      "createdBy": "usr-admin-01",
+      "creatorName": "Burhan Malu (Admin)",
+      "createdAt": "2026-11-27T12:19:04.835Z"
+    },
+    {
       "id": "buf-1795780734104-560",
       "projectId": "proj-1795780734097",
       "projectCode": "AW-SCF-000015",
@@ -3282,6 +3323,56 @@
     }
   ],
   "rentalExtensions": [
+    {
+      "id": "ext-1795781944843-177",
+      "extensionNumber": "EXT-2026-000006",
+      "projectId": "proj-1795781944832",
+      "projectCode": "AW-SCF-000015",
+      "originalRentalEndDate": "2026-12-04",
+      "previousRentalEndDate": "2026-12-24",
+      "newRentalEndDate": "2027-02-24",
+      "durationMonths": 2,
+      "extensionUnit": "MONTHS",
+      "extensionValue": 2,
+      "extensionReason": "Second phase facade",
+      "monthlyRentalRate": 0,
+      "additionalCharges": 4000,
+      "extensionAmount": 4000,
+      "paymentReceived": 1500,
+      "balanceAmount": 2500,
+      "approvalStatus": "APPROVED",
+      "approvedBy": "usr-admin-01",
+      "approverName": "Burhan Malu (Admin)",
+      "approvedAt": "2026-11-27T12:19:04.843Z",
+      "createdBy": "usr-admin-01",
+      "creatorName": "Burhan Malu (Admin)",
+      "createdAt": "2026-11-27T12:19:04.843Z"
+    },
+    {
+      "id": "ext-1795781944841-693",
+      "extensionNumber": "EXT-2026-000005",
+      "projectId": "proj-1795781944832",
+      "projectCode": "AW-SCF-000015",
+      "originalRentalEndDate": "2026-12-04",
+      "previousRentalEndDate": "2026-12-09",
+      "newRentalEndDate": "2026-12-24",
+      "durationMonths": 1,
+      "extensionUnit": "DAYS",
+      "extensionValue": 15,
+      "extensionReason": "Site finishing work",
+      "monthlyRentalRate": 0,
+      "additionalCharges": 3000,
+      "extensionAmount": 3000,
+      "paymentReceived": 3000,
+      "balanceAmount": 0,
+      "approvalStatus": "APPROVED",
+      "approvedBy": "usr-admin-01",
+      "approverName": "Burhan Malu (Admin)",
+      "approvedAt": "2026-11-27T12:19:04.841Z",
+      "createdBy": "usr-admin-01",
+      "creatorName": "Burhan Malu (Admin)",
+      "createdAt": "2026-11-27T12:19:04.841Z"
+    },
     {
       "id": "ext-1795780734112-816",
       "extensionNumber": "EXT-2026-000004",
@@ -3386,6 +3477,90 @@
   "shiftingRequests": [],
   "removalRequests": [],
   "notifications": [
+    {
+      "id": "notif-1795781944843",
+      "roleTarget": "ADMIN",
+      "title": "Rental Extension Approved: AW-SCF-000015",
+      "message": "Project extended by 2 Months until 2027-02-24.",
+      "type": "INFO",
+      "entityType": "RENTAL",
+      "entityId": "proj-1795781944832",
+      "isRead": false,
+      "createdAt": "2026-11-27T12:19:04.843Z"
+    },
+    {
+      "id": "notif-1795781944841",
+      "roleTarget": "ADMIN",
+      "title": "Rental Extension Approved: AW-SCF-000015",
+      "message": "Project extended by 15 Days until 2026-12-24.",
+      "type": "INFO",
+      "entityType": "RENTAL",
+      "entityId": "proj-1795781944832",
+      "isRead": false,
+      "createdAt": "2026-11-27T12:19:04.841Z"
+    },
+    {
+      "id": "notif-1795781944838",
+      "roleTarget": "SUPERVISOR",
+      "title": "Buffer Period Active: AW-SCF-000015",
+      "message": "2 buffer day(s) (PAID) applied. Updated removal deadline: 2026-12-09.",
+      "type": "WARNING",
+      "entityType": "RENTAL",
+      "entityId": "proj-1795781944832",
+      "isRead": false,
+      "createdAt": "2026-11-27T12:19:04.838Z"
+    },
+    {
+      "id": "notif-1795781944835",
+      "roleTarget": "SUPERVISOR",
+      "title": "Buffer Period Active: AW-SCF-000015",
+      "message": "3 buffer day(s) (UNPAID) applied. Updated removal deadline: 2026-12-07.",
+      "type": "WARNING",
+      "entityType": "RENTAL",
+      "entityId": "proj-1795781944832",
+      "isRead": false,
+      "createdAt": "2026-11-27T12:19:04.835Z"
+    },
+    {
+      "id": "notif-exp-1795781944832-798",
+      "roleTarget": "ADMIN",
+      "title": "Rental Expiry Reminder",
+      "message": "Attention! Project AW-SCF-000015 – Sync Rental Test Co has only 7 days remaining in its rental period.",
+      "type": "WARNING",
+      "entityType": "PROJECT",
+      "entityId": "proj-1795781944832",
+      "projectCode": "AW-SCF-000015",
+      "customerName": "Sync Rental Test Co",
+      "siteAddress": "Indore MP",
+      "installationDate": "2026-11-04",
+      "removalDate": "2026-12-04",
+      "remainingDays": 7,
+      "reminderMilestone": "7_DAYS",
+      "supervisorName": "Mustafa Alokhandwala (Supervisor)",
+      "notificationDate": "2026-11-27",
+      "isRead": false,
+      "createdAt": "2026-11-27T12:19:04.832Z"
+    },
+    {
+      "id": "notif-exp-1795781944818-813",
+      "roleTarget": "ADMIN",
+      "title": "Rental Period Overdue",
+      "message": "Project AW-SCF-000014 – Vikram Builders has exceeded its rental period. Please review the removal date.",
+      "type": "URGENT",
+      "entityType": "PROJECT",
+      "entityId": "proj-1795781944751",
+      "projectCode": "AW-SCF-000014",
+      "customerName": "Vikram Builders",
+      "siteAddress": "45 AB Road, Vijay Nagar, Indore",
+      "installationDate": "2026-08-06",
+      "removalDate": "2026-10-21",
+      "remainingDays": -37,
+      "reminderMilestone": "OVERDUE",
+      "supervisorName": "Mustafa Alokhandwala (Supervisor)",
+      "notificationDate": "2026-11-27",
+      "isRead": false,
+      "createdAt": "2026-11-27T12:19:04.818Z"
+    },
     {
       "id": "notif-1795780734112",
       "roleTarget": "ADMIN",
@@ -3819,6 +3994,168 @@
     }
   ],
   "auditLogs": [
+    {
+      "id": "aud-1795781944850",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "PROJECT_DELETED",
+      "entityTable": "projects",
+      "entityId": "proj-1795781944751",
+      "oldState": {
+        "projectCode": "AW-SCF-000014",
+        "customerName": "Vikram Builders",
+        "status": "ACTIVE_RENTAL"
+      },
+      "createdAt": "2026-11-27T12:19:04.850Z"
+    },
+    {
+      "id": "aud-1795781944847",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "PROJECT_DELETED",
+      "entityTable": "projects",
+      "entityId": "proj-1795781944832",
+      "oldState": {
+        "projectCode": "AW-SCF-000015",
+        "customerName": "Sync Rental Test Co",
+        "status": "EXTENDED"
+      },
+      "createdAt": "2026-11-27T12:19:04.847Z"
+    },
+    {
+      "id": "aud-1795781944843",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "RENTAL_EXTENDED",
+      "entityTable": "projects",
+      "entityId": "proj-1795781944832",
+      "oldState": {
+        "removalDate": "2026-12-24",
+        "status": "EXTENDED",
+        "totalAmount": 15000,
+        "paymentReceived": 13000
+      },
+      "newState": {
+        "removalDate": "2027-02-24",
+        "addedValue": 2,
+        "addedUnit": "MONTHS",
+        "extensionAmount": 4000,
+        "extPaymentReceived": 1500,
+        "totalAmount": 19000,
+        "paymentReceived": 14500,
+        "balanceAmount": 4500,
+        "status": "EXTENDED"
+      },
+      "createdAt": "2026-11-27T12:19:04.843Z"
+    },
+    {
+      "id": "aud-1795781944841",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "RENTAL_EXTENDED",
+      "entityTable": "projects",
+      "entityId": "proj-1795781944832",
+      "oldState": {
+        "removalDate": "2026-12-09",
+        "status": "BUFFER_PERIOD",
+        "totalAmount": 12000,
+        "paymentReceived": 10000
+      },
+      "newState": {
+        "removalDate": "2026-12-24",
+        "addedValue": 15,
+        "addedUnit": "DAYS",
+        "extensionAmount": 3000,
+        "extPaymentReceived": 3000,
+        "totalAmount": 15000,
+        "paymentReceived": 13000,
+        "balanceAmount": 2000,
+        "status": "EXTENDED"
+      },
+      "createdAt": "2026-11-27T12:19:04.841Z"
+    },
+    {
+      "id": "aud-1795781944838",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "BUFFER_PERIOD_ACTIVATED",
+      "entityTable": "projects",
+      "entityId": "proj-1795781944832",
+      "oldState": {
+        "removalDate": "2026-12-07",
+        "status": "BUFFER_PERIOD"
+      },
+      "newState": {
+        "removalDate": "2026-12-09",
+        "bufferEndDate": "2026-12-09",
+        "bufferDays": 2,
+        "paymentStatus": "PAID",
+        "totalAmount": 12000,
+        "paymentReceived": 10000,
+        "balanceAmount": 2000,
+        "status": "BUFFER_PERIOD"
+      },
+      "createdAt": "2026-11-27T12:19:04.838Z"
+    },
+    {
+      "id": "aud-1795781944835",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "BUFFER_PERIOD_ACTIVATED",
+      "entityTable": "projects",
+      "entityId": "proj-1795781944832",
+      "oldState": {
+        "removalDate": "2026-12-04",
+        "status": "ACTIVE_RENTAL"
+      },
+      "newState": {
+        "removalDate": "2026-12-07",
+        "bufferEndDate": "2026-12-07",
+        "bufferDays": 3,
+        "paymentStatus": "UNPAID",
+        "totalAmount": 10000,
+        "paymentReceived": 2000,
+        "balanceAmount": 8000,
+        "status": "BUFFER_PERIOD"
+      },
+      "createdAt": "2026-11-27T12:19:04.835Z"
+    },
+    {
+      "id": "aud-1795781944833",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "PROJECT_CREATED",
+      "entityTable": "projects",
+      "entityId": "proj-1795781944832",
+      "newState": {
+        "projectCode": "AW-SCF-000015",
+        "customerName": "Sync Rental Test Co",
+        "siteName": "Sync Site 1",
+        "status": "ACTIVE_RENTAL",
+        "totalAmount": 10000,
+        "paymentReceived": 2000,
+        "balanceAmount": 8000
+      },
+      "createdAt": "2026-11-27T12:19:04.832Z"
+    },
+    {
+      "id": "aud-1795781944827",
+      "actorId": "usr-admin-01",
+      "actorEmail": "Burhan Malu (Admin)",
+      "action": "PROJECT_CREATED",
+      "entityTable": "projects",
+      "entityId": "proj-1795781944751",
+      "newState": {
+        "projectCode": "AW-SCF-000014",
+        "customerName": "Vikram Builders",
+        "siteName": "Emerald Plaza Wing B",
+        "status": "ACTIVE_RENTAL",
+        "totalAmount": 50000,
+        "paymentReceived": 35000,
+        "balanceAmount": 15000
+      },
+      "createdAt": "2026-11-27T12:19:04.750Z"
+    },
     {
       "id": "aud-1795780734117",
       "actorId": "usr-admin-01",
@@ -6772,6 +7109,66 @@
   ],
   "activityEvents": [
     {
+      "id": "act-1795781944843",
+      "projectId": "proj-1795781944832",
+      "eventType": "RENTAL_EXTENDED",
+      "eventTitle": "Rental Extended by 2 Months",
+      "eventDescription": "Effective removal date updated from 2026-12-24 to 2027-02-24 (Original: 2026-12-04). Extension Charge: ₹4,000, Payment Received: ₹1,500. Reason: Second phase facade",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu (Admin)",
+      "createdAt": "2026-11-27T12:19:04.843Z"
+    },
+    {
+      "id": "act-1795781944841",
+      "projectId": "proj-1795781944832",
+      "eventType": "RENTAL_EXTENDED",
+      "eventTitle": "Rental Extended by 15 Days",
+      "eventDescription": "Effective removal date updated from 2026-12-09 to 2026-12-24 (Original: 2026-12-04). Extension Charge: ₹3,000, Payment Received: ₹3,000. Reason: Site finishing work",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu (Admin)",
+      "createdAt": "2026-11-27T12:19:04.841Z"
+    },
+    {
+      "id": "act-1795781944838",
+      "projectId": "proj-1795781944832",
+      "eventType": "BUFFER_APPROVED",
+      "eventTitle": "Buffer Period Active (+2 Days · Paid)",
+      "eventDescription": "Removal date updated from 2026-12-07 to 2026-12-09 (Original: 2026-12-04). Payment Status: PAID. Reason: Configured 2-day rental buffer period (Paid) activated",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu (Admin)",
+      "createdAt": "2026-11-27T12:19:04.838Z"
+    },
+    {
+      "id": "act-1795781944835",
+      "projectId": "proj-1795781944832",
+      "eventType": "BUFFER_APPROVED",
+      "eventTitle": "Buffer Period Active (+3 Days · Unpaid)",
+      "eventDescription": "Removal date updated from 2026-12-04 to 2026-12-07 (Original: 2026-12-04). Payment Status: UNPAID. Reason: Configured 3-day rental buffer period (Unpaid) activated",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu (Admin)",
+      "createdAt": "2026-11-27T12:19:04.835Z"
+    },
+    {
+      "id": "act-1795781944832",
+      "projectId": "proj-1795781944832",
+      "eventType": "PROJECT_CREATED",
+      "eventTitle": "Project Created",
+      "eventDescription": "Project AW-SCF-000015 created for Sync Rental Test Co (Sync Site 1) with Total ₹10,000 and Balance ₹8,000.",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu (Admin)",
+      "createdAt": "2026-11-27T12:19:04.832Z"
+    },
+    {
+      "id": "act-1795781944818",
+      "projectId": "proj-1795781944751",
+      "eventType": "PROJECT_CREATED",
+      "eventTitle": "Project Created",
+      "eventDescription": "Project AW-SCF-000014 created for Vikram Builders (Emerald Plaza Wing B) with Total ₹50,000 and Balance ₹15,000.",
+      "actorId": "usr-admin-01",
+      "actorName": "Burhan Malu (Admin)",
+      "createdAt": "2026-11-27T12:19:04.750Z"
+    },
+    {
       "id": "act-1795780734112",
       "projectId": "proj-1795780734097",
       "eventType": "RENTAL_EXTENDED",
@@ -8258,6 +8655,32 @@
     }
   ],
   "rentalExpiryReminders": [
+    {
+      "id": "rem-exp-1795781944832-866",
+      "projectId": "proj-1795781944832",
+      "projectCode": "AW-SCF-000015",
+      "removalDate": "2026-12-04",
+      "milestone": "7_DAYS",
+      "remainingDays": 7,
+      "status": "CANCELLED",
+      "notificationId": "notif-exp-1795781944832-798",
+      "sentAt": "2026-11-27T12:19:04.832Z",
+      "createdAt": "2026-11-27T12:19:04.832Z",
+      "updatedAt": "2026-11-27T12:19:04.835Z"
+    },
+    {
+      "id": "rem-exp-1795781944818-497",
+      "projectId": "proj-1795781944751",
+      "projectCode": "AW-SCF-000014",
+      "removalDate": "2026-10-21",
+      "milestone": "OVERDUE",
+      "remainingDays": -37,
+      "status": "SENT",
+      "notificationId": "notif-exp-1795781944818-813",
+      "sentAt": "2026-11-27T12:19:04.818Z",
+      "createdAt": "2026-11-27T12:19:04.818Z",
+      "updatedAt": "2026-11-27T12:19:04.818Z"
+    },
     {
       "id": "rem-exp-1795780734098-899",
       "projectId": "proj-1795780734097",

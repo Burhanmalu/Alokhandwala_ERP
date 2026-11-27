@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
-import { getEffectiveRemovalDate, getRemainingDaysInfo, isEligibleActiveProjectStatus } from '@/lib/formatters';
+import { getEffectiveRemovalDate, getRemainingDaysInfo, isReceivableEligibleProjectStatus } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,10 +52,10 @@ export async function GET(req: NextRequest) {
     const missingQty = materials.reduce((sum, m) => sum + m.missingQty, 0);
     const lowStockCount = materials.filter(m => (m.usableWarehouseQty - m.reservedQty) <= m.minimumStockThreshold).length;
 
-    // Financial metrics (Single Source of Truth from eligible active project financial records)
-    // Exclude Not Installed, Pending Approval, and Quotation Accepted projects
+    // Financial metrics (Single Source of Truth from receivable-eligible project statuses)
+    // Only include Confirmed, Scheduled, Active Rental / Installed, and Removal Pending projects
     const financialProjects = projects
-      .filter((p) => isEligibleActiveProjectStatus(p.status))
+      .filter((p) => isReceivableEligibleProjectStatus(p.status))
       .map((p) => {
       const totalAgreedPrice = Math.round(Number(p.totalAmount ?? p.agreedProjectPrice ?? p.quotationAmount ?? 0) * 100) / 100;
       const totalPaymentReceived = Math.round(Number(p.paymentReceived ?? p.advancePaidAmount ?? 0) * 100) / 100;

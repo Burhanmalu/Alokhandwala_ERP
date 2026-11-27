@@ -6,6 +6,7 @@ import { Project, BufferRequest, RentalExtension, RentalHistoryEntry } from '../
 import {
   calculateExtendedRemovalDate,
   calculateRentalDurationBreakdown,
+  computeCustomerStatsFromProjects,
   getEffectiveRemovalDate,
   getProjectInstallDateStr,
   toDateOnlyString,
@@ -129,11 +130,9 @@ export class RentalService {
 
         const customer = state.customers.find(c => c.id === project.customerId);
         if (customer) {
-          const balanceDelta = nextBalance - currentBalance;
-          customer.outstandingBalance = Math.max(
-            0,
-            Math.round(((customer.outstandingBalance || 0) + balanceDelta) * 100) / 100
-          );
+          const stats = computeCustomerStatsFromProjects(customer.id, state.projects);
+          customer.outstandingBalance = stats.outstandingBalance;
+          customer.activeRentalsCount = stats.activeRentalsCount;
           customer.updatedAt = now;
         }
       }
@@ -375,11 +374,9 @@ export class RentalService {
 
       const customer = state.customers.find(c => c.id === project.customerId);
       if (customer) {
-        const balanceDelta = nextBalance - prevBalance;
-        customer.outstandingBalance = Math.max(
-          0,
-          Math.round(((customer.outstandingBalance || 0) + balanceDelta) * 100) / 100
-        );
+        const stats = computeCustomerStatsFromProjects(customer.id, state.projects);
+        customer.outstandingBalance = stats.outstandingBalance;
+        customer.activeRentalsCount = stats.activeRentalsCount;
         customer.updatedAt = now;
       }
 

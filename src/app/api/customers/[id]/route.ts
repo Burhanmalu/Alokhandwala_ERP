@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
 import { Customer } from '@/lib/schema';
+import { computeCustomerStatsFromProjects } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,8 @@ export async function GET(
     if (!customer) {
       return NextResponse.json({ success: false, error: 'Customer not found' }, { status: 404 });
     }
-    return NextResponse.json({ success: true, data: customer });
+    const stats = computeCustomerStatsFromProjects(customer.id, dbStore.getProjects());
+    return NextResponse.json({ success: true, data: { ...customer, ...stats } });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

@@ -272,7 +272,11 @@ export class ProjectService {
       };
 
       state.projects.unshift(newProject);
-      customer.projectsCount = (customer.projectsCount || 0) + 1;
+      const stats = computeCustomerStatsFromProjects(customer.id, state.projects);
+      customer.sitesCount = stats.sitesCount;
+      customer.projectsCount = stats.projectsCount;
+      customer.activeRentalsCount = stats.activeRentalsCount;
+      customer.outstandingBalance = stats.outstandingBalance;
       ReminderService.syncProjectReminderInState(state, newProject);
       ReminderService.syncProjectRentalExpiryInState(state, newProject);
 
@@ -616,7 +620,7 @@ export class ProjectService {
           state: 'Madhya Pradesh',
           status: 'ACTIVE',
           creditLimit: 500000,
-          outstandingBalance: balanceAmount,
+          outstandingBalance: 0,
           sitesCount: 0,
           projectsCount: 0,
           activeRentalsCount: 0,
@@ -627,7 +631,6 @@ export class ProjectService {
       } else {
         if (data.customerPhone && !customer.phone) customer.phone = data.customerPhone.trim();
         if (data.customerEmail && !customer.email) customer.email = data.customerEmail.trim();
-        customer.outstandingBalance = Math.round(((customer.outstandingBalance || 0) + balanceAmount) * 100) / 100;
         customer.updatedAt = now;
       }
 
@@ -773,7 +776,11 @@ export class ProjectService {
       };
 
       state.projects.unshift(newProject);
-      customer.projectsCount = (customer.projectsCount || 0) + 1;
+      const stats = computeCustomerStatsFromProjects(customer.id, state.projects);
+      customer.sitesCount = stats.sitesCount;
+      customer.projectsCount = stats.projectsCount;
+      customer.activeRentalsCount = stats.activeRentalsCount;
+      customer.outstandingBalance = stats.outstandingBalance;
       ReminderService.syncProjectReminderInState(state, newProject);
       ReminderService.syncProjectRentalExpiryInState(state, newProject);
 

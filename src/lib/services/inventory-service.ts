@@ -9,6 +9,7 @@ import {
   RemovalRequest
 } from '../schema';
 import { ProjectService } from './project-service';
+import { computeCustomerStatsFromProjects } from '../formatters';
 import { OFFICIAL_TERMS_AND_CONDITIONS, DEFAULT_PAYMENT_TERMS_TEXT } from '../constants/terms-and-conditions';
 import { verifyProjectChallanReconciliation } from '../formatters';
 
@@ -848,11 +849,9 @@ export class InventoryService {
 
         const customer = state.customers.find(c => c.id === project.customerId);
         if (customer) {
-          const balanceDelta = nextBalance - prevBalance;
-          customer.outstandingBalance = Math.max(
-            0,
-            Math.round(((customer.outstandingBalance || 0) + balanceDelta) * 100) / 100
-          );
+          const stats = computeCustomerStatsFromProjects(customer.id, state.projects);
+          customer.outstandingBalance = stats.outstandingBalance;
+          customer.activeRentalsCount = stats.activeRentalsCount;
           customer.updatedAt = now;
         }
       }

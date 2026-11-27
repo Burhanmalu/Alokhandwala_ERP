@@ -24,10 +24,45 @@ const CUSTOMER_ACTIVE_RENTAL_STATUSES = new Set([
   'REMOVAL_PENDING',
 ]);
 
+export const RECEIVABLE_ELIGIBLE_PROJECT_STATUSES = new Set<string>([
+  'CONFIRMED_PROJECT',
+  'SCHEDULED',
+  'INSTALLED',
+  'ACTIVE_RENTAL',
+  'BUFFER_PERIOD',
+  'EXTENSION_REQUESTED',
+  'EXTENDED',
+  'SHIFTING_PENDING',
+  'SHIFTING_IN_PROGRESS',
+  'REMOVAL_PENDING',
+]);
+
+export function isReceivableEligibleProjectStatus(status?: string | null): boolean {
+  if (!status) return false;
+  return RECEIVABLE_ELIGIBLE_PROJECT_STATUSES.has(status);
+}
+
+export function getProjectOutstandingBalance(project: {
+  totalAmount?: number;
+  agreedProjectPrice?: number;
+  quotationAmount?: number;
+  paymentReceived?: number;
+  advancePaidAmount?: number;
+}): number {
+  const total = Number(project.totalAmount ?? project.agreedProjectPrice ?? project.quotationAmount ?? 0);
+  const received = Number(project.paymentReceived ?? project.advancePaidAmount ?? 0);
+  return Math.max(0, Math.round((total - received) * 100) / 100);
+}
+
 export function computeCustomerStatsFromProjects(customerId: string, projects: any[]) {
-  const validProjects = (projects || []).filter(
-    (p) => p.customerId === customerId && p.status !== 'CANCELLED'
-  );
+  const seenProjectIds = new Set<string>();
+  const validProjects: any[] = [];
+  for (const p of projects || []) {
+    if (!p || p.customerId !== customerId || p.status === 'CANCELLED') continue;
+    if (p.id && seenProjectIds.has(p.id)) continue;
+    if (p.id) seenProjectIds.add(p.id);
+    validProjects.push(p);
+  }
 
   const siteKeys = new Set<string>();
   let activeRentalsCount = 0;
@@ -41,10 +76,10 @@ export function computeCustomerStatsFromProjects(customerId: string, projects: a
       activeRentalsCount++;
     }
 
-    const total = Number(p.totalAmount ?? p.agreedProjectPrice ?? p.quotationAmount ?? 0);
-    const received = Number(p.paymentReceived ?? p.advancePaidAmount ?? 0);
-    const bal = Math.max(0, Math.round((total - received) * 100) / 100);
-    outstandingBalance = Math.round((outstandingBalance + bal) * 100) / 100;
+    if (isReceivableEligibleProjectStatus(p.status)) {
+      const bal = getProjectOutstandingBalance(p);
+      outstandingBalance = Math.round((outstandingBalance + bal) * 100) / 100;
+    }
   }
 
   return {
