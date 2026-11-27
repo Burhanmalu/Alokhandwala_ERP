@@ -389,7 +389,9 @@ class ERPDataStore {
       const client = await pool.connect();
 
       try {
-        await client.query('BEGIN');
+        await client.query(
+          "BEGIN; SET LOCAL lock_timeout = '8000ms'; SET LOCAL idle_in_transaction_session_timeout = '10000ms';"
+        );
         const locked = await client.query(
           "SELECT payload FROM erp_state_sync WHERE key = 'latest_state' FOR UPDATE"
         );
