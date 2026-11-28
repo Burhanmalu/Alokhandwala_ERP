@@ -276,6 +276,12 @@ function ProjectsListContent() {
     const statusFromUrl = searchParams.get('status');
     if (statusFromUrl) setCurrentTab(statusFromUrl);
 
+    const searchFromUrl = searchParams.get('search');
+    if (searchFromUrl !== null) {
+      setSearchQuery(searchFromUrl);
+      setActiveCurrentPage(1);
+    }
+
     // Deep link redirect for Projects Lifecycle -> Project Confirmation & Material Reservation
     const section = searchParams.get('section') || searchParams.get('tab') || searchParams.get('action');
     const targetProjId = searchParams.get('projectId');

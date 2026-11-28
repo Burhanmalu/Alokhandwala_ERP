@@ -143,52 +143,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
-    const trimmedEmail = email.trim().toLowerCase();
-    
-    // Always query database first so updated roles and passwords are never stale
-    let liveUsers: UserProfile[] = [];
-    try {
-      const res = await fetch('/api/users', { 
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
-      });
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-        liveUsers = json.data;
-        setAvailableUsers(liveUsers);
-      }
-    } catch (e) {
-      console.warn('[Auth] Database fetch failed on login, checking in-memory state', e);
-    }
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+      cache: 'no-store',
+      body: JSON.stringify({ email: email.trim(), password: password || '' }),
+    });
 
-    // Match in live database users first; fall back to availableUsers then seed-data only if offline
-    const user = liveUsers.find(u => u.email.toLowerCase() === trimmedEmail)
-      || availableUsers.find(u => u.email.toLowerCase() === trimmedEmail)
-      || initialUsers.find(u => u.email.toLowerCase() === trimmedEmail);
-
-    if (!user) {
-      return { 
-        success: false, 
-        error: 'Invalid email address. Please use your authorized ALOKHANDWALA corporate email.' 
-      };
-    }
-
-    if (!user.isActive) {
-      return { 
-        success: false, 
-        error: 'This account has been deactivated. Please contact your Super Administrator.' 
-      };
-    }
-
-    // Verify password if set on account
-    if (user.password && password && user.password !== password) {
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success || !json?.data) {
       return {
         success: false,
-        error: 'Incorrect password. Please verify your credentials.',
+        error: json?.error || 'Authentication failed. Please verify your credentials.',
       };
     }
 
-    // Set authenticated state and synchronize to session storage (cleared when tab/browser closes)
+    const user: UserProfile = json.data;
     setCurrentUser(user);
     setIsAuthenticated(true);
     sessionStorage.setItem('alokhandwala_logged_in', 'true');

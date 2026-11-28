@@ -552,21 +552,28 @@ export default function CustomersPage() {
           </div>
         </div>
 
-        <div className="bg-white border border-[#e8decb] rounded-lg p-3.5 shadow-2xs hover:border-[#c79e7c] transition-colors">
+        <Link
+          href="/customers/receivables"
+          className="block bg-white border border-[#e8decb] rounded-lg p-3.5 shadow-2xs hover:border-[#8c5e39] hover:bg-[#fcfaf6] transition-all cursor-pointer group"
+          title="View Outstanding & Overdue Projects"
+        >
           <div className="flex items-center justify-between text-xs text-[#7d6553] mb-1">
-            <span className="font-medium text-[11px] uppercase tracking-wider">Total Receivables</span>
-            <div className="w-6 h-6 rounded-md bg-[#faf6ee] border border-[#ebdcc9] flex items-center justify-center text-[#8c5e39]">
+            <span className="font-medium text-[11px] uppercase tracking-wider group-hover:text-[#59371d]">Total Receivables</span>
+            <div className="w-6 h-6 rounded-md bg-[#faf6ee] border border-[#ebdcc9] flex items-center justify-center text-[#8c5e39] group-hover:bg-[#24150c] group-hover:text-[#c79e7c] transition-colors">
               <ReceiptIndianRupee className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className={`text-xl font-bold font-mono mt-0.5 ${totalOutstanding > 0 ? 'text-amber-800' : 'text-[#24160c]'}`}>
             {formatINR(totalOutstanding).replace(/\.00$/, '')}
           </div>
-          <div className="text-[11px] text-[#9c826e] mt-1 flex items-center gap-1.5">
-            <span className={`w-1.5 h-1.5 rounded-full ${totalOutstanding > 0 ? 'bg-amber-600' : 'bg-emerald-600'}`}></span>
-            <span>{totalOutstanding > 0 ? 'Pending ledger dues' : 'All accounts fully settled'}</span>
+          <div className="text-[11px] text-[#9c826e] mt-1 flex items-center justify-between gap-1.5">
+            <span className="flex items-center gap-1.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${totalOutstanding > 0 ? 'bg-amber-600' : 'bg-emerald-600'}`}></span>
+              <span>{totalOutstanding > 0 ? 'Pending ledger dues' : 'All accounts fully settled'}</span>
+            </span>
+            <span className="text-[10px] font-semibold text-[#8c5e39] group-hover:underline">View Projects →</span>
           </div>
-        </div>
+        </Link>
 
         <div className="bg-white border border-[#e8decb] rounded-lg p-3.5 shadow-2xs hover:border-[#c79e7c] transition-colors">
           <div className="flex items-center justify-between text-xs text-[#7d6553] mb-1">
@@ -846,14 +853,18 @@ export default function CustomersPage() {
 
                   {/* Financial & Action Buttons */}
                   <div className="flex items-center justify-between pt-0.5">
-                    <div>
+                    <Link
+                      href={`/customers/receivables?customerId=${c.id}`}
+                      className="block group"
+                      title="View Outstanding Projects for this customer"
+                    >
                       <div className="text-[10px] text-[#7d6553] uppercase tracking-wider font-mono font-semibold">
                         Outstanding Dues
                       </div>
-                      <div className={`font-mono font-bold text-xs ${hasOutstanding ? 'text-amber-800' : 'text-[#24160c]'}`}>
+                      <div className={`font-mono font-bold text-xs group-hover:underline ${hasOutstanding ? 'text-amber-800' : 'text-[#24160c]'}`}>
                         {formatINR(c.outstandingBalance || 0).replace(/\.00$/, '')}
                       </div>
-                    </div>
+                    </Link>
 
                     <div className="flex items-center gap-1.5">
                       <button
@@ -957,7 +968,13 @@ export default function CustomersPage() {
                       </td>
 
                       <td className={`px-4 py-2.5 text-right font-mono font-bold ${hasOutstanding ? 'text-amber-800' : 'text-[#24160c]'}`}>
-                        {formatINR(c.outstandingBalance || 0).replace(/\.00$/, '')}
+                        <Link
+                          href={`/customers/receivables?customerId=${c.id}`}
+                          className="hover:underline"
+                          title="View Outstanding Projects for this customer"
+                        >
+                          {formatINR(c.outstandingBalance || 0).replace(/\.00$/, '')}
+                        </Link>
                       </td>
 
                       <td className="px-4 py-2.5 text-center">

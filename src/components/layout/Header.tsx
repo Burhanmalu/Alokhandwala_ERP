@@ -20,7 +20,10 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
   useEffect(() => {
     const loadUnread = () => {
-      fetch('/api/notifications')
+      const params = new URLSearchParams();
+      if (currentUser?.role) params.set('role', currentUser.role);
+      if (currentUser?.id) params.set('userId', currentUser.id);
+      fetch(`/api/notifications?${params.toString()}`, { cache: 'no-store' })
         .then((r) => r.json())
         .then((json) => {
           if (json.success) {
@@ -40,7 +43,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
       clearInterval(timer);
       window.removeEventListener('notifications-updated', loadUnread);
     };
-  }, []);
+  }, [currentUser?.role, currentUser?.id]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

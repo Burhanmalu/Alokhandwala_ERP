@@ -9,6 +9,7 @@ import {
   RemovalRequest
 } from '../schema';
 import { ProjectService } from './project-service';
+import { ReminderService } from './reminder-service';
 import { computeCustomerStatsFromProjects } from '../formatters';
 import { OFFICIAL_TERMS_AND_CONDITIONS, DEFAULT_PAYMENT_TERMS_TEXT } from '../constants/terms-and-conditions';
 import { verifyProjectChallanReconciliation } from '../formatters';
@@ -900,6 +901,9 @@ export class InventoryService {
         project.closureDate = now;
       }
       project.updatedAt = now;
+
+      ReminderService.syncProjectRentalExpiryInState(state, project);
+      ReminderService.syncProjectPaymentReminderInState(state, project);
 
       // Timeline event
       state.activityEvents.unshift({

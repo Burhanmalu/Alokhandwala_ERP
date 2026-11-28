@@ -819,7 +819,7 @@ export interface Notification {
   installationDate?: string;
   removalDate?: string;
   remainingDays?: number;
-  reminderMilestone?: '7_DAYS' | '3_DAYS' | '1_DAY' | '0_DAYS' | 'OVERDUE';
+  reminderMilestone?: RentalExpiryMilestone;
   supervisorName?: string;
   notificationDate?: string;
   scheduledTime?: string;
@@ -827,7 +827,16 @@ export interface Notification {
   createdAt: string;
 }
 
-export type RentalExpiryMilestone = '7_DAYS' | '3_DAYS' | '1_DAY' | '0_DAYS' | 'OVERDUE';
+export type RentalExpiryMilestone =
+  | '7_DAYS'
+  | '6_DAYS'
+  | '5_DAYS'
+  | '4_DAYS'
+  | '3_DAYS'
+  | '2_DAYS'
+  | '1_DAY'
+  | '0_DAYS'
+  | 'OVERDUE';
 
 export interface RentalExpiryReminderRecord {
   id: string;

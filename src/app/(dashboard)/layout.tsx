@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
+import { NotificationPopupHost } from '@/components/layout/NotificationPopupHost';
 import { useAuth } from '@/lib/auth/auth-context';
 
 export default function DashboardLayout({
@@ -71,6 +72,7 @@ export default function DashboardLayout({
           </div>
         </main>
       </div>
+      <NotificationPopupHost />
     </div>
   );
 }

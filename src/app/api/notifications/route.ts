@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     await dbStore.ensureSynced();
     await ReminderService.processDueInstallationReminders();
     await ReminderService.processDueRentalExpiryReminders();
+    await ReminderService.processDuePaymentReminders();
 
     const { searchParams } = new URL(req.url);
     const role = searchParams.get('role');

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
+import { hashPassword, sanitizeUser } from '@/lib/auth/password';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: users,
+      data: users.map(sanitizeUser),
     }, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -44,12 +45,12 @@ export async function POST(req: NextRequest) {
         fullName: body.fullName,
         phone: body.phone,
         role: body.role || 'SUPERVISOR',
-        password: body.password || '',
+        password: body.password ? hashPassword(body.password) : '',
         isActive: true,
         createdAt: new Date().toISOString(),
       };
       state.users.push(user);
-      return { ...user };
+      return sanitizeUser(user);
     });
 
     return NextResponse.json({
@@ -85,9 +86,9 @@ export async function PATCH(req: NextRequest) {
       if (fullName !== undefined) user.fullName = fullName;
       if (email !== undefined) user.email = email;
       if (phone !== undefined) user.phone = phone;
-      if (password !== undefined) user.password = password;
+      if (password !== undefined && password !== '') user.password = hashPassword(password);
       if (isActive !== undefined) user.isActive = isActive;
-      return { ...user };
+      return sanitizeUser(user);
     });
 
     return NextResponse.json({

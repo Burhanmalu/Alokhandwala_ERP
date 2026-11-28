@@ -7,7 +7,14 @@ import {
   Project,
   RentalExpiryMilestone,
 } from '../schema';
-import { formatDate, getEffectiveRemovalDate, getProjectInstallDateStr, toDateOnlyString } from '../formatters';
+import {
+  formatDate,
+  formatINR,
+  getEffectiveRemovalDate,
+  getProjectInstallDateStr,
+  getProjectOutstandingBalance,
+  toDateOnlyString,
+} from '../formatters';
 
 const ACTIVE_RENTAL_EXPIRY_STATUSES = new Set([
   'INSTALLED',
@@ -178,8 +185,8 @@ export class ReminderService {
         }
 
         const isDue =
-          todayIst > rem.notificationDate ||
-          (todayIst === rem.notificationDate && hourIst >= 13);
+          todayIst >= rem.notificationDate &&
+          todayIst <= rem.installationDate;
 
         if (!isDue) continue;
 
@@ -194,7 +201,6 @@ export class ReminderService {
 
         if (!alreadyNotified) {
           const notifId = `notif-inst-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-          const formattedInstallDate = formatDate(rem.installationDate);
           const supervisor = project.supervisorName || rem.supervisorName;
           const siteAddr = project.siteAddress || rem.siteAddress || project.siteName;
 
@@ -202,7 +208,7 @@ export class ReminderService {
             id: notifId,
             roleTarget: 'ADMIN',
             title: 'Installation Reminder',
-            message: `Reminder: Installation for Project ${project.projectCode} – ${project.customerName} is scheduled for tomorrow, ${formattedInstallDate}.`,
+            message: `Installation Reminder: Project ${project.projectCode} is scheduled for installation tomorrow.`,
             type: 'INFO',
             entityType: 'PROJECT',
             entityId: project.id,
@@ -241,6 +247,7 @@ export class ReminderService {
           this.syncProjectReminderInState(state, project, now);
         }
         this.syncProjectRentalExpiryInState(state, project, now);
+        this.syncProjectPaymentReminderInState(state, project, now);
       }
     });
     await this.processDueInstallationReminders(now);
@@ -274,8 +281,7 @@ export class ReminderService {
     if (remainingDays < 0) return 'OVERDUE';
     if (remainingDays === 0) return '0_DAYS';
     if (remainingDays === 1) return '1_DAY';
-    if (remainingDays <= 3) return '3_DAYS';
-    return '7_DAYS';
+    return `${remainingDays}_DAYS` as RentalExpiryMilestone;
   }
 
   /**
@@ -311,13 +317,14 @@ export class ReminderService {
       return 0;
     }
 
+    const todayIst = this.getIstParts(now).dateStr;
     const remainingDays = this.getRemainingDaysIst(effectiveRemoval, now);
     const milestone = this.getRentalExpiryMilestone(remainingDays);
     if (!milestone) {
       return 0;
     }
 
-    const alreadySent = state.rentalExpiryReminders.some(
+    const alreadySentMilestone = state.rentalExpiryReminders.some(
       (rec) =>
         rec.projectId === project.id &&
         rec.removalDate === effectiveRemoval &&
@@ -325,7 +332,15 @@ export class ReminderService {
         rec.status === 'SENT'
     );
 
-    if (alreadySent) {
+    const alreadySentToday = state.notifications.some(
+      (n) =>
+        n.entityType === 'PROJECT' &&
+        n.entityId === project.id &&
+        n.notificationDate === todayIst &&
+        (n.title === 'Rental Expiry Alert' || n.title === 'Rental Period Overdue')
+    );
+
+    if (alreadySentMilestone || alreadySentToday) {
       return 0;
     }
 
@@ -334,18 +349,14 @@ export class ReminderService {
     const supervisor = project.supervisorName || undefined;
     const notifId = `notif-exp-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    let title = 'Rental Expiry Reminder';
-    let message = `Attention! Project ${project.projectCode} – ${project.customerName} has only ${remainingDays} ${remainingDays === 1 ? 'day' : 'days'} remaining in its rental period.`;
+    let title = 'Rental Expiry Alert';
+    let message = `Rental Expiry Alert: Project ${project.projectCode} has only ${remainingDays} ${remainingDays === 1 ? 'day' : 'days'} remaining. Please coordinate with the customer regarding rental extension or material removal.`;
     let type: Notification['type'] = 'WARNING';
 
     if (milestone === 'OVERDUE') {
       title = 'Rental Period Overdue';
       message = `Project ${project.projectCode} – ${project.customerName} has exceeded its rental period. Please review the removal date.`;
       type = 'URGENT';
-    } else if (milestone === '0_DAYS') {
-      title = 'Rental Expiry Reminder';
-      message = `Attention! Project ${project.projectCode} – ${project.customerName} has 0 days remaining — rental period expires today (${formatDate(effectiveRemoval)}).`;
-      type = 'WARNING';
     }
 
     const notif: Notification = {
@@ -395,6 +406,80 @@ export class ReminderService {
       let sent = 0;
       for (const project of state.projects) {
         sent += this.syncProjectRentalExpiryInState(state, project, now);
+      }
+      return sent;
+    });
+  }
+
+  /**
+   * Generate an expected payment date reminder when todayIst >= expectedPaymentDate
+   * and outstanding balance > 0 (one notification per project per IST calendar day).
+   */
+  public static syncProjectPaymentReminderInState(
+    state: DatabaseState,
+    project: Project,
+    now: Date = new Date()
+  ): number {
+    if (!state.notifications) state.notifications = [];
+    if (!project || project.status === 'CANCELLED') return 0;
+
+    const balance = getProjectOutstandingBalance(project);
+    const expectedDate = toDateOnlyString(project.expectedPaymentDate);
+    if (balance <= 0 || !expectedDate) {
+      return 0;
+    }
+
+    const { dateStr: todayIst } = this.getIstParts(now);
+    if (todayIst < expectedDate) {
+      return 0;
+    }
+
+    const alreadySentToday = state.notifications.some(
+      (n) =>
+        n.entityType === 'PROJECT' &&
+        n.entityId === project.id &&
+        n.title === 'Payment Reminder' &&
+        n.notificationDate === todayIst
+    );
+    if (alreadySentToday) {
+      return 0;
+    }
+
+    const isOverdue = todayIst > expectedDate;
+    const formattedAmount = formatINR(balance, false);
+    const message = isOverdue
+      ? `Payment Reminder: The expected outstanding balance payment for Project ${project.projectCode} is overdue (due ${formatDate(expectedDate)}). Outstanding Amount: ${formattedAmount}.`
+      : `Payment Reminder: The expected outstanding balance payment for Project ${project.projectCode} is due today. Outstanding Amount: ${formattedAmount}.`;
+
+    const notif: Notification = {
+      id: `notif-pay-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      roleTarget: 'ADMIN',
+      title: 'Payment Reminder',
+      message,
+      type: isOverdue ? 'URGENT' : 'WARNING',
+      entityType: 'PROJECT',
+      entityId: project.id,
+      projectCode: project.projectCode,
+      customerName: project.customerName,
+      siteAddress: project.siteAddress || project.siteName,
+      supervisorName: project.supervisorName || undefined,
+      notificationDate: todayIst,
+      isRead: false,
+      createdAt: now.toISOString(),
+    };
+
+    state.notifications.unshift(notif);
+    return 1;
+  }
+
+  /**
+   * Process all projects with an expectedPaymentDate and pending balance in Asia/Kolkata.
+   */
+  public static async processDuePaymentReminders(now: Date = new Date()): Promise<number> {
+    return await dbStore.transaction(async (state) => {
+      let sent = 0;
+      for (const project of state.projects) {
+        sent += this.syncProjectPaymentReminderInState(state, project, now);
       }
       return sent;
     });

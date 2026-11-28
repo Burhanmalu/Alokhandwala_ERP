@@ -192,7 +192,7 @@ function LoginForm() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. admin@alokhandwala.com"
+                    placeholder="e.g. alokhandwala.sh@gmail.com"
                     required
                     disabled={loading}
                     className="w-full h-[46px] pl-10 pr-4 text-xs text-[#24160c] bg-white border border-[#d6c7b2] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8c5e39]/25 focus:border-[#8c5e39] transition shadow-2xs disabled:opacity-60"

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 import { dbStore } from '@/lib/db/store';
 import { ProjectService } from '@/lib/services/project-service';
 import { ReminderService } from '@/lib/services/reminder-service';
@@ -105,6 +107,81 @@ export async function PATCH(
         ReminderService.syncProjectRentalExpiryInState(state, proj);
         return proj;
       });
+
+      return NextResponse.json({ success: true, data: updated });
+    }
+
+    if (body.deletePhotoId) {
+      let deletedFileUrl: string | undefined;
+      let shouldDeleteFile = false;
+
+      const updated = await dbStore.transaction((state) => {
+        const proj = state.projects.find(p => p.id === id || p.projectCode === id);
+        if (!proj) throw new Error('Project not found');
+        if (!proj.photos || proj.photos.length === 0) {
+          throw new Error('Photograph not found');
+        }
+
+        const photoIdx = proj.photos.findIndex(
+          (ph: any) => ph.id === body.deletePhotoId || ph.fileUrl === body.deletePhotoId
+        );
+        if (photoIdx === -1) {
+          throw new Error('Photograph not found');
+        }
+
+        const [removed] = proj.photos.splice(photoIdx, 1);
+        deletedFileUrl = removed?.fileUrl;
+        const now = new Date().toISOString();
+        proj.updatedAt = now;
+
+        if (deletedFileUrl && deletedFileUrl.startsWith('/uploads/')) {
+          const stillReferencedInProjects = state.projects.some((p) =>
+            (p.photos || []).some((ph: any) => ph.fileUrl === deletedFileUrl)
+          );
+          const stillReferencedInChallans = (state.challans || []).some((c) =>
+            (c.images || []).some((img: any) => img.url === deletedFileUrl)
+          );
+          shouldDeleteFile = !stillReferencedInProjects && !stillReferencedInChallans;
+        }
+
+        state.activityEvents.unshift({
+          id: `act-${Date.now()}`,
+          projectId: proj.id,
+          eventType: 'PHOTO_DELETED',
+          eventTitle: 'Photograph Deleted',
+          eventDescription: `Deleted photograph ${removed?.fileName || body.deletePhotoId} from project ${proj.projectCode}.`,
+          actorId: body.actorId || 'usr-admin-01',
+          actorName: body.actorName || 'Admin',
+          createdAt: now,
+        });
+
+        state.auditLogs.unshift({
+          id: `aud-${Date.now()}`,
+          actorId: body.actorId || 'usr-admin-01',
+          actorEmail: body.actorName || 'Admin',
+          action: 'PROJECT_PHOTO_DELETED',
+          entityTable: 'projects',
+          entityId: proj.id,
+          oldState: { photoId: removed?.id, fileName: removed?.fileName, fileUrl: deletedFileUrl },
+          newState: { remainingPhotosCount: proj.photos.length },
+          createdAt: now,
+        });
+
+        return proj;
+      });
+
+      if (shouldDeleteFile && deletedFileUrl) {
+        try {
+          const uploadsRoot = path.resolve(process.cwd(), 'public', 'uploads');
+          const fileName = path.basename(deletedFileUrl);
+          const targetPath = path.resolve(uploadsRoot, fileName);
+          if (targetPath.startsWith(uploadsRoot + path.sep) && fs.existsSync(targetPath)) {
+            await fs.promises.unlink(targetPath);
+          }
+        } catch (storageErr: any) {
+          console.warn('[ProjectPhotoDelete] Non-fatal storage cleanup error:', storageErr?.message || storageErr);
+        }
+      }
 
       return NextResponse.json({ success: true, data: updated });
     }

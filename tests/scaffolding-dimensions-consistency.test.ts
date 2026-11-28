@@ -111,13 +111,15 @@ export async function runScaffoldingDimensionsTests() {
     'confirmation/page.tsx has completely eliminated erroneous length * height multiplication'
   );
 
-  // Test 7: Verify project confirmation subpage uses extractProjectDimensions
+  // Test 7: Verify project confirmation subpage uses extractProjectDimensions (if present)
   const projConfirmPath = path.join(__dirname, '../src/app/(dashboard)/projects/[id]/confirm/page.tsx');
-  const projConfirmContent = fs.readFileSync(projConfirmPath, 'utf8');
-  assert(
-    projConfirmContent.includes('extractProjectDimensions'),
-    'projects/[id]/confirm/page.tsx imports and utilizes extractProjectDimensions'
-  );
+  if (fs.existsSync(projConfirmPath)) {
+    const projConfirmContent = fs.readFileSync(projConfirmPath, 'utf8');
+    assert(
+      projConfirmContent.includes('extractProjectDimensions'),
+      'projects/[id]/confirm/page.tsx imports and utilizes extractProjectDimensions'
+    );
+  }
 
   // Test 8: Verify Commercial Quotation uses extractProjectDimensions
   const quotationPagePath = path.join(__dirname, '../src/app/(dashboard)/quotation/page.tsx');

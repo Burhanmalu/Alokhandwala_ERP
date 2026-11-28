@@ -17,6 +17,7 @@ import {
   ChevronRight,
   RotateCcw,
   X,
+  Camera,
 } from 'lucide-react';
 import { Challan } from '@/lib/schema';
 import { formatDate } from '@/lib/formatters';
@@ -476,7 +477,14 @@ export default function ChallanDirectoryPage() {
                     </div>
                   )}
 
-                  <div className="flex items-center justify-end gap-2 pt-1">
+                  <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                    <Link
+                      href={`/challans/${c.id}#challan-images`}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#fbf7f0] border border-[#d6c7b2] rounded font-semibold text-[#59371d]"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-[#8f6541]" />
+                      <span>Images ({(c.images || []).length})</span>
+                    </Link>
                     <Link
                       href={`/challans/${c.id}`}
                       className="px-2.5 py-1 bg-[#f7f2eb] border border-[#d6c7b2] rounded font-semibold text-[#24160c]"
@@ -607,6 +615,14 @@ export default function ChallanDirectoryPage() {
                       </td>
                       <td className="px-3.5 py-3 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1.5">
+                          <Link
+                            href={`/challans/${c.id}#challan-images`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#59371d] bg-[#fbf7f0] hover:bg-[#ebdcc9] border border-[#d6c7b2] rounded-md transition"
+                            title="View Challan Images / Photographs"
+                          >
+                            <Camera className="w-3.5 h-3.5 text-[#8f6541]" />
+                            <span>Images ({(c.images || []).length})</span>
+                          </Link>
                           <Link
                             href={`/challans/${c.id}`}
                             className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-stone-800 bg-[#f7f2eb] hover:bg-[#ebdcc9] border border-[#d6c7b2] rounded-md transition"

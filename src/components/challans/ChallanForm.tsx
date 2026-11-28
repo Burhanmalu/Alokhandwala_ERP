@@ -55,12 +55,15 @@ function getTodayDateString(): string {
 
 export function ChallanForm({
   editingChallan,
+  mode,
 }: {
   editingChallan?: Challan | null;
+  mode?: 'create' | 'edit' | 'return';
 }) {
   const router = useRouter();
   const { currentUser, can } = useAuth();
-  const isEdit = Boolean(editingChallan);
+  const isReturnMode = mode === 'return' && Boolean(editingChallan);
+  const isEdit = Boolean(editingChallan) && !isReturnMode;
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
@@ -89,7 +92,9 @@ export function ChallanForm({
   );
 
   const [inputRows, setInputRows] = useState<FormMaterialRow[]>(() =>
-    editingChallan?.inputEntries?.length
+    isReturnMode
+      ? [{ rowId: `in-ret-${Date.now()}`, date: getTodayDateString(), materialId: '', quantity: '1', remarks: '' }]
+      : editingChallan?.inputEntries?.length
       ? editingChallan.inputEntries.map((e, i) => ({
           rowId: `in-${i}-${Date.now()}`,
           id: e.id,
@@ -258,6 +263,14 @@ export function ChallanForm({
       issuedMap.set(r.materialId, (issuedMap.get(r.materialId) || 0) + qty);
     }
 
+    if (isReturnMode && editingChallan?.inputEntries?.length) {
+      for (const prevEntry of editingChallan.inputEntries) {
+        const qty = Math.max(0, Math.trunc(Number(prevEntry.quantity) || 0));
+        if (!prevEntry.materialId || qty <= 0) continue;
+        returnedMap.set(prevEntry.materialId, (returnedMap.get(prevEntry.materialId) || 0) + qty);
+      }
+    }
+
     for (const r of inputRows) {
       const qty = Math.max(0, Math.trunc(Number(r.quantity) || 0));
       if (!r.materialId || qty <= 0) continue;
@@ -333,7 +346,7 @@ export function ChallanForm({
       orphanErrors,
       autoStatus,
     };
-  }, [outputRows, inputRows, lostRows, materials, lossApproved]);
+  }, [outputRows, inputRows, lostRows, materials, lossApproved, isReturnMode, editingChallan]);
 
   const addOutputRow = () => {
     setOutputRows(prev => [
@@ -343,14 +356,10 @@ export function ChallanForm({
   };
 
   const addInputRow = () => {
-    setInputRows(prev => {
-      const used = new Set(prev.map(r => r.materialId).filter(Boolean));
-      const nextUnselected = issuedMaterialsList.find(m => !used.has(m.id))?.id || '';
-      return [
-        ...prev,
-        { rowId: `in-${Date.now()}-${Math.random()}`, date: getTodayDateString(), materialId: nextUnselected, quantity: '1', remarks: '' },
-      ];
-    });
+    setInputRows(prev => [
+      ...prev,
+      { rowId: `in-${Date.now()}-${Math.random()}`, date: getTodayDateString(), materialId: '', quantity: '1', remarks: '' },
+    ]);
   };
 
   const addLostRow = () => {
@@ -387,21 +396,15 @@ export function ChallanForm({
     if (validOutputs.length === 0) {
       return 'Please add at least one Output Material row with a valid material and quantity.';
     }
-    const seenOutputMats = new Set<string>();
     for (const r of outputRows) {
       if (!r.materialId) return 'Every Output Material row must have a selected material.';
-      if (seenOutputMats.has(r.materialId)) return 'Duplicate materials are not allowed in Output Material.';
-      seenOutputMats.add(r.materialId);
       if (!r.date) return 'Every Output Material row must have a valid date.';
       const qty = Number(r.quantity);
       if (!Number.isInteger(qty) || qty < 1) return 'Output quantities must be positive whole numbers.';
     }
 
-    const seenInputMats = new Set<string>();
     for (const r of inputRows) {
       if (!r.materialId) return 'Every Input (Return) row must have a selected material.';
-      if (seenInputMats.has(r.materialId)) return 'Duplicate materials are not allowed in Input Material.';
-      seenInputMats.add(r.materialId);
       if (!r.date) return 'Every Input (Return) row must have a valid date.';
       const qty = Number(r.quantity);
       if (!Number.isInteger(qty) || qty < 1) return 'Returned quantities must be positive whole numbers.';
@@ -501,6 +504,55 @@ export function ChallanForm({
     setError(null);
     setSuccessBanner(null);
 
+    if (isReturnMode && editingChallan) {
+      if (inputRows.length === 0) {
+        setError('Please add at least one return entry.');
+        return;
+      }
+      for (const r of inputRows) {
+        if (!r.date || !r.materialId || Number(r.quantity) <= 0) {
+          setError('Each return entry must have a valid Date, Issued Material, and Quantity >= 1.');
+          return;
+        }
+      }
+      if (reconciliationPreview.hasExcess) {
+        setError(
+          reconciliationPreview.orphanErrors[0] ||
+            'Returned quantity exceeds remaining issued quantity at site.'
+        );
+        return;
+      }
+
+      setSubmitting(true);
+      try {
+        const res = await fetch(`/api/challans/${editingChallan.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'ADD_RETURN',
+            entries: inputRows.map(r => ({
+              date: r.date,
+              materialId: r.materialId,
+              quantity: Math.trunc(Number(r.quantity)),
+              remarks: r.remarks?.trim() || undefined,
+            })),
+            actorId: currentUser?.id || 'usr-admin-01',
+            actorName: currentUser?.fullName || 'Admin',
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || 'Failed to save return entry');
+        }
+        router.push(`/challans/${editingChallan.id}`);
+      } catch (err: any) {
+        setError(err?.message || 'An error occurred while saving the return entry.');
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
     const validationError = validateBeforeSubmit();
     if (validationError) {
       setError(validationError);
@@ -590,16 +642,34 @@ export function ChallanForm({
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Challan Directory</span>
             </Link>
+            {isReturnMode && editingChallan && (
+              <>
+                <span>/</span>
+                <Link href={`/challans/${editingChallan.id}`} className="hover:text-[#24160c] font-mono">
+                  {editingChallan.challanNumber}
+                </Link>
+              </>
+            )}
             <span>/</span>
             <span className="font-semibold text-[#24160c]">
-              {isEdit ? `Edit ${editingChallan?.challanNumber}` : 'New Challan'}
+              {isReturnMode
+                ? 'Add Return Entry'
+                : isEdit
+                ? `Edit ${editingChallan?.challanNumber}`
+                : 'New Challan'}
             </span>
           </div>
           <h1 className="text-xl font-bold text-[#24160c] tracking-tight">
-            {isEdit ? `Edit Challan ${editingChallan?.challanNumber}` : 'Create Material Challan'}
+            {isReturnMode
+              ? `Add Return Entry · ${editingChallan?.challanNumber}`
+              : isEdit
+              ? `Edit Challan ${editingChallan?.challanNumber}`
+              : 'Create Material Challan'}
           </h1>
           <p className="text-xs text-stone-500">
-            Issue scaffolding material from warehouse to site, record returns, and track live material reconciliation.
+            {isReturnMode
+              ? 'Record returned scaffolding materials against this existing challan without creating a new challan.'
+              : 'Issue scaffolding material from warehouse to site, record returns, and track live material reconciliation.'}
           </p>
         </div>
 
@@ -652,7 +722,26 @@ export function ChallanForm({
           <h2 className="font-bold text-sm text-[#24160c]">A. Customer & Site Details</h2>
         </div>
 
-        {loadingRefs ? (
+        {isReturnMode && editingChallan ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-[#fbf9f5] p-3.5 rounded-md border border-[#e5dac8]">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Challan ID</div>
+              <div className="font-mono font-bold text-[#24160c] mt-0.5">{editingChallan.challanNumber}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Customer Name</div>
+              <div className="font-semibold text-[#24160c] mt-0.5">{editingChallan.customerName}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Site</div>
+              <div className="font-semibold text-[#24160c] mt-0.5">{editingChallan.siteName || '—'}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Size / Dimensions</div>
+              <div className="font-mono font-semibold text-[#24160c] mt-0.5">{editingChallan.size || '—'}</div>
+            </div>
+          </div>
+        ) : loadingRefs ? (
           <div className="py-4 text-stone-400">Loading customers, sites, and inventory catalog...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -774,6 +863,33 @@ export function ChallanForm({
           </div>
         </div>
 
+        {isReturnMode && editingChallan ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-[#fbf9f5] text-[10px] font-bold uppercase tracking-wider text-stone-500 border-b border-[#e8decb]">
+                <tr>
+                  <th className="px-3 py-2 w-36">Issue Date</th>
+                  <th className="px-3 py-2">Previously Issued Material</th>
+                  <th className="px-3 py-2 w-28 text-right">Issued Qty</th>
+                  <th className="px-3 py-2">Remarks</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#f0e8db]">
+                {editingChallan.outputEntries.map((entry) => (
+                  <tr key={entry.id} className="bg-[#fcfbf9]">
+                    <td className="px-3 py-2 font-mono text-stone-700">{formatDate(entry.date)}</td>
+                    <td className="px-3 py-2 font-semibold text-[#24160c]">
+                      {entry.materialName} <span className="text-stone-400 font-mono">({entry.itemCode})</span>
+                    </td>
+                    <td className="px-3 py-2 font-mono font-bold text-right text-[#24160c]">{entry.quantity}</td>
+                    <td className="px-3 py-2 text-stone-500">{entry.remarks || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+        <>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="bg-[#fbf9f5] text-[10px] font-bold uppercase tracking-wider text-stone-500 border-b border-[#e8decb]">
@@ -817,23 +933,17 @@ export function ChallanForm({
                         className="w-full px-2.5 py-1.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded text-[#24160c] font-medium focus:bg-white focus:border-[#8f6541] focus:outline-none"
                       >
                         <option value="">-- Select Material --</option>
-                        {materials
-                          .filter(
-                            (m) =>
-                              m.id === row.materialId ||
-                              !outputRows.some((other, otherIdx) => otherIdx !== idx && other.materialId === m.id)
-                          )
-                          .map(m => {
-                            const avail = Math.max(
-                              0,
-                              m.usableWarehouseQty - m.reservedQty + (originalIssuedByMat.get(m.id) || 0)
-                            );
-                            return (
-                              <option key={m.id} value={m.id}>
-                                {m.name} ({m.itemCode}) — Avail: {avail} {m.unitOfMeasurement}
-                              </option>
-                            );
-                          })}
+                        {materials.map(m => {
+                          const avail = Math.max(
+                            0,
+                            m.usableWarehouseQty - m.reservedQty + (originalIssuedByMat.get(m.id) || 0)
+                          );
+                          return (
+                            <option key={m.id} value={m.id}>
+                              {m.name} ({m.itemCode}) — Avail: {avail} {m.unitOfMeasurement}
+                            </option>
+                          );
+                        })}
                       </select>
                     </td>
                     <td className="px-3 py-2.5">
@@ -896,6 +1006,8 @@ export function ChallanForm({
             <span>Add Material</span>
           </button>
         </div>
+        </>
+        )}
       </section>
 
       {/* SECTION C: INPUT MATERIAL (MATERIAL RETURNED FROM SITE) */}
@@ -918,6 +1030,36 @@ export function ChallanForm({
             </div>
           </div>
         </div>
+
+        {isReturnMode && editingChallan && (editingChallan.inputEntries || []).length > 0 && (
+          <div className="bg-[#fbf9f5] border border-[#e5dac8] rounded-md p-3 space-y-2">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-[#4d301c]">
+              Previous Return Entries (Preserved)
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-[11px]">
+                <thead className="text-[10px] uppercase text-stone-500 border-b border-[#e5dac8]">
+                  <tr>
+                    <th className="py-1.5 pr-3">Date</th>
+                    <th className="py-1.5 pr-3">Material</th>
+                    <th className="py-1.5 pr-3 text-right">Returned Qty</th>
+                    <th className="py-1.5">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#f0e8db]">
+                  {editingChallan.inputEntries.map((prevEntry) => (
+                    <tr key={prevEntry.id}>
+                      <td className="py-1.5 pr-3 font-mono text-stone-700">{formatDate(prevEntry.date)}</td>
+                      <td className="py-1.5 pr-3 font-medium text-[#24160c]">{prevEntry.materialName}</td>
+                      <td className="py-1.5 pr-3 font-mono font-bold text-right text-emerald-700">{prevEntry.quantity}</td>
+                      <td className="py-1.5 text-stone-500">{prevEntry.remarks || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {inputRows.length === 0 ? (
           <div className="p-4 bg-[#fbf9f5] border border-dashed border-[#d6c7b2] rounded-md text-center text-stone-500">
@@ -963,20 +1105,14 @@ export function ChallanForm({
                           className="w-full px-2.5 py-1.5 bg-[#fbf9f5] border border-[#d6c7b2] rounded text-[#24160c] font-medium focus:bg-white focus:border-[#8f6541] focus:outline-none"
                         >
                           <option value="">-- Select Issued Material --</option>
-                          {issuedMaterialsList
-                            .filter(
-                              (m) =>
-                                m.id === row.materialId ||
-                                !inputRows.some((other, otherIdx) => otherIdx !== idx && other.materialId === m.id)
-                            )
-                            .map(m => {
-                              const line = reconciliationPreview.lines.find(l => l.materialId === m.id);
-                              return (
-                                <option key={m.id} value={m.id}>
-                                  {m.name} (Issued: {line?.issued || 0} {m.unitOfMeasurement})
-                                </option>
-                              );
-                            })}
+                          {issuedMaterialsList.map(m => {
+                            const line = reconciliationPreview.lines.find(l => l.materialId === m.id);
+                            return (
+                              <option key={m.id} value={m.id}>
+                                {m.name} (Issued: {line?.issued || 0} {m.unitOfMeasurement})
+                              </option>
+                            );
+                          })}
                         </select>
                       </td>
                       <td className="px-3 py-2.5">
@@ -1036,7 +1172,7 @@ export function ChallanForm({
         <div className="pt-1 flex justify-end">
           <button
             type="button"
-            disabled={issuedMaterialsList.length === 0 || inputRows.length >= issuedMaterialsList.length}
+            disabled={issuedMaterialsList.length === 0}
             onClick={addInputRow}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#fbf7f0] hover:bg-[#ebdcc9] text-[#24160c] border border-[#d6c7b2] rounded-md font-bold transition disabled:opacity-40 cursor-pointer shadow-2xs"
           >
@@ -1389,13 +1525,13 @@ export function ChallanForm({
       {/* FORM ACTIONS FOOTER */}
       <div className="bg-white rounded-lg border border-[#e5dac8] px-5 py-4 flex flex-wrap items-center justify-end gap-2.5 shadow-2xs">
         <Link
-          href={isEdit && editingChallan ? `/challans/${editingChallan.id}` : '/challans'}
+          href={(isEdit || isReturnMode) && editingChallan ? `/challans/${editingChallan.id}` : '/challans'}
           className="px-4 py-2 text-xs font-semibold text-stone-700 bg-white hover:bg-[#faf6ee] border border-[#d6c7b2] rounded-md transition"
         >
           Cancel
         </Link>
 
-        {!isEdit && (
+        {!isEdit && !isReturnMode && (
           <button
             type="button"
             disabled={submitting}
@@ -1414,7 +1550,15 @@ export function ChallanForm({
           className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-[#c79e7c] bg-[#24160c] hover:bg-[#382315] border border-[#19100a] rounded-md shadow-xs transition disabled:opacity-50 cursor-pointer"
         >
           {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-          <span>{submitting ? 'Saving Challan...' : isEdit ? 'Save Challan Changes' : 'Save Challan'}</span>
+          <span>
+            {submitting
+              ? (isReturnMode ? 'Saving Return...' : 'Saving Challan...')
+              : isReturnMode
+              ? 'Save Return Entry'
+              : isEdit
+              ? 'Save Challan Changes'
+              : 'Save Challan'}
+          </span>
         </button>
       </div>
     </div>

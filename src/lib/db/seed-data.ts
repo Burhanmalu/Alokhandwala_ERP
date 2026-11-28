@@ -47,11 +47,11 @@ export const initialCompanySettings: CompanySettings = {
 export const initialUsers: UserProfile[] = [
   {
     id: 'usr-admin-01',
-    email: 'admin@alokhandwala.com',
+    email: 'alokhandwala.sh@gmail.com',
     fullName: 'Ali/Abdeali(Admin)',
     phone: '+91 98200 11111',
     role: 'ADMIN',
-    password: 'demo2026',
+    password: 'scrypt$b727e64e0c3214ec1624eb5c9987edce$059915fe61450e6a9394320dc152c7e595850dad6524eceb3751876076ae22e5ca74861490c569a927efab33f3a0be1a78a3524e8f9464f687d695ba34b5c63f',
     isActive: true,
     createdAt: '2026-01-01T09:00:00Z',
   },

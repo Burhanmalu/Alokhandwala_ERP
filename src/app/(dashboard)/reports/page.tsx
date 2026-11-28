@@ -14,7 +14,15 @@ import {
   Award,
   ArrowRight
 } from 'lucide-react';
-import { formatINR, formatQuantity, formatDate } from '@/lib/formatters';
+import {
+  formatINR,
+  formatQuantity,
+  formatDate,
+  isReceivableEligibleProjectStatus,
+  getProjectOutstandingBalance,
+  getEffectiveRemovalDate,
+  getStatusBadgeConfig,
+} from '@/lib/formatters';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/auth-context';
 
@@ -92,17 +100,24 @@ export default function ReportsPage() {
         m.totalOwnedQty * m.purchaseCost,
       ]);
     } else if (selectedReport === 'OUTSTANDING_RECEIVABLES') {
-      headers = ['Invoice #', 'Customer', 'Invoice Date', 'Due Date', 'Total Amount (INR)', 'Paid (INR)', 'Outstanding (INR)', 'Status'];
-      rows = data.invoices.map((i: any) => [
-        i.invoiceNumber,
-        `"${i.customerName}"`,
-        i.invoiceDate,
-        i.dueDate,
-        i.totalAmount,
-        i.paidAmount,
-        i.outstandingAmount,
-        i.status,
-      ]);
+      headers = ['Project Code', 'Customer', 'Site', 'Status', 'Removal / Expiry', 'Total Amount (INR)', 'Received (INR)', 'Outstanding (INR)'];
+      rows = data.projects
+        .filter((p: any) => isReceivableEligibleProjectStatus(p.status) && getProjectOutstandingBalance(p) > 0)
+        .map((p: any) => {
+          const total = Number(p.totalAmount ?? p.agreedProjectPrice ?? p.quotationAmount ?? 0);
+          const received = Number(p.paymentReceived ?? p.advancePaidAmount ?? 0);
+          const balance = getProjectOutstandingBalance(p);
+          return [
+            p.projectCode,
+            `"${p.customerName}"`,
+            `"${p.siteName}"`,
+            p.status,
+            getEffectiveRemovalDate(p) || '',
+            total,
+            received,
+            balance,
+          ];
+        });
     }
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
@@ -263,36 +278,43 @@ export default function ReportsPage() {
         <>
           {/* Mobile Outstanding Receivables Cards */}
           <div className="block md:hidden space-y-3">
-            {data.invoices.map((inv: any) => (
-              <div key={inv.id} className="p-4 bg-white rounded-lg border border-[#e8decb] shadow-2xs space-y-2 text-xs">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="font-bold text-stone-900 font-mono">{inv.invoiceNumber}</div>
-                    <div className="text-stone-700 font-medium">{inv.customerName}</div>
+            {data.projects
+              .filter((p: any) => isReceivableEligibleProjectStatus(p.status) && getProjectOutstandingBalance(p) > 0)
+              .map((p: any) => {
+                const total = Number(p.totalAmount ?? p.agreedProjectPrice ?? p.quotationAmount ?? 0);
+                const received = Number(p.paymentReceived ?? p.advancePaidAmount ?? 0);
+                const balance = getProjectOutstandingBalance(p);
+                const badge = getStatusBadgeConfig(p.status);
+                const remDate = getEffectiveRemovalDate(p);
+                return (
+                  <div key={p.id} className="p-4 bg-white rounded-lg border border-[#e8decb] shadow-2xs space-y-2 text-xs">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-bold text-stone-900 font-mono">{p.projectCode}</div>
+                        <div className="text-stone-700 font-medium">{p.customerName}</div>
+                        <div className="text-[11px] text-stone-500">{p.siteName}</div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${badge.className}`}>
+                        {badge.label}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 bg-[#fbf7f0] rounded-md border border-[#ebdcc9] font-mono">
+                      <span className="text-[11px] text-[#714f36] font-sans font-medium">Outstanding Balance:</span>
+                      <span className="font-bold text-rose-700 text-sm">{formatINR(balance)}</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px] text-stone-500 font-mono pt-1">
+                      <div>Total: <span className="font-bold text-stone-800">{formatINR(total)}</span></div>
+                      <div>Received: <span className="font-bold text-[#714f36]">{formatINR(received)}</span></div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] text-stone-400 font-mono pt-1 border-t border-[#f0e8db]">
+                      <span>Removal / Expiry: {remDate ? formatDate(remDate) : '—'}</span>
+                    </div>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                    inv.status === 'PAID' ? 'bg-[#fbf7f0] text-[#714f36] border-[#ebdcc9]' : 'bg-amber-100 text-amber-800 border-amber-200'
-                  }`}>
-                    {inv.status}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between p-2.5 bg-[#fbf7f0] rounded-md border border-[#ebdcc9] font-mono">
-                  <span className="text-[11px] text-[#714f36] font-sans font-medium">Outstanding Balance:</span>
-                  <span className="font-bold text-rose-700 text-sm">{formatINR(inv.outstandingAmount)}</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-stone-500 font-mono pt-1">
-                  <div>Invoiced: <span className="font-bold text-stone-800">{formatINR(inv.totalAmount)}</span></div>
-                  <div>Paid: <span className="font-bold text-[#714f36]">{formatINR(inv.paidAmount)}</span></div>
-                </div>
-
-                <div className="flex items-center justify-between text-[10px] text-stone-400 font-mono pt-1 border-t border-[#f0e8db]">
-                  <span>Dated: {formatDate(inv.invoiceDate)}</span>
-                  <span>Due: {formatDate(inv.dueDate)}</span>
-                </div>
-              </div>
-            ))}
+                );
+              })}
           </div>
 
           {/* Desktop Outstanding Receivables Table */}
@@ -301,35 +323,42 @@ export default function ReportsPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-[#fbf9f5] text-stone-600 uppercase tracking-wider text-[10px] font-semibold border-b border-[#e8decb]">
                   <tr>
-                    <th className="px-4 py-3">Invoice Number</th>
+                    <th className="px-4 py-3">Project Code</th>
                     <th className="px-4 py-3">Customer</th>
-                    <th className="px-4 py-3">Invoice Date</th>
-                    <th className="px-4 py-3">Due Date</th>
-                    <th className="px-4 py-3 text-right">Total Invoiced</th>
-                    <th className="px-4 py-3 text-right">Paid Amount</th>
+                    <th className="px-4 py-3">Site</th>
+                    <th className="px-4 py-3">Removal / Expiry</th>
+                    <th className="px-4 py-3 text-right">Total Agreed</th>
+                    <th className="px-4 py-3 text-right">Received</th>
                     <th className="px-4 py-3 text-right font-bold text-rose-700">Outstanding Balance</th>
                     <th className="px-4 py-3 text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f0e8db] font-mono">
-                  {data.invoices.map((inv: any) => (
-                    <tr key={inv.id} className="hover:bg-[#fcfbf9] transition">
-                      <td className="px-4 py-3 font-bold text-[#24160c]">{inv.invoiceNumber}</td>
-                      <td className="px-4 py-3 font-sans font-semibold text-stone-800">{inv.customerName}</td>
-                      <td className="px-4 py-3">{formatDate(inv.invoiceDate)}</td>
-                      <td className="px-4 py-3">{formatDate(inv.dueDate)}</td>
-                      <td className="px-4 py-3 text-right">{formatINR(inv.totalAmount)}</td>
-                      <td className="px-4 py-3 text-right text-[#714f36]">{formatINR(inv.paidAmount)}</td>
-                      <td className="px-4 py-3 text-right font-bold text-rose-700">{formatINR(inv.outstandingAmount)}</td>
-                      <td className="px-4 py-3 text-center font-sans">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                          inv.status === 'PAID' ? 'bg-[#fbf7f0] text-[#714f36] border-[#ebdcc9]' : 'bg-amber-100 text-amber-800 border-amber-200'
-                        }`}>
-                          {inv.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {data.projects
+                    .filter((p: any) => isReceivableEligibleProjectStatus(p.status) && getProjectOutstandingBalance(p) > 0)
+                    .map((p: any) => {
+                      const total = Number(p.totalAmount ?? p.agreedProjectPrice ?? p.quotationAmount ?? 0);
+                      const received = Number(p.paymentReceived ?? p.advancePaidAmount ?? 0);
+                      const balance = getProjectOutstandingBalance(p);
+                      const badge = getStatusBadgeConfig(p.status);
+                      const remDate = getEffectiveRemovalDate(p);
+                      return (
+                        <tr key={p.id} className="hover:bg-[#fcfbf9] transition">
+                          <td className="px-4 py-3 font-bold text-[#24160c]">{p.projectCode}</td>
+                          <td className="px-4 py-3 font-sans font-semibold text-stone-800">{p.customerName}</td>
+                          <td className="px-4 py-3 font-sans text-stone-600">{p.siteName}</td>
+                          <td className="px-4 py-3">{remDate ? formatDate(remDate) : '—'}</td>
+                          <td className="px-4 py-3 text-right">{formatINR(total)}</td>
+                          <td className="px-4 py-3 text-right text-[#714f36]">{formatINR(received)}</td>
+                          <td className="px-4 py-3 text-right font-bold text-rose-700">{formatINR(balance)}</td>
+                          <td className="px-4 py-3 text-center font-sans">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${badge.className}`}>
+                              {badge.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>

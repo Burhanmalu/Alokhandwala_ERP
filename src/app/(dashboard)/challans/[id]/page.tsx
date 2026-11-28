@@ -20,6 +20,11 @@ import {
   Loader2,
   X,
   History,
+  Camera,
+  ImageIcon,
+  Maximize2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Challan } from '@/lib/schema';
 import { formatDate, formatDateTime } from '@/lib/formatters';
@@ -42,6 +47,7 @@ export default function ChallanViewPage({
   const [challan, setChallan] = useState<Challan | null>(null);
   const [loading, setLoading] = useState(true);
   const [banner, setBanner] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [previewImageIndex, setPreviewImageIndex] = useState<number | null>(null);
 
   // Add Return Entry Modal
   const [returnModalOpen, setReturnModalOpen] = useState(false);
@@ -397,14 +403,13 @@ export default function ChallanViewPage({
         {/* Challan Actions */}
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           {can('CHALLAN_RECORD_RETURN') && returnableLines.length > 0 && (
-            <button
-              type="button"
-              onClick={openReturnModal}
+            <Link
+              href={`/challans/${challan.id}/return`}
               className="h-9 px-3.5 bg-[#24160c] hover:bg-[#382315] text-[#c79e7c] rounded-md text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Return Entry</span>
-            </button>
+            </Link>
           )}
 
           {can('CHALLAN_RECORD_LOSS') && returnableLines.length > 0 && (
@@ -625,13 +630,12 @@ export default function ChallanViewPage({
               </h3>
             </div>
             {can('CHALLAN_RECORD_RETURN') && returnableLines.length > 0 && (
-              <button
-                type="button"
-                onClick={openReturnModal}
+              <Link
+                href={`/challans/${challan.id}/return`}
                 className="text-[11px] font-bold text-[#714f36] hover:underline cursor-pointer"
               >
                 + Add Return
-              </button>
+              </Link>
             )}
           </div>
           <div className="overflow-x-auto">
@@ -713,6 +717,138 @@ export default function ChallanViewPage({
             </div>
           )}
         </div>
+
+        {/* Challan Images / Photographs Gallery */}
+        <div id="challan-images" className="bg-white rounded-lg border border-[#e5dac8] shadow-2xs overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#f0e8db] flex flex-wrap items-center justify-between gap-2 bg-[#fbf9f5]">
+            <div className="flex items-center gap-2">
+              <Camera className="w-4 h-4 text-[#8f6541]" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#24160c]">
+                Challan Images / Photographs
+              </h3>
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#f7f2eb] text-[#714f36] border border-[#e5dac8]">
+                {(challan.images || []).length} {(challan.images || []).length === 1 ? 'photo' : 'photos'}
+              </span>
+            </div>
+            {can('CHALLAN_EDIT') && (
+              <Link
+                href={`/challans/${challan.id}/edit`}
+                className="text-[11px] font-bold text-[#714f36] hover:underline"
+              >
+                Manage Images in Edit
+              </Link>
+            )}
+          </div>
+
+          <div className="p-4">
+            {(challan.images || []).length === 0 ? (
+              <div className="text-center py-8 px-4 border-2 border-dashed border-[#e5dac8] rounded-lg bg-[#fbf9f5]">
+                <ImageIcon className="w-7 h-7 text-stone-400 mx-auto mb-1.5" />
+                <div className="text-xs font-semibold text-stone-700">No photographs attached to this challan</div>
+                <p className="text-[11px] text-stone-400 mt-0.5">
+                  Attach dispatch or return evidence photos via Edit Challan.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                {(challan.images || []).map((img, idx) => (
+                  <div
+                    key={img.id}
+                    onClick={() => setPreviewImageIndex(idx)}
+                    className="rounded-md overflow-hidden border border-[#e5dac8] bg-stone-900 group shadow-2xs cursor-pointer hover:border-[#8f6541] transition"
+                  >
+                    <div className="aspect-video relative overflow-hidden bg-stone-900">
+                      <img
+                        src={img.url}
+                        alt={img.fileName || `Challan image ${idx + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300 opacity-90 group-hover:opacity-100"
+                      />
+                      <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                        <span className="p-1.5 bg-black/65 rounded-full text-white shadow-sm">
+                          <Maximize2 className="w-4 h-4" />
+                        </span>
+                      </div>
+                      <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#140b06]/80 text-[#dfcbab] border border-[#382315]">
+                        {img.source || 'PHOTO'}
+                      </span>
+                    </div>
+                    <div className="p-2 bg-white text-[11px]">
+                      <div className="font-medium text-stone-800 truncate">{img.fileName}</div>
+                      <div className="text-[10px] text-stone-400 mt-0.5">
+                        {formatDateTime(img.uploadedAt)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Lightbox Modal for Challan Images */}
+        {previewImageIndex !== null && challan.images && challan.images[previewImageIndex] && (
+          <div
+            className="fixed inset-0 z-50 bg-[#140b06]/85 backdrop-blur-xs flex items-center justify-center p-4"
+            onClick={() => setPreviewImageIndex(null)}
+          >
+            <div
+              className="relative max-w-4xl w-full bg-stone-950 rounded-lg overflow-hidden shadow-2xl border border-[#523622]"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-3 bg-[#19100a] border-b border-[#382315] flex items-center justify-between text-white text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Camera className="w-4 h-4 text-[#c79e7c] shrink-0" />
+                  <span className="font-semibold text-stone-200 truncate">
+                    {challan.images[previewImageIndex].fileName}
+                  </span>
+                  <span className="px-2 py-0.5 bg-[#24160c] border border-[#382315] rounded text-[10px] text-[#c79e7c] shrink-0">
+                    {previewImageIndex + 1} / {challan.images.length}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPreviewImageIndex(null)}
+                  className="p-1 rounded text-stone-400 hover:text-white hover:bg-[#24160c] transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="relative max-h-[75vh] overflow-hidden flex items-center justify-center bg-black">
+                {challan.images.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPreviewImageIndex((previewImageIndex - 1 + challan.images!.length) % challan.images!.length)
+                    }
+                    className="absolute left-3 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white cursor-pointer"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                )}
+                <img
+                  src={challan.images[previewImageIndex].url}
+                  alt={challan.images[previewImageIndex].fileName}
+                  className="max-w-full max-h-[75vh] object-contain"
+                />
+                {challan.images.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPreviewImageIndex((previewImageIndex + 1) % challan.images!.length)
+                    }
+                    className="absolute right-3 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white cursor-pointer"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+              <div className="p-3 bg-[#19100a] border-t border-[#382315] flex items-center justify-between text-xs text-stone-400">
+                <span>Challan: <strong className="text-white font-mono">{challan.challanNumber}</strong></span>
+                <span>Uploaded: {formatDateTime(challan.images[previewImageIndex].uploadedAt)}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Transaction History */}
         <div className="bg-white rounded-lg border border-[#e5dac8] shadow-2xs overflow-hidden">

@@ -37,7 +37,8 @@ import {
   Ban,
   AlertOctagon,
   Info,
-  Edit3
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import {
   formatINR,
@@ -125,6 +126,9 @@ export default function ProjectWorkspacePage({
   const [closing, setClosing] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState<any | null>(null);
+  const [photoToDelete, setPhotoToDelete] = useState<any | null>(null);
+  const [deletingPhoto, setDeletingPhoto] = useState(false);
+  const [photoActionError, setPhotoActionError] = useState<string | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const photoInputRef = React.useRef<HTMLInputElement>(null);
@@ -509,6 +513,44 @@ export default function ProjectWorkspacePage({
       alert('Error uploading photos: ' + err.message);
     } finally {
       setUploadingPhotos(false);
+    }
+  };
+
+  const handleConfirmDeletePhoto = async () => {
+    if (!photoToDelete || deletingPhoto) return;
+    setDeletingPhoto(true);
+    setPhotoActionError(null);
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deletePhotoId: photoToDelete.id || photoToDelete.fileUrl,
+          actorId: currentUser?.id || 'usr-admin-01',
+          actorName: currentUser?.fullName || 'Admin',
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to delete photograph.');
+      }
+
+      setProject((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              photos: json.data?.photos ?? (prev.photos || []).filter((p: any) => p.id !== photoToDelete.id),
+            }
+          : prev
+      );
+      if (previewPhoto?.id === photoToDelete.id) {
+        setPreviewPhoto(null);
+      }
+      setPhotoToDelete(null);
+    } catch (err: any) {
+      setPhotoActionError(err?.message || 'Failed to delete photograph.');
+    } finally {
+      setDeletingPhoto(false);
     }
   };
 
@@ -1387,6 +1429,19 @@ export default function ProjectWorkspacePage({
                     <div className="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold bg-[#140b06]/80 text-[#dfcbab] backdrop-blur-xs font-mono border border-[#382315]">
                       {photo.stageLabel?.replace(/_/g, ' ') || photo.entityType}
                     </div>
+                    <button
+                      type="button"
+                      title="Delete photograph"
+                      aria-label={`Delete ${photo.fileName || 'photograph'}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPhotoActionError(null);
+                        setPhotoToDelete(photo);
+                      }}
+                      className="absolute top-2 left-2 p-1.5 rounded-md bg-[#140b06]/85 hover:bg-rose-700 text-rose-200 hover:text-white border border-[#523622] hover:border-rose-500 shadow-sm transition cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                   <div className="p-2.5 text-xs bg-white">
                     <div className="font-medium text-stone-800 truncate flex items-center gap-1.5">
@@ -1421,13 +1476,26 @@ export default function ProjectWorkspacePage({
                       {previewPhoto.stageLabel?.replace(/_/g, ' ') || 'SITE PHOTO'}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewPhoto(null)}
-                    className="p-1 rounded text-stone-400 hover:text-white hover:bg-[#24160c] transition"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhotoActionError(null);
+                        setPhotoToDelete(previewPhoto);
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-semibold bg-rose-900/60 hover:bg-rose-700 text-rose-100 border border-rose-700/70 transition cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewPhoto(null)}
+                      className="p-1 rounded text-stone-400 hover:text-white hover:bg-[#24160c] transition"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 <div className="max-h-[75vh] overflow-hidden flex items-center justify-center bg-black">
                   <img src={previewPhoto.fileUrl} alt={previewPhoto.fileName} className="max-w-full max-h-[75vh] object-contain" />
@@ -1443,6 +1511,73 @@ export default function ProjectWorkspacePage({
                     <span>Open original in new tab</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Photograph Confirmation Modal */}
+          {photoToDelete && (
+            <div
+              className="fixed inset-0 z-50 bg-[#140b06]/75 backdrop-blur-xs flex items-center justify-center p-4"
+              onClick={() => !deletingPhoto && setPhotoToDelete(null)}
+            >
+              <div
+                className="w-full max-w-md bg-white rounded-xl border border-[#d6c7b2] shadow-2xl overflow-hidden text-xs"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="bg-[#24160c] px-5 py-3.5 text-white flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Trash2 className="w-4 h-4 text-rose-400" />
+                    <h3 className="text-sm font-bold">Delete Photograph</h3>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={deletingPhoto}
+                    onClick={() => setPhotoToDelete(null)}
+                    className="p-1 text-stone-300 hover:text-white cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="p-5 space-y-3">
+                  <p className="text-stone-700 leading-relaxed">
+                    Are you sure you want to permanently delete{' '}
+                    <strong className="text-[#24160c]">{photoToDelete.fileName}</strong>? This action cannot be undone.
+                  </p>
+                  {photoToDelete.fileUrl && (
+                    <div className="h-32 w-full rounded-md overflow-hidden border border-[#e8decb] bg-stone-900">
+                      <img
+                        src={photoToDelete.fileUrl}
+                        alt={photoToDelete.fileName}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  )}
+                  {photoActionError && (
+                    <div className="p-2.5 bg-rose-50 border border-rose-300 rounded text-rose-800 font-semibold">
+                      {photoActionError}
+                    </div>
+                  )}
+                </div>
+                <div className="px-5 py-3.5 bg-[#fbf9f5] border-t border-[#e8decb] flex justify-end gap-2">
+                  <button
+                    type="button"
+                    disabled={deletingPhoto}
+                    onClick={() => setPhotoToDelete(null)}
+                    className="px-4 py-1.5 bg-white border border-[#d6c7b2] rounded-md font-semibold text-stone-700 hover:bg-[#faf6ee] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deletingPhoto}
+                    onClick={handleConfirmDeletePhoto}
+                    className="px-4 py-1.5 bg-rose-700 hover:bg-rose-800 text-white rounded-md font-bold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {deletingPhoto && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    <span>{deletingPhoto ? 'Deleting...' : 'Delete Photograph'}</span>
+                  </button>
                 </div>
               </div>
             </div>
